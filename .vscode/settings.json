@@ -1,0 +1,43 @@
+{
+    "files.autoSave": "afterDelay",
+    "workbench.iconTheme": "vscode-icons",
+    "workbench.colorTheme": "Dark-Dracula",
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "editor.fontSize": 14,
+    "security.workspace.trust.enabled": false,
+    "VsCodeTaskButtons.showCounter": true,
+    "VsCodeTaskButtons.tasks": [
+        {
+            "label": "$(tools) Build",
+            "task": "build",
+            "tooltip": "🛠️ build"
+        },
+        {
+            "label": "$(notebook-delete-cell) Clean",
+            "task": "clean",
+            "tooltip": "🧹 clean"
+        },
+        {
+            "label": "$(notebook-delete-cell) $(tools) Re-bulid",
+            "task": "rebuild",
+            "tooltip": "🛠️ rebuild"
+        },
+        {
+            "label": "$(zap) Flash",
+            "task": "flash",
+            "tooltip": "⚡ flash"
+        }
+    ],
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.intelliSenseMode": "gcc-arm",
+    "C_Cpp.default.cStandard": "c99",
+    "C_Cpp.default.compilerPath": "D:/Program Files/msys64/mingw64/bin/arm-none-eabi-gcc.exe",
+    "files.associations": {
+        "usbd_core.h": "c",
+        "usbd_ctlreq.h": "c",
+        "usbd_def.h": "c",
+        "usbd_conf.h": "c",
+        "usbd_desc.h": "c"
+    }
+}

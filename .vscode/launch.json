@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug On STlink",
+            "cwd": "${workspaceRoot}/",
+            "executable": "./build/${workspaceRootFolderName}.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd", //要选择的GDB server
+            "device": "STM32H750",
+            "interface": "swd",
+            "gdbPath": "D:/Program Files (x86)/Vscode Tools/arm-none-eabi-13-3/bin/arm-none-eabi-gdb.exe",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32h7x.cfg",
+            ],
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            "runToEntryPoint": "main",
+            "showDevDebugTimestamps": true,
+            "preLaunchTask": "flash", //先运行Build任务编译项目,取消注释即可使用
+            "svdFile": "${workspaceRoot}/STM32H750.svd",
+            // "swoConfig": {
+            //     "enabled": true,
+            //     "cpuFrequency": 480000000,
+            //     // "cpuFrequency": 1800000,
+            //     "swoFrequency": 2000000,
+            //     "source": "probe",
+            //     "decoders": [
+            //         { "type": "console", "label": "ITM", "port": 0 }
+            //     ]
+            // }
+        }
+    ]
+}
