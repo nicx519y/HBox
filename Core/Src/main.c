@@ -22,11 +22,27 @@
 #include "dma.h"
 #include "memorymap.h"
 #include "usart.h"
+#include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "usbd_core.h"
+// #include "usbd_desc.h"
+// #include "usbd_core.h"
+// // #include "usbd_cdc.h"
+// #include "usbd_composite_builder.h"
+// #include "usbd_cdc_rndis.h"
+// #include "usbd_cdc_rndis_if.h"
+
+#include "bsp/board_api.h"
+#include "tusb.h"
+#include "dhserver.h"
+#include "dnserver.h"
+#include "httpd.h"
+#include "lwip/ethip6.h"
+#include "lwip/init.h"
+#include "lwip/timeouts.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,8 +67,7 @@
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-void PeriphCommonClock_Config(void);
+
 static void MPU_Config(void);
 /* USER CODE BEGIN PFP */
 
@@ -60,6 +75,201 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// USBD_HandleTypeDef USBD_Device;
+
+#ifdef INCLUDE_IPERF
+#include "lwip/apps/lwiperf.h"
+#endif
+
+#define INIT_IP4(a, b, c, d) \
+  {PP_HTONL(LWIP_MAKEU32(a, b, c, d))}
+
+/* lwip context */
+static struct netif netif_data;
+
+/* shared between tud_network_recv_cb() and service_traffic() */
+static struct pbuf *received_frame;
+
+/* this is used by this code, ./class/net/net_driver.c, and usb_descriptors.c */
+/* ideally speaking, this should be generated from the hardware's unique ID (if available) */
+/* it is suggested that the first byte is 0x02 to indicate a link-local address */
+uint8_t tud_network_mac_address[6] = {0x02, 0x02, 0x84, 0x6A, 0x96, 0x00};
+
+/* network parameters of this MCU */
+static const ip4_addr_t ipaddr = INIT_IP4(192, 168, 7, 1);
+static const ip4_addr_t netmask = INIT_IP4(255, 255, 255, 0);
+static const ip4_addr_t gateway = INIT_IP4(0, 0, 0, 0);
+
+/* database IP addresses that can be offered to the host; this must be in RAM to store assigned MAC addresses */
+static dhcp_entry_t entries[] = {
+    /* mac ip address               lease time */
+    {{0}, INIT_IP4(192, 168, 7, 2), 24 * 60 * 60},
+    {{0}, INIT_IP4(192, 168, 7, 3), 24 * 60 * 60},
+    {{0}, INIT_IP4(192, 168, 7, 4), 24 * 60 * 60},
+};
+
+static const dhcp_config_t dhcp_config = {
+    .router = INIT_IP4(0, 0, 0, 0),  /* router address (if any) */
+    .port = 67,                      /* listen port */
+    .dns = INIT_IP4(192, 168, 7, 1), /* dns server (if any) */
+    "usb",                           /* dns suffix */
+    TU_ARRAY_SIZE(entries),          /* num entry */
+    entries                          /* entries */
+};
+
+static err_t linkoutput_fn(struct netif *netif, struct pbuf *p)
+{
+  (void)netif;
+
+  for (;;)
+  {
+    /* if TinyUSB isn't ready, we must signal back to lwip that there is nothing we can do */
+    if (!tud_ready())
+      return ERR_USE;
+
+    /* if the network driver can accept another packet, we make it happen */
+    if (tud_network_can_xmit(p->tot_len))
+    {
+      tud_network_xmit(p, 0 /* unused for this example */);
+      return ERR_OK;
+    }
+
+    /* transfer execution to TinyUSB in the hopes that it will finish transmitting the prior packet */
+    tud_task();
+  }
+}
+
+static err_t ip4_output_fn(struct netif *netif, struct pbuf *p, const ip4_addr_t *addr)
+{
+  return etharp_output(netif, p, addr);
+}
+
+#if LWIP_IPV6
+static err_t ip6_output_fn(struct netif *netif, struct pbuf *p, const ip6_addr_t *addr)
+{
+  return ethip6_output(netif, p, addr);
+}
+#endif
+
+static err_t netif_init_cb(struct netif *netif)
+{
+  LWIP_ASSERT("netif != NULL", (netif != NULL));
+  netif->mtu = CFG_TUD_NET_MTU;
+  netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP | NETIF_FLAG_UP;
+  netif->state = NULL;
+  netif->name[0] = 'E';
+  netif->name[1] = 'X';
+  netif->linkoutput = linkoutput_fn;
+  netif->output = ip4_output_fn;
+#if LWIP_IPV6
+  netif->output_ip6 = ip6_output_fn;
+#endif
+  return ERR_OK;
+}
+
+static void init_lwip(void)
+{
+  struct netif *netif = &netif_data;
+
+  lwip_init();
+
+  /* the lwip virtual MAC address must be different from the host's; to ensure this, we toggle the LSbit */
+  netif->hwaddr_len = sizeof(tud_network_mac_address);
+  memcpy(netif->hwaddr, tud_network_mac_address, sizeof(tud_network_mac_address));
+  netif->hwaddr[5] ^= 0x01;
+
+  netif = netif_add(netif, &ipaddr, &netmask, &gateway, NULL, netif_init_cb, ip_input);
+#if LWIP_IPV6
+  netif_create_ip6_linklocal_address(netif, 1);
+#endif
+  netif_set_default(netif);
+}
+
+/* handle any DNS requests from dns-server */
+bool dns_query_proc(const char *name, ip4_addr_t *addr)
+{
+  if (0 == strcmp(name, "tiny.usb"))
+  {
+    *addr = ipaddr;
+    return true;
+  }
+  return false;
+}
+
+bool tud_network_recv_cb(const uint8_t *src, uint16_t size)
+{
+  /* this shouldn't happen, but if we get another packet before
+  parsing the previous, we must signal our inability to accept it */
+  if (received_frame)
+    return false;
+
+  if (size)
+  {
+    struct pbuf *p = pbuf_alloc(PBUF_RAW, size, PBUF_POOL);
+
+    if (p)
+    {
+      /* pbuf_alloc() has already initialized struct; all we need to do is copy the data */
+      memcpy(p->payload, src, size);
+
+      /* store away the pointer for service_traffic() to later handle */
+      received_frame = p;
+    }
+  }
+
+  return true;
+}
+
+uint16_t tud_network_xmit_cb(uint8_t *dst, void *ref, uint16_t arg)
+{
+  struct pbuf *p = (struct pbuf *)ref;
+
+  (void)arg; /* unused for this example */
+
+  return pbuf_copy_partial(p, dst, p->tot_len, 0);
+}
+
+static void service_traffic(void)
+{
+  /* handle any packet received by tud_network_recv_cb() */
+  if (received_frame)
+  {
+    ethernet_input(received_frame, &netif_data);
+    pbuf_free(received_frame);
+    received_frame = NULL;
+    tud_network_recv_renew();
+  }
+
+  sys_check_timeouts();
+}
+
+void tud_network_init_cb(void)
+{
+  /* if the network is re-initializing and we have a leftover packet, we must do a cleanup */
+  if (received_frame)
+  {
+    pbuf_free(received_frame);
+    received_frame = NULL;
+  }
+}
+
+/* lwip has provision for using a mutex, when applicable */
+sys_prot_t sys_arch_protect(void)
+{
+  return 0;
+}
+void sys_arch_unprotect(sys_prot_t pval)
+{
+  (void)pval;
+}
+
+/* lwip needs a millisecond time source, and the TinyUSB board support code has one available */
+uint32_t sys_now(void)
+{
+  // return board_millis();
+  return HAL_GetTick();
+}
+
 
 /* USER CODE END 0 */
 
@@ -87,126 +297,59 @@ int main(void)
   /* USER CODE END Init */
 
   /* Configure the system clock */
-  SystemClock_Config();
+  // SystemClock_Config();
 
   /* Configure the peripherals common clocks */
-  PeriphCommonClock_Config();
+  // PeriphCommonClock_Config();
 
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_ADC1_Init();
-  MX_ADC2_Init();
-  MX_USART1_UART_Init();
+  // MX_GPIO_Init();
+  // MX_DMA_Init();
+  // MX_ADC1_Init();
+  // MX_ADC2_Init();
+  // MX_USART1_UART_Init();
+  // MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
+  // USBD_Init(&USBD_Device, &FS_Desc, DEVICE_FS);
+  // USBD_CMPSIT_AddClass(&USBD_Device, USBD_CDC_RNDIS_CLASS);
+  // while (USBD_CMPSIT_AddToConfDesc(&USBD_Device) != USBD_OK)
+  //   ;
+  // while (USBD_RegisterClass(&USBD_Device, USBD_CDC_RNDIS_CLASS) != USBD_OK)
+  //   ;
+  // while (USBD_CDC_RNDIS_RegisterInterface(&USBD_Device, USBD_CDC_RNDIS_ITF) != USBD_OK)
+  //   ;
+  // while (USBD_Start(&USBD_Device) != USBD_OK)
+  //   ;
+  // HAL_PWREx_EnableUSBVoltageDetector();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  board_init();
+
+  board_led_write(false);
+
+  // tusb_init();
+  tud_init(BOARD_TUD_RHPORT);
+  init_lwip();
+  while (!netif_is_up(&netif_data));
+  while (dhserv_init(&dhcp_config) != ERR_OK);
+  while (dnserv_init(IP_ADDR_ANY, 53, dns_query_proc) != ERR_OK);
+  httpd_init();
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    tud_task();
+    service_traffic();
   }
   /* USER CODE END 3 */
-}
-
-/**
- * @brief System Clock Configuration
- * @retval None
- */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-
-  /** Supply configuration update enable
-   */
-  HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
-
-  /** Configure the main internal regulator output voltage
-   */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY))
-  {
-  }
-
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
-
-  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY))
-  {
-  }
-
-  /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48 | RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 2;
-  RCC_OscInitStruct.PLL.PLLN = 80;
-  RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 2;
-  RCC_OscInitStruct.PLL.PLLR = 2;
-  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
-  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
-  RCC_OscInitStruct.PLL.PLLFRACN = 0;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV2;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
-  RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
-  {
-    Error_Handler();
-  }
-}
-
-/**
- * @brief Peripherals Common Clock Configuration
- * @retval None
- */
-void PeriphCommonClock_Config(void)
-{
-  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
-
-  /** Initializes the peripherals clock
-   */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  PeriphClkInitStruct.PLL3.PLL3M = 2;
-  PeriphClkInitStruct.PLL3.PLL3N = 14;
-  PeriphClkInitStruct.PLL3.PLL3P = 2;
-  PeriphClkInitStruct.PLL3.PLL3Q = 4;
-  PeriphClkInitStruct.PLL3.PLL3R = 12;
-  PeriphClkInitStruct.PLL3.PLL3RGE = RCC_PLL3VCIRANGE_3;
-  PeriphClkInitStruct.PLL3.PLL3VCOSEL = RCC_PLL3VCOMEDIUM;
-  PeriphClkInitStruct.PLL3.PLL3FRACN = 0;
-  PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL3;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
 }
 
 /* USER CODE BEGIN 4 */

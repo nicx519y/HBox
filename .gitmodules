@@ -1,3 +1,6 @@
-[submodule "Libs/stm32_mw_usb_device"]
-	path = Libs/stm32_mw_usb_device
-	url = git@github.com:STMicroelectronics/stm32_mw_usb_device.git
+[submodule "Libs/tinyusb"]
+	path = Libs/tinyusb
+	url = git@github.com:hathach/tinyusb.git
+[submodule "Libs/stm32_mw_lwip"]
+	path = Libs/stm32_mw_lwip
+	url = git@github.com:STMicroelectronics/stm32_mw_lwip.git

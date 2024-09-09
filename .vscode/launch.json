@@ -10,7 +10,7 @@
             "servertype": "openocd", //要选择的GDB server
             "device": "STM32H750",
             "interface": "swd",
-            "gdbPath": "D:/Program Files (x86)/Vscode Tools/arm-none-eabi-13-3/bin/arm-none-eabi-gdb.exe",
+            "gdbPath": "D:/VscodeTools/arm-none-eabi-13-3/bin/arm-none-eabi-gdb.exe",
             "configFiles": [
                 "interface/stlink.cfg",
                 "target/stm32h7x.cfg",

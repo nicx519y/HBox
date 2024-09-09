@@ -3,10 +3,16 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/**"
                 // "USB_DEVICE/App",
                 // "USB_DEVICE/Target"
             ],
+            "browse": {
+                "path": [
+                    "${workspaceRoot}/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            },
             "defines": [
                 "_DEBUG",
                 "UNICODE",
