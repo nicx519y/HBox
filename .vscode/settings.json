@@ -69,7 +69,10 @@
         "string.h": "c",
         "stm32h7xx_hal_rcc.h": "c",
         "stm32h7xx_hal_def.h": "c",
-        "stddef.h": "c"
+        "stddef.h": "c",
+        "net_device.h": "c",
+        "net_init.h": "c",
+        "board_cfg.h": "c"
     },
     "cmake.sourceDirectory": "E:/Works/STM32/HBox/tinyusb/examples/device/hid_generic_inout"
 }

@@ -139,6 +139,7 @@ C_INCLUDES =  \
 -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
 -ILibs/stm32_mw_lwip/src/include \
 -ILibs/stm32_mw_lwip/src/include/lwip/apps \
+-ICpp_Core/Inc \
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

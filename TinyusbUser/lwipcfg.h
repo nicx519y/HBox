@@ -3,6 +3,13 @@
  * Copy this to lwipcfg.h and make the config changes you need.
  */
 
+#ifndef __LWIPCFG_H__
+#define __LWIPCFG_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* configuration for this port */
 #define PPP_USERNAME "Admin"
 #define PPP_PASSWORD "pass"
@@ -75,3 +82,9 @@
 
 /* define this to your custom application-init function */
 /* #define LWIP_APP_INIT my_app_init() */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __LWIPCFG_H__ */

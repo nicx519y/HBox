@@ -32,6 +32,11 @@
 #ifndef __LWIPOPTS_H__
 #define __LWIPOPTS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* Prevent having to link sys_arch.c (we don't test the API layers in unit tests) */
 #define NO_SYS                          1
 #define MEM_ALIGNMENT                   4
@@ -67,5 +72,9 @@
 #define LWIP_BROADCAST_PING             1
 #define LWIP_IPV6_MLD                   0
 #define LWIP_IPV6_SEND_ROUTER_SOLICIT   0
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __LWIPOPTS_H__ */
