@@ -39,11 +39,13 @@ BUILD_DIR = build
 C_SOURCE_DIRS = \
 Core/Src \
 Drivers/STM32H7xx_HAL_Driver/Src \
+Drivers/QSPI-W25Q64 \
 Libs/tinyusb/src \
 Libs/tinyusb/src/device \
 Libs/tinyusb/src/common \
 Libs/tinyusb/lib/networking \
 Libs/tinyusb/src/portable/synopsys/dwc2 \
+Libs/rndis \
 TinyusbUser \
 USB_DEVICE/App \
 USB_DEVICE/Target \
@@ -53,6 +55,8 @@ Libs/stm32_mw_lwip/src/apps \
 Libs/stm32_mw_lwip/src/core \
 Libs/stm32_mw_lwip/src/netif \
 Libs/stm32_mw_lwip/src/core/ipv4 \
+Libs/FatFS \
+# Libs/httpd \
 
 
 # CPP sources
@@ -62,6 +66,8 @@ Libs/stm32_mw_lwip/src/core/ipv4 \
 # Cpp cource dir
 CPP_SOURCE_DIRS = \
 Cpp_Core/Src \
+Cpp_Core/Src/drivers/net \
+Cpp_Core/Src/configs \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -128,19 +134,24 @@ C_INCLUDES =  \
 -IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
+-IDrivers/QSPI-W25Q64 \
 -ICpp_Core/Inc \
 -ILibs/tinyusb/src \
 -ILibs/tinyusb/hw \
 -ILibs/tinyusb/lib/networking \
+-IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
+-IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
+-ILibs/rndis \
+-ILibs/httpd \
+-ILibs/lwip-port \
 -ITinyusbUser \
 -IUSB_DEVICE/App \
 -IUSB_DEVICE/Target \
--IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
--IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
--ILibs/stm32_mw_lwip/src/include \
--ILibs/stm32_mw_lwip/src/include/lwip/apps \
 -ICpp_Core/Inc \
+-ILibs/stm32_mw_lwip/src/include \
+-ILibs/FatFS \
 
+# -ILibs/stm32_mw_lwip/src/include/lwip/apps \
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
@@ -162,11 +173,11 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32H750XBHx_FLASH.ld	
 
 # libraries
-LIBS = -lc -lm -lnosys 
+LIBS = -lc -lm -lnosys -lstdc++
 LIBDIR = 
 # D:/VscodeTools/WpdPack/Lib \  #wincap
 # LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
-LDFLAGS = $(MCU) -specs=nano.specs -specs=nosys.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LDFLAGS = $(MCU) -specs=nano.specs -specs=nosys.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections -Wl,-V
 
 #######################################
 # build the application
@@ -178,7 +189,8 @@ CPP_SOURCES = $(foreach dir, $(CPP_SOURCE_DIRS), $(wildcard $(dir)/*.cpp))
 
 C_SOURCES += \
 Libs/stm32_mw_lwip/src/apps/http/httpd.c \
-Libs/stm32_mw_lwip/src/apps/http/fs.c \
+# Libs/httpd/fs.c \
+# Libs/stm32_mw_lwip/src/apps/http/fs.c \
 
 
 # $(info $(C_SOURCES))
@@ -200,9 +212,9 @@ $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 # C++
 $(BUILD_DIR)/%.o: %.cpp Makefile | $(BUILD_DIR) 
-	$(CXX) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.cpp=.lst)) $< -o $@
-
-$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+	$(CXX) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.cpp=.lst)) $< -o $@	
+	
+$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)	
 	$(AS) -c $(CFLAGS) $< -o $@
 $(BUILD_DIR)/%.o: %.S Makefile | $(BUILD_DIR)
 	$(AS) -c $(CFLAGS) $< -o $@

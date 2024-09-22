@@ -24,6 +24,7 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
+#include "stm32h750xx.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -65,7 +66,12 @@ static void MPU_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 // USBD_HandleTypeDef USBD_Device;
-
+// hack uart for debug
+int _write(int file, char *ch, int len)
+{
+    HAL_UART_Transmit(&huart1, (uint8_t *)ch, 1, 10);
+    return 1;
+}
 /* USER CODE END 0 */
 
 /**

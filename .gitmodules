@@ -4,3 +4,6 @@
 [submodule "Libs/stm32_mw_lwip"]
 	path = Libs/stm32_mw_lwip
 	url = git@github.com:STMicroelectronics/stm32_mw_lwip.git
+[submodule "Libs/dynamic_loader"]
+	path = Libs/dynamic_loader
+	url = git@gitee.com:wzh1845462801/dynamic_loader.git

@@ -1,6 +1,8 @@
 #include "stm32h7xx_hal.h"
 #include "board_cfg.h"
 #include "bsp/board_api.h"
+#include "qspi-w25q64.h"
+#include "usart.h"
 
 UART_HandleTypeDef UartHandle;
 
@@ -45,6 +47,20 @@ void board_init(void) {
   NVIC_SetPriority(OTG_HS_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY );
 #endif
 
+  LED_init();
+
+  MX_USART1_UART_Init();
+  // UART_init();
+  MX_QUADSPI_Init();
+
+  USB_init();
+  
+
+  
+
+}
+
+void LED_init() {
   GPIO_InitTypeDef GPIO_InitStruct;
 
   // LED
@@ -53,14 +69,10 @@ void board_init(void) {
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_PORT, &GPIO_InitStruct);
+}
 
-  // Button
-  // GPIO_InitStruct.Pin = BUTTON_PIN;
-  // GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  // GPIO_InitStruct.Pull = GPIO_NOPULL;
-  // GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  // HAL_GPIO_Init(BUTTON_PORT, &GPIO_InitStruct);
-
+void UART_init() {
+  GPIO_InitTypeDef GPIO_InitStruct;
   // Uart
   GPIO_InitStruct.Pin = UART_TX_PIN | UART_RX_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -78,8 +90,12 @@ void board_init(void) {
   UartHandle.Init.Mode = UART_MODE_TX_RX;
   UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
   HAL_UART_Init(&UartHandle);
+}
 
-#if BOARD_TUD_RHPORT == 0
+void USB_init() {
+  GPIO_InitTypeDef GPIO_InitStruct;
+
+  #if BOARD_TUD_RHPORT == 0
   // Despite being call USB2_OTG
   // OTG_FS is marked as RHPort0 by TinyUSB to be consistent across stm32 port
   // PA9 VUSB, PA10 ID, PA11 DM, PA12 DP
@@ -169,8 +185,9 @@ void board_init(void) {
   // For waveshare openh743 ULPI PHY reset walkaround
   board_stm32h7_post_init();
 #endif // rhport = 1
-
 }
+
+
 
 void board_led_write(bool state) {
   HAL_GPIO_WritePin(LED_PORT, LED_PIN, state ? LED_STATE_ON : (1-LED_STATE_ON));

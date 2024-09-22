@@ -72,7 +72,19 @@
         "stddef.h": "c",
         "net_device.h": "c",
         "net_init.h": "c",
-        "board_cfg.h": "c"
+        "board_cfg.h": "c",
+        "ostream": "cpp",
+        "functional": "cpp",
+        "memory": "cpp",
+        "optional": "cpp",
+        "sstream": "cpp",
+        "tusb_option.h": "c",
+        "lwipopts.h": "c",
+        "debug.h": "c",
+        "def.h": "c",
+        "fsdata.h": "c",
+        "fs.h": "c",
+        "ff.h": "c"
     },
     "cmake.sourceDirectory": "E:/Works/STM32/HBox/tinyusb/examples/device/hid_generic_inout"
 }

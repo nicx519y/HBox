@@ -26,19 +26,19 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+// #include "main.h"
 
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
 
-extern QSPI_HandleTypeDef hqspi;
+// extern QSPI_HandleTypeDef hqspi;
 
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
 
-void MX_QUADSPI_Init(void);
+// void MX_QUADSPI_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
