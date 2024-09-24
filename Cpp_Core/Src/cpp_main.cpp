@@ -9,7 +9,6 @@
 
 #include "qspi-w25q64.h"
 #include "ff.h"
-
 #include <stdio.h>
 
 FATFS fs;				//声明文件系统对象
@@ -25,7 +24,7 @@ int cpp_main(void)
     
     board_init();
     board_led_write(false);
-
+    
     // tusb_init();
     // tud_init(BOARD_TUD_RHPORT);
     // net_init();
@@ -35,11 +34,15 @@ int cpp_main(void)
     // GPDriver * inputDriver = DriverManager::getInstance().getDriver();
 
     // ConfigManager::getInstance().setup(CONFIG_TYPE_WEB);
-    // f_mount(&fs, "0:/", 1);
+
+    // err=dl_load_file(&use_handle,"0:/dll_generate.bin");
+    // void* export_func=dl_get_func(&use_handle,"export_func");
+    // export_func();
+    // dl_get_entry(&use_handle)(0,NULL);
+    // dl_destroy_lib(&use_handle);
 
     while(1) {
         // HAL_Delay(1000);
-        // printf("begin...");
         // res = f_open(&fp,"0:/Dem3.TXT",FA_CREATE_NEW | FA_WRITE);	
         // if ( res == FR_OK )		//新建并打开了该文件
         // { 

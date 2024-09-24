@@ -1400,17 +1400,15 @@ static HAL_StatusTypeDef USB_CoreReset(USB_OTG_GlobalTypeDef *USBx)
   /* Core Soft Reset */
   count = 0U;
   USBx->GRSTCTL |= USB_OTG_GRSTCTL_CSRST;
-  uint32_t a = USB_OTG_GRSTCTL_CSRST;
+
   do
   {
     count++;
-    uint32_t b = USB_OTG_GRSTCTL_CSRST;
+
     if (count > HAL_USB_TIMEOUT)
     {
       return HAL_TIMEOUT;
     }
-
-    
   } while ((USBx->GRSTCTL & USB_OTG_GRSTCTL_CSRST) == USB_OTG_GRSTCTL_CSRST);
 
   return HAL_OK;
