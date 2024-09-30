@@ -170,7 +170,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = STM32H750XBHx_FLASH.ld	
+LDSCRIPT = STM32H750XBHx_application.ld
 
 # libraries
 LIBS = -lc -lm -lnosys -lstdc++
@@ -192,6 +192,8 @@ Libs/stm32_mw_lwip/src/apps/http/httpd.c \
 # Libs/httpd/fs.c \
 # Libs/stm32_mw_lwip/src/apps/http/fs.c \
 
+# default action: build all
+all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
 
 # $(info $(C_SOURCES))
 # $(info $(CPP_SOURCES))
@@ -232,14 +234,28 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir $@		
 
-# default action: build all
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
-
 # openocdinit:
 # 	openocd -f interface/stlink-v2-1.cfg -f target/stm32h7x.cfg -c init -c "reset halt" -c "stm32h7x unlock 0" -c "reset halt" -c "exit"
 
 openocd:
-	openocd -f ST-LINK.cfg -c "tcl_port disabled" -c "gdb_port disabled" -c "tcl_port disabled" -c "program $(BUILD_DIR)/$(TARGET).elf" -c reset -c shutdown
+	openocd \
+ 	-f Openocd_Script/config.cfg \
+	-c init \
+	-c halt \
+	-c "reset init" \
+ 	-c "program $(BUILD_DIR)/$(TARGET).elf" \
+	-c reset \
+ 	-c shutdown
+
+# openocd:
+# 	openocd \
+#  	-f Openocd_Script/config.cfg \
+# 	-c init \
+# 	-c halt \
+# 	-c "reset init" \
+#  	-c "flash write_image erase $(BUILD_DIR)/$(TARGET).hex 0x00000000" \
+# 	-c reset \
+#  	-c shutdown
 
 
 #######################################

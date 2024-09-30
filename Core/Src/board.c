@@ -193,6 +193,10 @@ void board_led_write(bool state) {
   HAL_GPIO_WritePin(LED_PORT, LED_PIN, state ? LED_STATE_ON : (1-LED_STATE_ON));
 }
 
+void board_led_toggle() {
+  HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
+}
+
 /**
  * @brief System Clock Configuration
  * @retval None

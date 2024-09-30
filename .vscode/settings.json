@@ -87,7 +87,9 @@
         "ff.h": "c",
         "dl_port.h": "c",
         "dl_elf.h": "c",
-        "dl_extern_lib.h": "c"
+        "dl_extern_lib.h": "c",
+        "qspi-w25q64.h": "c",
+        "usart.h": "c"
     },
     "cmake.sourceDirectory": "E:/Works/STM32/HBox/tinyusb/examples/device/hid_generic_inout"
 }

@@ -6,7 +6,7 @@
 #include "drivers/net/NetDriver.hpp"
 #include "configmanager.hpp"
 // #include "net_init.h"
-
+#include "board_cfg.h"
 #include "qspi-w25q64.h"
 #include "ff.h"
 #include <stdio.h>
@@ -23,7 +23,7 @@ int cpp_main(void)
 {
     
     board_init();
-    board_led_write(false);
+    
     
     // tusb_init();
     // tud_init(BOARD_TUD_RHPORT);
@@ -42,7 +42,8 @@ int cpp_main(void)
     // dl_destroy_lib(&use_handle);
 
     while(1) {
-        // HAL_Delay(1000);
+        HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
+        HAL_Delay(1000);
         // res = f_open(&fp,"0:/Dem3.TXT",FA_CREATE_NEW | FA_WRITE);	
         // if ( res == FR_OK )		//新建并打开了该文件
         // { 

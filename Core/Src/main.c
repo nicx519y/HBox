@@ -81,7 +81,14 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  for(uint8_t i = 0; i < 8; i++)
+	{
+		NVIC->ICER[i]=0xFFFFFFFF;
+		NVIC->ICPR[i]=0xFFFFFFFF;
+	}
+	SCB->VTOR = QSPI_BASE;      // 重定位中断向量表 到QSPI_BASE
+	__enable_irq();             // 重新使能中断
+	__set_PRIMASK(0);
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
@@ -93,6 +100,8 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  SCB_DisableICache();		// 关闭ICache
+	SCB_DisableDCache();		// 关闭Dcache
   cpp_main();
   /* USER CODE END Init */
 
