@@ -1,4 +1,6 @@
 #include "cpp_main.hpp"
+#include <stdio.h>
+#include <stdint.h>
 #include "bsp/board_api.h"
 #include "tusb.h"
 #include "enums.hpp"
@@ -9,7 +11,8 @@
 #include "board_cfg.h"
 #include "qspi-w25q64.h"
 #include "ff.h"
-#include <stdio.h>
+#include "led.h"
+#include "ex_flash.h"
 
 FATFS fs;				//声明文件系统对象
 FIL fp;					   //创建文件
@@ -21,8 +24,8 @@ UINT bw;
 
 int cpp_main(void) 
 {
-    
     board_init();
+    printf("board_init success ... \r\n");
     
     
     // tusb_init();
@@ -35,15 +38,12 @@ int cpp_main(void)
 
     // ConfigManager::getInstance().setup(CONFIG_TYPE_WEB);
 
-    // err=dl_load_file(&use_handle,"0:/dll_generate.bin");
-    // void* export_func=dl_get_func(&use_handle,"export_func");
-    // export_func();
-    // dl_get_entry(&use_handle)(0,NULL);
-    // dl_destroy_lib(&use_handle);
-
+    
     while(1) {
-        HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
+        LED1_Toggle;
+        printf("LED1_Toggle...\r\n");
         HAL_Delay(1000);
+        // board_led_write(false);
         // res = f_open(&fp,"0:/Dem3.TXT",FA_CREATE_NEW | FA_WRITE);	
         // if ( res == FR_OK )		//新建并打开了该文件
         // { 

@@ -31,6 +31,7 @@
 // #include "bsp/board_api.h"
 // #include "tusb.h"
 // #include "net_init.h"
+// #include "led.h"
 
 /* USER CODE END Includes */
 
@@ -66,11 +67,7 @@ static void MPU_Config(void);
 /* USER CODE BEGIN 0 */
 // USBD_HandleTypeDef USBD_Device;
 // hack uart for debug
-int _write(int file, char *ch, int len)
-{
-    HAL_UART_Transmit(&huart1, (uint8_t *)ch, 1, 10);
-    return 1;
-}
+
 /* USER CODE END 0 */
 
 /**
@@ -89,19 +86,19 @@ int main(void)
 	SCB->VTOR = QSPI_BASE;      // 重定位中断向量表 到QSPI_BASE
 	__enable_irq();             // 重新使能中断
 	__set_PRIMASK(0);
+  SCB_EnableICache();		// 打开ICache
+	SCB_EnableDCache();		// 打开Dcache
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
-  MPU_Config();
+  // MPU_Config();
 
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
+  
   /* USER CODE BEGIN Init */
-  SCB_DisableICache();		// 关闭ICache
-	SCB_DisableDCache();		// 关闭Dcache
   cpp_main();
   /* USER CODE END Init */
 

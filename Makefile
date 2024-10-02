@@ -40,6 +40,9 @@ C_SOURCE_DIRS = \
 Core/Src \
 Drivers/STM32H7xx_HAL_Driver/Src \
 Drivers/QSPI-W25Q64 \
+Drivers/USART \
+Drivers/LED \
+Drivers/FLASH \
 Libs/tinyusb/src \
 Libs/tinyusb/src/device \
 Libs/tinyusb/src/common \
@@ -135,6 +138,9 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/QSPI-W25Q64 \
+-IDrivers/FLASH \
+-IDrivers/LED \
+-IDrivers/USART \
 -ICpp_Core/Inc \
 -ILibs/tinyusb/src \
 -ILibs/tinyusb/hw \
@@ -243,7 +249,7 @@ openocd:
 	-c init \
 	-c halt \
 	-c "reset init" \
- 	-c "program $(BUILD_DIR)/$(TARGET).elf" \
+ 	-c "program $(BUILD_DIR)/$(TARGET).hex" \
 	-c reset \
  	-c shutdown
 

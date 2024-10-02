@@ -89,7 +89,15 @@
         "dl_elf.h": "c",
         "dl_extern_lib.h": "c",
         "qspi-w25q64.h": "c",
-        "usart.h": "c"
+        "usart.h": "c",
+        "stdio.h": "c",
+        "stm32h750xx.h": "c",
+        "led.h": "c",
+        "cstdio": "c",
+        "stdbool.h": "c",
+        "ex_flash.h": "c",
+        "stm32_hal_legacy.h": "c",
+        "stm32h7xx_hal_flash.h": "c"
     },
     "cmake.sourceDirectory": "E:/Works/STM32/HBox/tinyusb/examples/device/hid_generic_inout"
 }

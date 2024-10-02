@@ -3,6 +3,7 @@
 #include "bsp/board_api.h"
 #include "qspi-w25q64.h"
 #include "usart.h"
+#include "led.h"
 
 UART_HandleTypeDef UartHandle;
 
@@ -47,50 +48,54 @@ void board_init(void) {
   NVIC_SetPriority(OTG_HS_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY );
 #endif
 
-  LED_init();
+  USART1_Init();
+  LED_Init();
+  printf("LED_Init success... \r\n");
+  // QSPI_W25Qxx_Init();
 
-  MX_USART1_UART_Init();
-  // UART_init();
-  MX_QUADSPI_Init();
+  // uint32_t rid = QSPI_W25Qxx_ReadID();
 
-  USB_init();
+  // printf("QSPI W25Qxx_Init success... %d \r\n", rid);
+  // USB_init();
   
 
   
 
 }
 
-void LED_init() {
-  GPIO_InitTypeDef GPIO_InitStruct;
+// void LED_init() {
+//   GPIO_InitTypeDef GPIO_InitStruct;
 
-  // LED
-  GPIO_InitStruct.Pin = LED_PIN;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(LED_PORT, &GPIO_InitStruct);
-}
+//   // LED
+//   GPIO_InitStruct.Pin = LED_PIN;
+//   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//   GPIO_InitStruct.Pull = GPIO_PULLUP;
+//   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+//   HAL_GPIO_Init(LED_PORT, &GPIO_InitStruct);
 
-void UART_init() {
-  GPIO_InitTypeDef GPIO_InitStruct;
-  // Uart
-  GPIO_InitStruct.Pin = UART_TX_PIN | UART_RX_PIN;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = UART_GPIO_AF;
-  HAL_GPIO_Init(UART_GPIO_PORT, &GPIO_InitStruct);
+//   HAL_GPIO_WritePin(LED_PORT, LED_PIN, 1 - LED_STATE_ON);
+// }
 
-  UartHandle.Instance = UART_DEV;
-  UartHandle.Init.BaudRate = CFG_BOARD_UART_BAUDRATE;
-  UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
-  UartHandle.Init.StopBits = UART_STOPBITS_1;
-  UartHandle.Init.Parity = UART_PARITY_NONE;
-  UartHandle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  UartHandle.Init.Mode = UART_MODE_TX_RX;
-  UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
-  HAL_UART_Init(&UartHandle);
-}
+// void UART_init() {
+//   GPIO_InitTypeDef GPIO_InitStruct;
+//   // Uart
+//   GPIO_InitStruct.Pin = UART_TX_PIN | UART_RX_PIN;
+//   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+//   GPIO_InitStruct.Pull = GPIO_PULLUP;
+//   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+//   GPIO_InitStruct.Alternate = UART_GPIO_AF;
+//   HAL_GPIO_Init(UART_GPIO_PORT, &GPIO_InitStruct);
+
+//   UartHandle.Instance = UART_DEV;
+//   UartHandle.Init.BaudRate = CFG_BOARD_UART_BAUDRATE;
+//   UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
+//   UartHandle.Init.StopBits = UART_STOPBITS_1;
+//   UartHandle.Init.Parity = UART_PARITY_NONE;
+//   UartHandle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+//   UartHandle.Init.Mode = UART_MODE_TX_RX;
+//   UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+//   HAL_UART_Init(&UartHandle);
+// }
 
 void USB_init() {
   GPIO_InitTypeDef GPIO_InitStruct;
@@ -186,8 +191,6 @@ void USB_init() {
   board_stm32h7_post_init();
 #endif // rhport = 1
 }
-
-
 
 void board_led_write(bool state) {
   HAL_GPIO_WritePin(LED_PORT, LED_PIN, state ? LED_STATE_ON : (1-LED_STATE_ON));
