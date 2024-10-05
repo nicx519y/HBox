@@ -78,20 +78,20 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  for(uint8_t i = 0; i < 8; i++)
-	{
-		NVIC->ICER[i]=0xFFFFFFFF;
-		NVIC->ICPR[i]=0xFFFFFFFF;
-	}
-	SCB->VTOR = QSPI_BASE;      // 重定位中断向量表 到QSPI_BASE
-	__enable_irq();             // 重新使能中断
-	__set_PRIMASK(0);
+  // for(uint8_t i = 0; i < 8; i++)
+	// {
+	// 	NVIC->ICER[i]=0xFFFFFFFF;
+	// 	NVIC->ICPR[i]=0xFFFFFFFF;
+	// }
+	// SCB->VTOR = QSPI_BASE;      // 重定位中断向量表 到QSPI_BASE
+	// __enable_irq();             // 重新使能中断
+	// __set_PRIMASK(0);
   SCB_EnableICache();		// 打开ICache
 	SCB_EnableDCache();		// 打开Dcache
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
-  // MPU_Config();
+  MPU_Config();
 
   /* MCU Configuration--------------------------------------------------------*/
 

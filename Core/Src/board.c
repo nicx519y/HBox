@@ -56,7 +56,7 @@ void board_init(void) {
   // uint32_t rid = QSPI_W25Qxx_ReadID();
 
   // printf("QSPI W25Qxx_Init success... %d \r\n", rid);
-  // USB_init();
+  USB_init();
   
 
   

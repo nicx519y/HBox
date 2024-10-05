@@ -42,7 +42,6 @@ Drivers/STM32H7xx_HAL_Driver/Src \
 Drivers/QSPI-W25Q64 \
 Drivers/USART \
 Drivers/LED \
-Drivers/FLASH \
 Libs/tinyusb/src \
 Libs/tinyusb/src/device \
 Libs/tinyusb/src/common \
@@ -59,8 +58,9 @@ Libs/stm32_mw_lwip/src/core \
 Libs/stm32_mw_lwip/src/netif \
 Libs/stm32_mw_lwip/src/core/ipv4 \
 Libs/FatFS \
-# Libs/httpd \
+Libs/httpd \
 
+# TinyusbUser/net \
 
 # CPP sources
 # CPP_SOURCES = \
@@ -138,7 +138,6 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/QSPI-W25Q64 \
--IDrivers/FLASH \
 -IDrivers/LED \
 -IDrivers/USART \
 -ICpp_Core/Inc \
@@ -157,6 +156,7 @@ C_INCLUDES =  \
 -ILibs/stm32_mw_lwip/src/include \
 -ILibs/FatFS \
 
+# -ITinyusbUser/net \
 # -ILibs/stm32_mw_lwip/src/include/lwip/apps \
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
@@ -243,26 +243,22 @@ $(BUILD_DIR):
 # openocdinit:
 # 	openocd -f interface/stlink-v2-1.cfg -f target/stm32h7x.cfg -c init -c "reset halt" -c "stm32h7x unlock 0" -c "reset halt" -c "exit"
 
-openocd:
-	openocd \
- 	-f Openocd_Script/config.cfg \
-	-c init \
-	-c halt \
-	-c "reset init" \
- 	-c "program $(BUILD_DIR)/$(TARGET).hex" \
-	-c reset \
- 	-c shutdown
-
+# program to qspi flash
 # openocd:
 # 	openocd \
-#  	-f Openocd_Script/config.cfg \
+#  	-f Openocd_Script/ST-LINK-QSPIFLASH.cfg \
 # 	-c init \
 # 	-c halt \
 # 	-c "reset init" \
-#  	-c "flash write_image erase $(BUILD_DIR)/$(TARGET).hex 0x00000000" \
+#  	-c "program $(BUILD_DIR)/$(TARGET).hex" \
 # 	-c reset \
 #  	-c shutdown
 
+openocd:
+	openocd \
+	-f Openocd_Script/ST-LINK.cfg \
+	-c "program $(BUILD_DIR)/$(TARGET).elf" \
+	-c reset -c shutdown
 
 #######################################
 # clean up

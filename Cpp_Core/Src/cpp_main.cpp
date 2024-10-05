@@ -7,12 +7,11 @@
 #include "drivermanager.hpp"
 #include "drivers/net/NetDriver.hpp"
 #include "configmanager.hpp"
-// #include "net_init.h"
 #include "board_cfg.h"
 #include "qspi-w25q64.h"
 #include "ff.h"
 #include "led.h"
-#include "ex_flash.h"
+// #include "net_init.h"
 
 FATFS fs;				//声明文件系统对象
 FIL fp;					   //创建文件
@@ -32,17 +31,26 @@ int cpp_main(void)
     // tud_init(BOARD_TUD_RHPORT);
     // net_init();
 
-    // InputMode inputMode = INPUT_MODE_CONFIG;
-    // DriverManager::getInstance().setup(inputMode);      
-    // GPDriver * inputDriver = DriverManager::getInstance().getDriver();
+    InputMode inputMode = INPUT_MODE_CONFIG;
+    ConfigType configType = CONFIG_TYPE_WEB;
+    DriverManager::getInstance().setup(inputMode);      
+    ConfigManager::getInstance().setup(configType);
 
-    // ConfigManager::getInstance().setup(CONFIG_TYPE_WEB);
-
+    uint32_t t = HAL_GetTick();
     
     while(1) {
-        LED1_Toggle;
-        printf("LED1_Toggle...\r\n");
-        HAL_Delay(1000);
+        if(HAL_GetTick() - t >= 1000)
+        {
+            LED1_Toggle;
+            t = HAL_GetTick();
+        }
+
+        ConfigManager::getInstance().loop();
+        // service_traffic();
+
+        // LED1_Toggle;
+        // printf("LED1_Toggle...\r\n");
+        // HAL_Delay(1000);
         // board_led_write(false);
         // res = f_open(&fp,"0:/Dem3.TXT",FA_CREATE_NEW | FA_WRITE);	
         // if ( res == FR_OK )		//新建并打开了该文件
@@ -61,10 +69,8 @@ int cpp_main(void)
         // {
         //     printf("\r\n failure. \n");
         // }
-        // ConfigManager::getInstance().loop();
-        // tud_task();
-        // service_traffic();
+        
     }
 
     return 0;
-}
+} 
