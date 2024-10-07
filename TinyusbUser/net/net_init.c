@@ -1,7 +1,6 @@
 #include "net_init.h"
 #include "dhserver.h"
 #include "dnserver.h"
-#include "httpd.h"
 #include "lwip/ethip6.h"
 #include "lwip/init.h"
 #include "lwip/timeouts.h"

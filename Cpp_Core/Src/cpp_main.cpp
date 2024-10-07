@@ -11,6 +11,7 @@
 #include "qspi-w25q64.h"
 #include "ff.h"
 #include "led.h"
+#include "fsdata.h"
 // #include "net_init.h"
 
 FATFS fs;				//声明文件系统对象
@@ -22,15 +23,18 @@ UINT br;
 UINT bw;
 
 int cpp_main(void) 
-{
+{   
+
     board_init();
     printf("board_init success ... \r\n");
-    
     
     // tusb_init();
     // tud_init(BOARD_TUD_RHPORT);
     // net_init();
 
+    QSPI_W25Qxx_Init();
+
+    
     InputMode inputMode = INPUT_MODE_CONFIG;
     ConfigType configType = CONFIG_TYPE_WEB;
     DriverManager::getInstance().setup(inputMode);      
@@ -39,6 +43,11 @@ int cpp_main(void)
     uint32_t t = HAL_GetTick();
     
     while(1) {
+        // LED1_Toggle;
+        // printf("FS_ROOT\r\n");
+        // FS_ROOT;
+        // HAL_Delay(1000);
+
         if(HAL_GetTick() - t >= 1000)
         {
             LED1_Toggle;
@@ -46,7 +55,6 @@ int cpp_main(void)
         }
 
         ConfigManager::getInstance().loop();
-        // service_traffic();
 
         // LED1_Toggle;
         // printf("LED1_Toggle...\r\n");

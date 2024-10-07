@@ -188,6 +188,12 @@ SECTIONS
   }
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
+
+  ._Text_Area :
+  {
+    . = ALIGN(4);
+    . = ALIGN(4);
+  } >RAM
 }
 
 

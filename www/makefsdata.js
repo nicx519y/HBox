@@ -4,14 +4,16 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import pako from 'pako';
-
+const __makeExFile = true;	//是否将文件内容生成外部文件
 const __filename = fileURLToPath(import.meta.url);
 
 const root = path.dirname(__filename).replace(path.normalize('www'), '');
 const rootwww = path.dirname(__filename);
 const buildPath = path.join(rootwww, 'build');
-
+const ex_fsdata_addr = 0x00000000;			// 读取外部fsdata文件在qspiflash中的地址
+const memory_section = '._Text_Area';		// 运行时保存fsdata数据所用的 RAM section，需要在ld文件中定义
 const fsdataPath = path.normalize(path.join(root, 'Libs/httpd/fsdata.c'));
+const exfilePath = path.normalize(path.join(root, 'Libs/httpd/ex_fsdata.bin'));
 
 // These are the same content types that are used by the original makefsdata
 const contentTypes = new Map([
@@ -127,9 +129,91 @@ function createHexString(value, prependComment = false) {
 	return hexString + '\n';
 }
 
+function createFileData(value) {
+	if(typeof value === 'string') {
+		const bytes = Buffer.from(value, 'utf8');
+		return bytes;
+	} else if(Buffer.isBuffer(value) || value instanceof Uint8Array) {
+		return value;
+	} else {
+		return null;
+	}
+}
+
+function concatenateArrayBuffers(buffers) {
+
+	if(Array.isArray(buffers) == false) {
+		console.log("buffers is not array: ", buffers)
+		return;
+	}
+
+	// console.log(buffers)
+
+	const infoArr = [];
+	let bytelen = 0;
+	buffers.forEach(buffer => {
+		if(buffer && (Buffer.isBuffer(buffer) || buffer instanceof Uint8Array)) {
+			bytelen += buffer.byteLength;
+		}
+	});
+
+	let idx = 0; 
+	const tmp = new Uint8Array(bytelen);
+	
+	buffers.forEach(buffer => {
+		if(buffer && (Buffer.isBuffer(buffer) || buffer instanceof Uint8Array)) {
+			// console.log('buffers.foreach: ', buffer, idx)
+			tmp.set(new Uint8Array(buffer), idx);
+			// console.log('tmp: ', tmp, tmp.buffer, idx)
+			infoArr.push({
+				start: idx,
+				size: buffer.byteLength,
+			});
+
+			idx += buffer.byteLength;
+		}
+	});
+
+	return {
+		info: infoArr,
+		buffer: Buffer.from(tmp),
+	};
+}
+
+function makeFileBuffer(paddedQualifiedName, ext, isCompressed, fileContent, compressed = null) {
+	let buffer = concatenateArrayBuffers([
+		createFileData(paddedQualifiedName),
+		createFileData('HTTP/1.0 200 OK\r\n'),
+		createFileData(`Server: ${serverHeader}\r\n`),
+		createFileData(`Content-Length: ${isCompressed ? compressed.byteLength : fileContent.byteLength}\r\n`),
+		isCompressed ? createFileData('Content-Encoding: deflate\r\n') : null,
+		createFileData(`Content-Type: ${contentTypes.get(ext) ?? defaultContentType}\r\n\r\n`),
+		isCompressed ? compressed : fileContent
+	]).buffer;
+
+	return buffer;
+}
+
+function makeAllFileData(buffers) {
+
+	/**
+	 * first: [ length, size0, size1, size2, ... ]
+	 */
+
+	const sizeArr = buffers.map(buffer => buffer.byteLength);
+	sizeArr.unshift(buffers.length);
+	const uint32a = new DataView(new ArrayBuffer(sizeArr.length * 4));
+	sizeArr.forEach((value, index) => uint32a.setUint32(index * 4, value, false));
+	const firstBuffer = Buffer.from(uint32a.buffer);
+	buffers.unshift(firstBuffer);
+	return concatenateArrayBuffers( buffers );
+}
+
 function makefsdata() {
 	let fsdata = '';
 	fsdata += '#include "fsdata.h"\n';
+	fsdata += '#include "qspi-w25q64.h"\n';
+	fsdata += '#include <stdbool.h>\n';
 	fsdata += '\n';
 	fsdata += '#define file_NULL (struct fsdata_file *) NULL\n';
 	fsdata += '\n';
@@ -153,10 +237,17 @@ function makefsdata() {
 	fsdata += '#include "fsdata_alignment.h"\n';
 	fsdata += '#endif\n';
 	fsdata += '\n';
+	fsdata += `#define ex_fsdata_addr 0x${ex_fsdata_addr.toString(16)}\n`;
+	fsdata += '\n';
+	fsdata += `#define __Text_Area__ __attribute__((section("${memory_section}")))\n`;
+	fsdata += '\n';
+	fsdata += 'static bool fsdata_inited = false;\n';
+	fsdata += '\n';
 
 	let payloadAlignmentDummyCounter = 0;
 
 	const fileInfos = [];
+	const fileDataBuffers = [];
 
 	getFiles(buildPath).forEach((file) => {
 		const ext = getLowerCaseFileExtension(file);
@@ -202,39 +293,51 @@ function makefsdata() {
 		const paddedQualifiedName =
 			qualifiedName +
 			'\0'.repeat(1 + paddedQualifiedNameLength - qualifiedNameLength);
-		fsdata += `static const unsigned char data_${varName}[] FSDATA_ALIGN_PRE = {\n`;
-		fsdata += `/* ${qualifiedName} (${qualifiedNameLength} chars) */\n`;
-		fsdata += createHexString(paddedQualifiedName, false);
-		fsdata += '\n';
-		fsdata += '/* HTTP header */\n';
-		fsdata += createHexString('HTTP/1.0 200 OK\r\n', true);
-		fsdata += createHexString(`Server: ${serverHeader}\r\n`, true);
-		fsdata += createHexString(
-			`Content-Length: ${
+
+		const fileBuffer = makeFileBuffer(paddedQualifiedName, ext, isCompressed, fileContent, compressed);
+
+		// 是否生成外部文件
+		if(__makeExFile === true) {
+			// 生成二进制文件数据
+			fileDataBuffers.push(fileBuffer);
+			fsdata += `__Text_Area__ static unsigned char data_${varName}[${fileBuffer.byteLength}] FSDATA_ALIGN_PRE = {};\n\n`;
+		} else {
+			fsdata += `static unsigned char data_${varName}[] FSDATA_ALIGN_PRE = {\n`;
+			fsdata += `/* ${qualifiedName} (${qualifiedNameLength} chars) */\n`;
+			fsdata += createHexString(paddedQualifiedName, false);
+			fsdata += '\n';
+			fsdata += '/* HTTP header */\n';
+			fsdata += createHexString('HTTP/1.0 200 OK\r\n', true);
+			fsdata += createHexString(`Server: ${serverHeader}\r\n`, true);
+			fsdata += createHexString(
+				`Content-Length: ${
+					isCompressed ? compressed.byteLength : fileContent.byteLength
+				}\r\n`,
+				true,
+			);
+			if (isCompressed) {
+				fsdata += createHexString('Content-Encoding: deflate\r\n', true);
+			}
+			fsdata += createHexString(
+				`Content-Type: ${contentTypes.get(ext) ?? defaultContentType}\r\n\r\n`,
+				true,
+			);
+			fsdata += `/* raw file data (${
 				isCompressed ? compressed.byteLength : fileContent.byteLength
-			}\r\n`,
-			true,
-		);
-		if (isCompressed) {
-			fsdata += createHexString('Content-Encoding: deflate\r\n', true);
+			} bytes) */\n`;
+			fsdata += createHexString(isCompressed ? compressed : fileContent);
+			fsdata += `};\n\n`;
 		}
-		fsdata += createHexString(
-			`Content-Type: ${contentTypes.get(ext) ?? defaultContentType}\r\n\r\n`,
-			true,
-		);
-		fsdata += `/* raw file data (${
-			isCompressed ? compressed.byteLength : fileContent.byteLength
-		} bytes) */\n`;
-		fsdata += createHexString(isCompressed ? compressed : fileContent);
-		fsdata += '};\n\n';
+		
 
 		fileInfos.push({
 			varName,
 			paddedQualifiedNameLength,
 			isSsiFile: shtmlExtensions.has(ext),
 		});
-	});
 
+	});
+	
 	let prevFile = 'NULL';
 	fileInfos.forEach((fileInfo) => {
 		fsdata += `const struct fsdata_file file_${fileInfo.varName}[] = {{\n`;
@@ -252,10 +355,84 @@ function makefsdata() {
 		prevFile = fileInfo.varName;
 	});
 
-	fsdata += `#define FS_ROOT file_${prevFile}\n`;
-	fsdata += `#define FS_NUMFILES ${fileInfos.length}\n`;
+	fsdata += `
+static void convert_buffer(uint8_t* buffer, uint32_t* output, size_t buffer_size) {
+	if (buffer_size % 4 != 0) {
+		// Handle error: buffer size is not divisible by 4
+		printf("buffer size is not divisible by 4\\r\\n");
+		return;
+	}
+	
+	for (size_t i = 0; i < buffer_size / 4; i++) {
+		output[i] = (buffer[i * 4] << 24) |  // Most significant byte
+					(buffer[i * 4 + 1] << 16) |  // Next most significant byte
+					(buffer[i * 4 + 2] << 8) |  // Least significant byte
+					buffer[i * 4 + 3];  // Least significant byte
+	}
+}
+	`;
+
+	fsdata += `
+const struct fsdata_file * getFSRoot(void)
+{
+	if(fsdata_inited == false) {
+		uint8_t lenBufferIn[4];
+		uint32_t lenBufferOut[1];
+		uint32_t addr = ex_fsdata_addr;
+		uint32_t size = 4;
+		uint8_t result = QSPI_W25Qxx_ReadBuffer(lenBufferIn, addr, size);
+		if(result != QSPI_W25Qxx_OK) {
+			printf("Read QSPI_W25QXX failure! Err Code: %d \\r\\n", result);
+		} 
+		convert_buffer(lenBufferIn, lenBufferOut, 4);
+
+		uint32_t len = lenBufferOut[0];                 // 文件数量
+		uint8_t sizesBufferIn[4 * len];
+		uint32_t sizesBufferOut[len];
+		addr += size;
+		size = 4 * len;
+		result = QSPI_W25Qxx_ReadBuffer(sizesBufferIn, addr, size);
+		if(result != QSPI_W25Qxx_OK) {
+			printf("Read QSPI_W25QXX failure! Err Code: %d \\r\\n", result);
+		}
+		convert_buffer(sizesBufferIn, sizesBufferOut, 4 * len); // 文件size
+	`;
+	
+	fileInfos.forEach((fileInfo, index) => {
+		fsdata += `
+		addr += size;
+        size = sizesBufferOut[${index}];
+        result = QSPI_W25Qxx_ReadBuffer(data_${fileInfo.varName}, addr, size);
+        if(result != QSPI_W25Qxx_OK) {
+            printf("Read QSPI_W25QXX failure! Err Code: %d \\r\\n", result);
+        } else {
+            printf("Read QSPI_W25QXX success!");
+        }
+		`;
+	});
+
+	fsdata += `
+		fsdata_inited = true;
+	}
+
+	return file_${fileInfos[fileInfos.length - 1].varName};
+}
+	\n`;
+
+	// fsdata += `#define FS_ROOT file_${prevFile}\n`;
+	// fsdata += `#define FS_NUMFILES ${fileInfos.length}\n`;
+	fsdata += `const uint8_t numfiles = ${fileInfos.length};\n`;
 
 	fs.writeFileSync(fsdataPath, fsdata, 'utf8');
+
+	if(__makeExFile === true) {
+		// 生成外部文件
+		const allFileData = makeAllFileData(fileDataBuffers);
+
+		fs.writeFileSync(exfilePath, allFileData.buffer, 'utf8');
+
+		console.log('make bin file success.');
+	}
 }
 
 makefsdata();

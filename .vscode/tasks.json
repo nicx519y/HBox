@@ -36,14 +36,6 @@
             "label": "flash",
             "type": "shell",
             "command": "make openocd",
-            "args": [
-                // "-f",
-                // "interface/stlink.cfg",
-                // "-f",
-                // "target/stm32h7x.cfg",
-                // "-c",
-                // "program build/${workspaceRootFolderName}.elf -c reset -c shutdown"
-            ],
             "problemMatcher": [
                 "$gcc"
             ],
@@ -53,28 +45,38 @@
             ]
         },
         {
-            "type": "cppbuild",
-            "label": "C/C++: arm-none-eabi-gcc.exe 生成活动文件",
-            "command": "arm-none-eabi-gcc",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe",
-                "-mcpu=cortex-m7",
-                "-mthumb",
-                "-mfpu=fpv4-sp-d16",
-                "-mfloat-abi=hard"
-            ],
-            "options": {
-                "cwd": "D:\\Program Files\\msys64\\mingw64\\bin"
-            },
+            "label": "exfsdata-download",
+            "type": "shell",
+            "command": "make exfsdata-download",
             "problemMatcher": [
                 "$gcc"
             ],
             "group": "build",
-            "detail": ""
+            "dependsOn": []
         }
+        // {
+        //     "type": "cppbuild",
+        //     "label": "C/C++: arm-none-eabi-gcc.exe 生成活动文件",
+        //     "command": "arm-none-eabi-gcc",
+        //     "args": [
+        //         "-fdiagnostics-color=always",
+        //         "-g",
+        //         "${file}",
+        //         "-o",
+        //         "${fileDirname}\\${fileBasenameNoExtension}.exe",
+        //         "-mcpu=cortex-m7",
+        //         "-mthumb",
+        //         "-mfpu=fpv4-sp-d16",
+        //         "-mfloat-abi=hard"
+        //     ],
+        //     "options": {
+        //         "cwd": "D:\\Program Files\\msys64\\mingw64\\bin"
+        //     },
+        //     "problemMatcher": [
+        //         "$gcc"
+        //     ],
+        //     "group": "build",
+        //     "detail": ""
+        // }
     ]
 }

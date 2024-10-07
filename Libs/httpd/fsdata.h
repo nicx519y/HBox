@@ -51,20 +51,14 @@ struct fsdata_file {
 #endif /* HTTPD_PRECALCULATED_CHECKSUM */
 };
 
-extern const struct fsdata_file file__assets_index_2a2af97b_css[];
-extern const struct fsdata_file file__assets_index_3470b205_js[];
-extern const struct fsdata_file file__favicon_ico[];
-extern const struct fsdata_file file__images_logo_png[];
 extern const struct fsdata_file file__index_html[];
 extern const struct fsdata_file file__manifest_json[];
+extern const struct fsdata_file * getFSRoot(void);
+extern const uint8_t numfiles;
 
-#ifndef FS_ROOT
-#define FS_ROOT file__manifest_json
-#endif // !FS_ROOT
 
-#ifndef FS_NUMFILES
-#define FS_NUMFILES 6
-#endif // !FS_NUMFILES
+#define FS_ROOT getFSRoot()
+#define FS_NUMFILES numfiles
 
 #ifdef __cplusplus
 }

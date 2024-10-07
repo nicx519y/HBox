@@ -31,6 +31,9 @@ OPT = -Og
 # Build path
 BUILD_DIR = build
 
+# ExFsData file path
+EX_FSDATA_PATH = Libs/httpd/ex_fsdata.bin
+
 ######################################
 # source
 ######################################
@@ -259,6 +262,30 @@ openocd:
 	-f Openocd_Script/ST-LINK.cfg \
 	-c "program $(BUILD_DIR)/$(TARGET).elf" \
 	-c reset -c shutdown
+
+# 用于连接openocd服务 可在终端泳 telnet localhost 4444 连接监听
+# >telnet localhost 4444
+# >halt
+# >reset init
+# >flash list
+# >flash info 0
+# >flash info 1
+
+# connect:
+# openocd \
+# 	-f Openocd_Script/ST-LINK-QSPIFLASH.cfg 
+
+# 把fsdata外部文件download到qspi-flash
+exfsdata-download:
+	openocd \
+	-f Openocd_Script/ST-LINK-QSPIFLASH.cfg \
+	-c init \
+	-c halt \
+	-c "reset init" \
+	-c "flash write_image erase $(EX_FSDATA_PATH) 0x90000000" \
+	-c reset \
+	-c shutdown
+
 
 #######################################
 # clean up

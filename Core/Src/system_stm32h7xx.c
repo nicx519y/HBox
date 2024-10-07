@@ -172,6 +172,7 @@
   * @param  None
   * @retval None
   */
+
 void SystemInit (void)
 {
 #if defined (DATA_IN_D2_SRAM)
