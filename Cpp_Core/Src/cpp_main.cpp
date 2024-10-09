@@ -33,8 +33,9 @@ int cpp_main(void)
     // net_init();
 
     QSPI_W25Qxx_Init();
+    int8_t mmmResult = QSPI_W25Qxx_MemoryMappedMode(); 	// 配置QSPI为内存映射模
+    printf("QSPI MemoryMappedMode result: %d\r\n", mmmResult);
 
-    
     InputMode inputMode = INPUT_MODE_CONFIG;
     ConfigType configType = CONFIG_TYPE_WEB;
     DriverManager::getInstance().setup(inputMode);      
@@ -42,10 +43,12 @@ int cpp_main(void)
 
     uint32_t t = HAL_GetTick();
     
+    // FS_ROOT;
+
     while(1) {
         // LED1_Toggle;
         // printf("FS_ROOT\r\n");
-        // FS_ROOT;
+        
         // HAL_Delay(1000);
 
         if(HAL_GetTick() - t >= 1000)

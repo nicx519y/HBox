@@ -203,7 +203,7 @@ function makeAllFileData(buffers) {
 	const sizeArr = buffers.map(buffer => buffer.byteLength);
 	sizeArr.unshift(buffers.length);
 	const uint32a = new DataView(new ArrayBuffer(sizeArr.length * 4));
-	sizeArr.forEach((value, index) => uint32a.setUint32(index * 4, value, false));
+	sizeArr.forEach((value, index) => uint32a.setUint32(index * 4, value, true));	//stm32都是littleEndian
 	const firstBuffer = Buffer.from(uint32a.buffer);
 	buffers.unshift(firstBuffer);
 	return concatenateArrayBuffers( buffers );
@@ -237,7 +237,7 @@ function makefsdata() {
 	fsdata += '#include "fsdata_alignment.h"\n';
 	fsdata += '#endif\n';
 	fsdata += '\n';
-	fsdata += `#define ex_fsdata_addr 0x${ex_fsdata_addr.toString(16)}\n`;
+	fsdata += '#define ex_fsdata_addr 0x90000000\n';
 	fsdata += '\n';
 	fsdata += `#define __Text_Area__ __attribute__((section("${memory_section}")))\n`;
 	fsdata += '\n';
@@ -300,7 +300,7 @@ function makefsdata() {
 		if(__makeExFile === true) {
 			// 生成二进制文件数据
 			fileDataBuffers.push(fileBuffer);
-			fsdata += `__Text_Area__ static unsigned char data_${varName}[${fileBuffer.byteLength}] FSDATA_ALIGN_PRE = {};\n\n`;
+			fsdata += `__Text_Area__ static unsigned char data_${varName}[${fileBuffer.byteLength}] FSDATA_ALIGN_PRE;\n\n`;
 		} else {
 			fsdata += `static unsigned char data_${varName}[] FSDATA_ALIGN_PRE = {\n`;
 			fsdata += `/* ${qualifiedName} (${qualifiedNameLength} chars) */\n`;
@@ -356,58 +356,22 @@ function makefsdata() {
 	});
 
 	fsdata += `
-static void convert_buffer(uint8_t* buffer, uint32_t* output, size_t buffer_size) {
-	if (buffer_size % 4 != 0) {
-		// Handle error: buffer size is not divisible by 4
-		printf("buffer size is not divisible by 4\\r\\n");
-		return;
-	}
-	
-	for (size_t i = 0; i < buffer_size / 4; i++) {
-		output[i] = (buffer[i * 4] << 24) |  // Most significant byte
-					(buffer[i * 4 + 1] << 16) |  // Next most significant byte
-					(buffer[i * 4 + 2] << 8) |  // Least significant byte
-					buffer[i * 4 + 3];  // Least significant byte
-	}
-}
-	`;
-
-	fsdata += `
 const struct fsdata_file * getFSRoot(void)
 {
 	if(fsdata_inited == false) {
-		uint8_t lenBufferIn[4];
-		uint32_t lenBufferOut[1];
-		uint32_t addr = ex_fsdata_addr;
-		uint32_t size = 4;
-		uint8_t result = QSPI_W25Qxx_ReadBuffer(lenBufferIn, addr, size);
-		if(result != QSPI_W25Qxx_OK) {
-			printf("Read QSPI_W25QXX failure! Err Code: %d \\r\\n", result);
-		} 
-		convert_buffer(lenBufferIn, lenBufferOut, 4);
-
-		uint32_t len = lenBufferOut[0];                 // 文件数量
-		uint8_t sizesBufferIn[4 * len];
-		uint32_t sizesBufferOut[len];
-		addr += size;
-		size = 4 * len;
-		result = QSPI_W25Qxx_ReadBuffer(sizesBufferIn, addr, size);
-		if(result != QSPI_W25Qxx_OK) {
-			printf("Read QSPI_W25QXX failure! Err Code: %d \\r\\n", result);
-		}
-		convert_buffer(sizesBufferIn, sizesBufferOut, 4 * len); // 文件size
+		uint32_t *fsptr = (uint32_t *) ex_fsdata_addr;
+		uint32_t len = *fsptr;                 // 文件数量
+        uint32_t size = 0;
+		uint32_t addr = ex_fsdata_addr + (1 + len) * 4;
 	`;
 	
 	fileInfos.forEach((fileInfo, index) => {
 		fsdata += `
 		addr += size;
-        size = sizesBufferOut[${index}];
-        result = QSPI_W25Qxx_ReadBuffer(data_${fileInfo.varName}, addr, size);
-        if(result != QSPI_W25Qxx_OK) {
-            printf("Read QSPI_W25QXX failure! Err Code: %d \\r\\n", result);
-        } else {
-            printf("Read QSPI_W25QXX success!");
-        }
+        uint8_t * dataptr${index} = addr;
+        uint32_t *sizeptr${index} = (uint32_t *) (ex_fsdata_addr + 4 * (${index} + 1));
+        size = *sizeptr${index};
+        memcpy(data_${fileInfo.varName}, dataptr${index}, size);
 		`;
 	});
 
@@ -419,8 +383,6 @@ const struct fsdata_file * getFSRoot(void)
 }
 	\n`;
 
-	// fsdata += `#define FS_ROOT file_${prevFile}\n`;
-	// fsdata += `#define FS_NUMFILES ${fileInfos.length}\n`;
 	fsdata += `const uint8_t numfiles = ${fileInfos.length};\n`;
 
 	fs.writeFileSync(fsdataPath, fsdata, 'utf8');

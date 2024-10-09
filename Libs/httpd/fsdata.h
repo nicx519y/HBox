@@ -52,7 +52,6 @@ struct fsdata_file {
 };
 
 extern const struct fsdata_file file__index_html[];
-extern const struct fsdata_file file__manifest_json[];
 extern const struct fsdata_file * getFSRoot(void);
 extern const uint8_t numfiles;
 

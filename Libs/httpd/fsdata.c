@@ -24,7 +24,7 @@
 #include "fsdata_alignment.h"
 #endif
 
-#define ex_fsdata_addr 0x0
+#define ex_fsdata_addr 0x90000000
 
 #define __Text_Area__ __attribute__((section("._Text_Area")))
 
@@ -33,32 +33,32 @@ static bool fsdata_inited = false;
 #if FSDATA_FILE_ALIGNMENT==1
 static const unsigned int dummy_align__assets_index_2a2af97b_css = 0;
 #endif
-__Text_Area__ static unsigned char data__assets_index_2a2af97b_css[34142] FSDATA_ALIGN_PRE = {};
+__Text_Area__ static unsigned char data__assets_index_2a2af97b_css[34142] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
 static const unsigned int dummy_align__assets_index_3470b205_js = 1;
 #endif
-__Text_Area__ static unsigned char data__assets_index_3470b205_js[343912] FSDATA_ALIGN_PRE = {};
+__Text_Area__ static unsigned char data__assets_index_3470b205_js[343912] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
 static const unsigned int dummy_align__favicon_ico = 2;
 #endif
-__Text_Area__ static unsigned char data__favicon_ico[1829] FSDATA_ALIGN_PRE = {};
+__Text_Area__ static unsigned char data__favicon_ico[1829] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
 static const unsigned int dummy_align__images_logo_png = 3;
 #endif
-__Text_Area__ static unsigned char data__images_logo_png[2375] FSDATA_ALIGN_PRE = {};
+__Text_Area__ static unsigned char data__images_logo_png[2375] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
 static const unsigned int dummy_align__index_html = 4;
 #endif
-__Text_Area__ static unsigned char data__index_html[657] FSDATA_ALIGN_PRE = {};
+__Text_Area__ static unsigned char data__index_html[657] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
 static const unsigned int dummy_align__manifest_json = 5;
 #endif
-__Text_Area__ static unsigned char data__manifest_json[440] FSDATA_ALIGN_PRE = {};
+__Text_Area__ static unsigned char data__manifest_json[440] FSDATA_ALIGN_PRE;
 
 const struct fsdata_file file__assets_index_2a2af97b_css[] = {{
 file_NULL,
@@ -109,98 +109,49 @@ FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_SSI
 }};
 
 
-static void convert_buffer(uint8_t* buffer, uint32_t* output, size_t buffer_size) {
-	if (buffer_size % 4 != 0) {
-		// Handle error: buffer size is not divisible by 4
-		printf("buffer size is not divisible by 4\r\n");
-		return;
-	}
-	
-	for (size_t i = 0; i < buffer_size / 4; i++) {
-		output[i] = (buffer[i * 4] << 24) |  // Most significant byte
-					(buffer[i * 4 + 1] << 16) |  // Next most significant byte
-					(buffer[i * 4 + 2] << 8) |  // Least significant byte
-					buffer[i * 4 + 3];  // Least significant byte
-	}
-}
-	
 const struct fsdata_file * getFSRoot(void)
 {
 	if(fsdata_inited == false) {
-		uint8_t lenBufferIn[4];
-		uint32_t lenBufferOut[1];
-		uint32_t addr = ex_fsdata_addr;
-		uint32_t size = 4;
-		uint8_t result = QSPI_W25Qxx_ReadBuffer(lenBufferIn, addr, size);
-		if(result != QSPI_W25Qxx_OK) {
-			printf("Read QSPI_W25QXX failure! Err Code: %d \r\n", result);
-		} 
-		convert_buffer(lenBufferIn, lenBufferOut, 4);
-
-		uint32_t len = lenBufferOut[0];                 // 文件数量
-		uint8_t sizesBufferIn[4 * len];
-		uint32_t sizesBufferOut[len];
-		addr += size;
-		size = 4 * len;
-		result = QSPI_W25Qxx_ReadBuffer(sizesBufferIn, addr, size);
-		if(result != QSPI_W25Qxx_OK) {
-			printf("Read QSPI_W25QXX failure! Err Code: %d \r\n", result);
-		}
-		convert_buffer(sizesBufferIn, sizesBufferOut, 4 * len); // 文件size
+		uint32_t *fsptr = (uint32_t *) ex_fsdata_addr;
+		uint32_t len = *fsptr;                 // 文件数量
+        uint32_t size = 0;
+		uint32_t addr = ex_fsdata_addr + (1 + len) * 4;
 	
 		addr += size;
-        size = sizesBufferOut[0];
-        result = QSPI_W25Qxx_ReadBuffer(data__assets_index_2a2af97b_css, addr, size);
-        if(result != QSPI_W25Qxx_OK) {
-            printf("Read QSPI_W25QXX failure! Err Code: %d \r\n", result);
-        } else {
-            printf("Read QSPI_W25QXX success!");
-        }
+        uint8_t * dataptr0 = addr;
+        uint32_t *sizeptr0 = (uint32_t *) (ex_fsdata_addr + 4 * (0 + 1));
+        size = *sizeptr0;
+        memcpy(data__assets_index_2a2af97b_css, dataptr0, size);
 		
 		addr += size;
-        size = sizesBufferOut[1];
-        result = QSPI_W25Qxx_ReadBuffer(data__assets_index_3470b205_js, addr, size);
-        if(result != QSPI_W25Qxx_OK) {
-            printf("Read QSPI_W25QXX failure! Err Code: %d \r\n", result);
-        } else {
-            printf("Read QSPI_W25QXX success!");
-        }
+        uint8_t * dataptr1 = addr;
+        uint32_t *sizeptr1 = (uint32_t *) (ex_fsdata_addr + 4 * (1 + 1));
+        size = *sizeptr1;
+        memcpy(data__assets_index_3470b205_js, dataptr1, size);
 		
 		addr += size;
-        size = sizesBufferOut[2];
-        result = QSPI_W25Qxx_ReadBuffer(data__favicon_ico, addr, size);
-        if(result != QSPI_W25Qxx_OK) {
-            printf("Read QSPI_W25QXX failure! Err Code: %d \r\n", result);
-        } else {
-            printf("Read QSPI_W25QXX success!");
-        }
+        uint8_t * dataptr2 = addr;
+        uint32_t *sizeptr2 = (uint32_t *) (ex_fsdata_addr + 4 * (2 + 1));
+        size = *sizeptr2;
+        memcpy(data__favicon_ico, dataptr2, size);
 		
 		addr += size;
-        size = sizesBufferOut[3];
-        result = QSPI_W25Qxx_ReadBuffer(data__images_logo_png, addr, size);
-        if(result != QSPI_W25Qxx_OK) {
-            printf("Read QSPI_W25QXX failure! Err Code: %d \r\n", result);
-        } else {
-            printf("Read QSPI_W25QXX success!");
-        }
+        uint8_t * dataptr3 = addr;
+        uint32_t *sizeptr3 = (uint32_t *) (ex_fsdata_addr + 4 * (3 + 1));
+        size = *sizeptr3;
+        memcpy(data__images_logo_png, dataptr3, size);
 		
 		addr += size;
-        size = sizesBufferOut[4];
-        result = QSPI_W25Qxx_ReadBuffer(data__index_html, addr, size);
-        if(result != QSPI_W25Qxx_OK) {
-            printf("Read QSPI_W25QXX failure! Err Code: %d \r\n", result);
-        } else {
-            printf("Read QSPI_W25QXX success!");
-        }
+        uint8_t * dataptr4 = addr;
+        uint32_t *sizeptr4 = (uint32_t *) (ex_fsdata_addr + 4 * (4 + 1));
+        size = *sizeptr4;
+        memcpy(data__index_html, dataptr4, size);
 		
 		addr += size;
-        size = sizesBufferOut[5];
-        result = QSPI_W25Qxx_ReadBuffer(data__manifest_json, addr, size);
-        if(result != QSPI_W25Qxx_OK) {
-            printf("Read QSPI_W25QXX failure! Err Code: %d \r\n", result);
-        } else {
-            printf("Read QSPI_W25QXX success!");
-        }
+        uint8_t * dataptr5 = addr;
+        uint32_t *sizeptr5 = (uint32_t *) (ex_fsdata_addr + 4 * (5 + 1));
+        size = *sizeptr5;
+        memcpy(data__manifest_json, dataptr5, size);
 		
 		fsdata_inited = true;
 	}
