@@ -137,7 +137,9 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "fsdata copy": "cpp"
+        "fsdata copy": "cpp",
+        "list": "c",
+        "stm32h7xx.h": "c"
     },
     "cmake.sourceDirectory": "E:/Works/STM32/HBox/tinyusb/examples/device/hid_generic_inout"
 }

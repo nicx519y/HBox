@@ -48,14 +48,13 @@ void board_init(void) {
   NVIC_SetPriority(OTG_HS_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY );
 #endif
 
-  USART1_Init();
+  USART1_Init();    //USART for debug
   LED_Init();
   printf("LED_Init success... \r\n");
-  // QSPI_W25Qxx_Init();
+  QSPI_W25Qxx_Init();
+  int8_t mmmResult = QSPI_W25Qxx_MemoryMappedMode(); 	// 配置QSPI为内存映射模
+  printf("QSPI MemoryMappedMode result: %d\r\n", mmmResult);
 
-  // uint32_t rid = QSPI_W25Qxx_ReadID();
-
-  // printf("QSPI W25Qxx_Init success... %d \r\n", rid);
   USB_init();
   
 

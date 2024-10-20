@@ -61,6 +61,7 @@ Libs/stm32_mw_lwip/src/core \
 Libs/stm32_mw_lwip/src/netif \
 Libs/stm32_mw_lwip/src/core/ipv4 \
 Libs/FatFS \
+Libs/cJSON \
 Libs/httpd \
 
 # TinyusbUser/net \
@@ -73,7 +74,10 @@ Libs/httpd \
 CPP_SOURCE_DIRS = \
 Cpp_Core/Src \
 Cpp_Core/Src/drivers/net \
+Cpp_Core/Src/drivers/xinput \
 Cpp_Core/Src/configs \
+Cpp_Core/Src/gamepad \
+Libs/CRC32/src \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -158,6 +162,8 @@ C_INCLUDES =  \
 -ICpp_Core/Inc \
 -ILibs/stm32_mw_lwip/src/include \
 -ILibs/FatFS \
+-ILibs/cJSON \
+-ILibs/CRC32/src \
 
 # -ITinyusbUser/net \
 # -ILibs/stm32_mw_lwip/src/include/lwip/apps \

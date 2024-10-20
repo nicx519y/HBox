@@ -14,7 +14,7 @@
 // #include "drivers/switch/SwitchDriver.h"
 // #include "drivers/xbone/XBOneDriver.h"
 // #include "drivers/xboxog/XboxOriginalDriver.h"
-// #include "drivers/xinput/XInputDriver.h"
+#include "drivers/xinput/XInputDriver.hpp"
 
 // #include "usbhostmanager.hpp"
 
@@ -65,9 +65,9 @@ void DriverManager::setup(InputMode mode) {
         // case INPUT_MODE_XBOXORIGINAL:
         //     driver = new XboxOriginalDriver();
         //     break;
-        // case INPUT_MODE_XINPUT:
-        //     driver = new XInputDriver();
-        //     break;
+        case INPUT_MODE_XINPUT:
+            driver = new XInputDriver();
+            break;
         default:
             return;
     }

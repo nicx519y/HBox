@@ -1,6 +1,8 @@
+#include "constant.hpp"
 #include "fsdata.h"
 #include "qspi-w25q64.h"
 #include <stdbool.h>
+#include <string.h>
 
 #define file_NULL (struct fsdata_file *) NULL
 
@@ -24,7 +26,7 @@
 #include "fsdata_alignment.h"
 #endif
 
-#define ex_fsdata_addr 0x90000000
+#define ex_fsdata_addr EX_FSDATA_ADDR
 
 #define __Text_Area__ __attribute__((section("._Text_Area")))
 
@@ -118,37 +120,37 @@ const struct fsdata_file * getFSRoot(void)
 		uint32_t addr = ex_fsdata_addr + (1 + len) * 4;
 	
 		addr += size;
-        uint8_t * dataptr0 = addr;
+        uint8_t * dataptr0 = (uint8_t*) addr;
         uint32_t *sizeptr0 = (uint32_t *) (ex_fsdata_addr + 4 * (0 + 1));
         size = *sizeptr0;
         memcpy(data__assets_index_2a2af97b_css, dataptr0, size);
 		
 		addr += size;
-        uint8_t * dataptr1 = addr;
+        uint8_t * dataptr1 = (uint8_t*) addr;
         uint32_t *sizeptr1 = (uint32_t *) (ex_fsdata_addr + 4 * (1 + 1));
         size = *sizeptr1;
         memcpy(data__assets_index_3470b205_js, dataptr1, size);
 		
 		addr += size;
-        uint8_t * dataptr2 = addr;
+        uint8_t * dataptr2 = (uint8_t*) addr;
         uint32_t *sizeptr2 = (uint32_t *) (ex_fsdata_addr + 4 * (2 + 1));
         size = *sizeptr2;
         memcpy(data__favicon_ico, dataptr2, size);
 		
 		addr += size;
-        uint8_t * dataptr3 = addr;
+        uint8_t * dataptr3 = (uint8_t*) addr;
         uint32_t *sizeptr3 = (uint32_t *) (ex_fsdata_addr + 4 * (3 + 1));
         size = *sizeptr3;
         memcpy(data__images_logo_png, dataptr3, size);
 		
 		addr += size;
-        uint8_t * dataptr4 = addr;
+        uint8_t * dataptr4 = (uint8_t*) addr;
         uint32_t *sizeptr4 = (uint32_t *) (ex_fsdata_addr + 4 * (4 + 1));
         size = *sizeptr4;
         memcpy(data__index_html, dataptr4, size);
 		
 		addr += size;
-        uint8_t * dataptr5 = addr;
+        uint8_t * dataptr5 = (uint8_t*) addr;
         uint32_t *sizeptr5 = (uint32_t *) (ex_fsdata_addr + 4 * (5 + 1));
         size = *sizeptr5;
         memcpy(data__manifest_json, dataptr5, size);

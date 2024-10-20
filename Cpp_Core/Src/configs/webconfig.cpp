@@ -560,7 +560,7 @@ void httpd_post_finished(void *connection, char *response_uri, uint16_t response
 //         if (altsIndex > 2) break;
 //     }
 
-//     Storage::getInstance().save();
+    // Storage::getInstance().save();
 //     return serialize_json(doc);
 // }
 
@@ -1805,10 +1805,10 @@ void httpd_post_finished(void *connection, char *response_uri, uint16_t response
 
 // std::string getAddonOptions()
 // {
-//     DynamicJsonDocument doc(LWIP_HTTPD_POST_MAX_PAYLOAD_LEN);
+    // DynamicJsonDocument doc(LWIP_HTTPD_POST_MAX_PAYLOAD_LEN);
 
 //     const AnalogOptions& analogOptions = Storage::getInstance().getAddonOptions().analogOptions;
-//     writeDoc(doc, "analogAdc1PinX", cleanPin(analogOptions.analogAdc1PinX));
+    // writeDoc(doc, "analogAdc1PinX", cleanPin(analogOptions.analogAdc1PinX));
 //     writeDoc(doc, "analogAdc1PinY", cleanPin(analogOptions.analogAdc1PinY));
 //     writeDoc(doc, "analogAdc1Mode", analogOptions.analogAdc1Mode);
 //     writeDoc(doc, "analogAdc1Invert", analogOptions.analogAdc1Invert);

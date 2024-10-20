@@ -14,14 +14,6 @@
 #include "fsdata.h"
 // #include "net_init.h"
 
-FATFS fs;				//声明文件系统对象
-FIL fp;					   //创建文件
-UINT fnum;				   //接收�?/写返回的数量
-FRESULT res;			   //获取返回�?
-BYTE formatBuffer[1024*4] = {0};
-UINT br;
-UINT bw;
-
 int cpp_main(void) 
 {   
 
@@ -32,19 +24,16 @@ int cpp_main(void)
     // tud_init(BOARD_TUD_RHPORT);
     // net_init();
 
-    QSPI_W25Qxx_Init();
-    int8_t mmmResult = QSPI_W25Qxx_MemoryMappedMode(); 	// 配置QSPI为内存映射模
-    printf("QSPI MemoryMappedMode result: %d\r\n", mmmResult);
-
-    InputMode inputMode = INPUT_MODE_CONFIG;
+    // InputMode inputMode = INPUT_MODE_CONFIG;
+    InputMode inputMode = INPUT_MODE_XINPUT;
     ConfigType configType = CONFIG_TYPE_WEB;
     DriverManager::getInstance().setup(inputMode);      
     ConfigManager::getInstance().setup(configType);
 
+    bool configMode = false;
+
     uint32_t t = HAL_GetTick();
     
-    // FS_ROOT;
-
     while(1) {
         // LED1_Toggle;
         // printf("FS_ROOT\r\n");
@@ -57,30 +46,11 @@ int cpp_main(void)
             t = HAL_GetTick();
         }
 
-        ConfigManager::getInstance().loop();
-
-        // LED1_Toggle;
-        // printf("LED1_Toggle...\r\n");
-        // HAL_Delay(1000);
-        // board_led_write(false);
-        // res = f_open(&fp,"0:/Dem3.TXT",FA_CREATE_NEW | FA_WRITE);	
-        // if ( res == FR_OK )		//新建并打开了该文件
-        // { 
-        //     res = f_write(&fp, formatBuffer, sizeof(formatBuffer), &bw); 
-        //     printf( "\r\n file create success \n" ); 
-        // //新建或打开文件后，一定要关闭   
-        //     f_close(&fp);      
-        // }
-        // else if ( res == FR_EXIST )	//文件已存在
-        // {
-        //     printf( "\r\n file is existed \n" );
-        //     f_close(&fp);		
-        // }
-        // else
-        // {
-        //     printf("\r\n failure. \n");
-        // }
-        
+        if(configMode) {
+            ConfigManager::getInstance().loop();
+        } else {
+            tud_task();
+        }
     }
 
     return 0;

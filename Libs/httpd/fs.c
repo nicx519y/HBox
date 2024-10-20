@@ -86,7 +86,6 @@ fs_open(struct fs_file *file, const char *name)
 #endif /* #if LWIP_HTTPD_FILE_STATE */
       return ERR_OK;
     }
-
 #if LWIP_HTTPD_CUSTOM_FILES
   if (fs_open_custom(file, name)) {
     file->is_custom_file = 1;

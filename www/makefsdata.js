@@ -211,9 +211,11 @@ function makeAllFileData(buffers) {
 
 function makefsdata() {
 	let fsdata = '';
+	fsdata += '#include "constant.hpp"\n';
 	fsdata += '#include "fsdata.h"\n';
 	fsdata += '#include "qspi-w25q64.h"\n';
 	fsdata += '#include <stdbool.h>\n';
+	fsdata += '#include <string.h>\n';
 	fsdata += '\n';
 	fsdata += '#define file_NULL (struct fsdata_file *) NULL\n';
 	fsdata += '\n';
@@ -237,7 +239,7 @@ function makefsdata() {
 	fsdata += '#include "fsdata_alignment.h"\n';
 	fsdata += '#endif\n';
 	fsdata += '\n';
-	fsdata += '#define ex_fsdata_addr 0x90000000\n';
+	fsdata += '#define ex_fsdata_addr EX_FSDATA_ADDR\n';
 	fsdata += '\n';
 	fsdata += `#define __Text_Area__ __attribute__((section("${memory_section}")))\n`;
 	fsdata += '\n';
@@ -359,7 +361,7 @@ function makefsdata() {
 const struct fsdata_file * getFSRoot(void)
 {
 	if(fsdata_inited == false) {
-		uint32_t *fsptr = (uint32_t *) ex_fsdata_addr;
+		uint32_t *fsptr = (uint32_t*) ex_fsdata_addr;
 		uint32_t len = *fsptr;                 // 文件数量
         uint32_t size = 0;
 		uint32_t addr = ex_fsdata_addr + (1 + len) * 4;
@@ -368,8 +370,8 @@ const struct fsdata_file * getFSRoot(void)
 	fileInfos.forEach((fileInfo, index) => {
 		fsdata += `
 		addr += size;
-        uint8_t * dataptr${index} = addr;
-        uint32_t *sizeptr${index} = (uint32_t *) (ex_fsdata_addr + 4 * (${index} + 1));
+        uint8_t* dataptr${index} = (uint8_t*) addr;
+        uint32_t* sizeptr${index} = (uint32_t*) (ex_fsdata_addr + 4 * (${index} + 1));
         size = *sizeptr${index};
         memcpy(data_${fileInfo.varName}, dataptr${index}, size);
 		`;
