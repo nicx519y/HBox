@@ -25,7 +25,7 @@ class ADCBtnsManager {
             return instance;
         }
 
-        bool setup();
+        void setup();
         void deinit();
         void process();
         void setState(const ADCButtonManagerState state);

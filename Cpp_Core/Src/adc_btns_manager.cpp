@@ -13,7 +13,7 @@ ADCBtnsManager::ADCBtnsManager():
  * @brief  通过配置 初始化计算所需要的模拟值
  * 
  */
-bool ADCBtnsManager::setup()
+void ADCBtnsManager::setup()
 {
 
     HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
@@ -34,9 +34,6 @@ bool ADCBtnsManager::setup()
 
     switch(this->state) {
         case ADCButtonManagerState::WORKING:
-
-            uint8_t isReady = 1;
-
             this->virtualPinMask = 0x0;
             SCB_InvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
 
@@ -45,10 +42,8 @@ bool ADCBtnsManager::setup()
                 
                 if(btn->ready) {
                     ADC_btnStates[i] = ADCButtonState::READY;
-                    isReady &= 1;
                 } else {
                     ADC_btnStates[i] = ADCButtonState::NOT_READY;
-                    isReady &= 0;
                 }
 
                 ADC_topValues[i] = (int32_t) btn->topValue;
@@ -72,25 +67,8 @@ bool ADCBtnsManager::setup()
                 }
             }
 
-            if(isReady != 1) {
-                return false;
-            } else {
-                return true;
-            }
-
             break;
-        case ADCButtonManagerState::CALIBRATING:
-            // 标定初始化
-            memset(&ADC_btnStates[0], ADCButtonState::NOT_READY, sizeof(ADC_btnStates));
-            memset(&ADC_topValues[0], 0, sizeof(ADC_topValues));
-            memset(&ADC_bottomValues[0], 0, sizeof(ADC_bottomValues));
-            memset(&ADC_timesOfCalibrate[0], 0, sizeof(ADC_timesOfCalibrate));
-
-            return true;
-
-            break;
-        default:    // NOT_READY
-
+        default:
 
             break;
     }
@@ -176,33 +154,26 @@ void ADCBtnsManager::process()
             break;
         case ADCButtonManagerState::CALIBRATING:
 
-            uint8_t isComplete = 1;
-
             for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
 
                 switch(ADC_btnStates[i]) {
                     case ADCButtonState::NOT_READY:
-                        isComplete &= 0;
                         ADC_btnStates[i] = ADCButtonState::CALIBRATING_TOP;
                         break;
                     case ADCButtonState::CALIBRATING_TOP:
-                        isComplete &= 0;
-                        int32_t value = (int32_t) ADC_Values[i];
-                        uint8_t times = ADC_timesOfCalibrate[i];
-
                         // 如果当前读取的adc value跟之前比跳动过大，则校准失败。需要连续到相近的adc values才算标定成功
-                        if(times > 0 && abs(value - (int32_t) round((double_t)ADC_tmp[i-1]/(double_t)times)) > ADC_VOLATILITY) {
+                        if(ADC_timesOfCalibrate[i] > 0 && abs((int32_t)ADC_Values[i] - (int32_t) round((double_t)ADC_tmp[i-1]/(double_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY) {
                             // 校准失败 这个按钮重新校准
                             ADC_tmp[i] = 0;
                             ADC_timesOfCalibrate[i] = 0;
                         } else {
-                            ADC_tmp[i] += value;
+                            ADC_tmp[i] += (int32_t)ADC_Values[i] ;
                             ADC_timesOfCalibrate[i] ++;
                         }
                         
                         if(ADC_timesOfCalibrate[i] >= TIMES_ADC_CALIBRATION) {
                             // 校准成功 ADC_topValues[i]
-                            ADC_topValues[i] = (int32_t) round((double_t) ADC_tmp[i] / (double_t) TIMES_ADC_CALIBRATION);
+                            ADC_topValues[i] = (int32_t) round((double_t)ADC_tmp[i] / (double_t)TIMES_ADC_CALIBRATION);
 
                             ADC_btnStates[i] = ADCButtonState::CALIBRATING_BOTTOM;
                             ADC_tmp[i] = 0;
@@ -211,17 +182,14 @@ void ADCBtnsManager::process()
 
                         break;
                     case ADCButtonState::CALIBRATING_BOTTOM:
-                        isComplete &= 0;
-                        int32_t value = (int32_t) ADC_Values[i];
-                        uint8_t times = ADC_timesOfCalibrate[i];
 
                         // 如果当前读取的adc value跟之前比跳动过大，则校准失败。需要连续到相近的adc values才算标定成功
-                        if(times > 0 && abs(value - (int32_t) abs((double_t) ADC_tmp[i-1] / (double_t) times)) > ADC_VOLATILITY) {
+                        if(ADC_timesOfCalibrate[i] > 0 && abs((int32_t)ADC_Values[i] - (int32_t)abs((double_t) ADC_tmp[i-1] / (double_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY) {
                             // 校准失败 这个按钮重新校准
                             ADC_tmp[i] = 0;
                             ADC_timesOfCalibrate[i] = 0;
                         } else {
-                            ADC_tmp[i] += value;
+                            ADC_tmp[i] += (int32_t) ADC_Values[i];
                             ADC_timesOfCalibrate[i] ++;
                         }
 
@@ -236,7 +204,6 @@ void ADCBtnsManager::process()
 
                         break;
                     default:    // READY
-                        isComplete &= 1;
 
                         break;
                 }
