@@ -17,6 +17,11 @@ GamepadOptions& Storage::getGamepadOptions()
 	return *(config.profiles[config.profileIndex]);
 }
 
+ADCButton* (&Storage::getADCButtonOptions())[NUM_ADC_BUTTONS]
+{
+	return config.ADCButtons;
+}
+
 void Storage::ResetSettings()
 {
 	NVIC_SystemReset();				//reboot

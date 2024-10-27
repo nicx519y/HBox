@@ -12,7 +12,12 @@ extern "C" {
 #define EX_CONFIG_ADDR          0x90800000  // 0x90400000 ~ 0x905FFFFF      (2MB)
 
 #define NUM_PROFILES            8
-#define NUM_ADC_BUTTONS         16
+#define NUM_ADC1_BUTTONS        8
+#define NUM_ADC2_BUTTONS        8
+#define NUM_ADC_BUTTONS         (NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS)
+#define TIMES_ADC_CALIBRATION   100
+#define DELAY_ADC_CALIBRATION   10              // 校准时间 TIMES_ADC_CALIBRATION * DELAY_ADC_CALIBRATION
+#define ADC_VOLATILITY          300
 #define NUM_GPIO_BUTTONS        4
 
 #ifdef __cplusplus

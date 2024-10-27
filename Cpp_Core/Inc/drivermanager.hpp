@@ -24,4 +24,4 @@ private:
     InputMode inputMode;
 };
 
-#endif
+#endif  //_DRIVERMANAGER_H

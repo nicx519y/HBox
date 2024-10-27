@@ -2,17 +2,28 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "bsp/board_api.h"
-#include "tusb.h"
 #include "enums.hpp"
 #include "drivermanager.hpp"
 #include "drivers/net/NetDriver.hpp"
 #include "configmanager.hpp"
 #include "board_cfg.h"
 #include "qspi-w25q64.h"
-#include "ff.h"
 #include "led.h"
-#include "fsdata.h"
+#include "adc.h"
 // #include "net_init.h"
+
+// 声明ADC DMA的内存地址，为了避免自动分配到DTCMRAM(DTCMRAM直连CPU，DMA不能访问)，所以为变量指定了内存区域为指向AXISRAM的地址
+// static __attribute__((section("._ADC_DMA_Area"))) uint32_t ADC_Values[16] = {0};
+
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+    // printf("ADC Conv;\n");
+}
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc){
+    printf("Sorry, ADC error!\n");
+}
+
 
 int cpp_main(void) 
 {   
@@ -31,6 +42,20 @@ int cpp_main(void)
     ConfigManager::getInstance().setup(configType);
 
     bool configMode = false;
+    
+    // HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
+    // if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Values[0], sizeof(ADC_Values) / sizeof(ADC_Values[0]) / 2) != HAL_OK) {
+    //     printf("DMA1 start fail. \n");
+    // } else {
+    //     printf("DMA1 start success.\n");
+    // }
+
+    // HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
+    // if(HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&ADC_Values[8], sizeof(ADC_Values) / sizeof(ADC_Values[0]) / 2) != HAL_OK) {
+    //     printf("DMA2 start fail. \n");
+    // } else {
+    //     printf("DMA2 start success.\n");
+    // }
 
     uint32_t t = HAL_GetTick();
     
@@ -43,6 +68,19 @@ int cpp_main(void)
         if(HAL_GetTick() - t >= 1000)
         {
             LED1_Toggle;
+
+            // 因为开启了DCache，所以每次DMA每次更新完读取是需要使DCache失效
+            // SCB_InvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
+
+            // printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+            //     ADC_Values[0], ADC_Values[1], ADC_Values[2], ADC_Values[3], ADC_Values[4], ADC_Values[5], ADC_Values[6], ADC_Values[7],
+            //     ADC_Values[8], ADC_Values[9], ADC_Values[10], ADC_Values[11], ADC_Values[12], ADC_Values[13], ADC_Values[14], ADC_Values[15]
+            //     );
+
+
+            // printf("%d,%d\n", ADC1_Values[0], ADC1_Values[1]);
+
+
             t = HAL_GetTick();
         }
 

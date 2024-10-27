@@ -21,6 +21,7 @@ public:
 	// Config& getConfig() { return config; }
 
 	GamepadOptions& getGamepadOptions();
+	ADCButton* (&getADCButtonOptions())[NUM_ADC_BUTTONS];
 
 	void init();
 	bool save();

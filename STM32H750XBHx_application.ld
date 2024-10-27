@@ -195,6 +195,18 @@ SECTIONS
     . = ALIGN(4);
     . = ALIGN(4);
   } >RAM
+
+  ._ADC_DMA_Area :
+  {
+    . = ALIGN(4);
+    . = ALIGN(4);
+  } >RAM
+
+    ._DTCMRAM_Area :
+  {
+    . = ALIGN(4);
+    . = ALIGN(4);
+  } >DTCMRAM
 }
 
 

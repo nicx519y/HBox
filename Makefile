@@ -45,6 +45,8 @@ Drivers/STM32H7xx_HAL_Driver/Src \
 Drivers/QSPI-W25Q64 \
 Drivers/USART \
 Drivers/LED \
+Drivers/USB \
+Drivers/ADC \
 Libs/tinyusb/src \
 Libs/tinyusb/src/device \
 Libs/tinyusb/src/common \
@@ -147,6 +149,8 @@ C_INCLUDES =  \
 -IDrivers/QSPI-W25Q64 \
 -IDrivers/LED \
 -IDrivers/USART \
+-IDrivers/USB \
+-IDrivers/ADC \
 -ICpp_Core/Inc \
 -ILibs/tinyusb/src \
 -ILibs/tinyusb/hw \

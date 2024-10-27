@@ -145,7 +145,19 @@ enum PLEDType
     PLED_TYPE_RGB = 1,
 };
 
+enum ADCButtonManagerState
+{
+    WORKING     = 0,
+    CALIBRATING = 1,
+};
 
+enum ADCButtonState
+{
+    NOT_READY           = 0,
+    CALIBRATING_TOP     = 1,
+    CALIBRATING_BOTTOM  = 2,
+    READY               = 3,
+};
 
 
 #endif /* _NET_DRIVER_H_  */

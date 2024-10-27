@@ -113,8 +113,15 @@ char * ConfigUtils::toJSON(const Config& config)
     ADCButton* ADCButtonPtr = (ADCButton*) config.ADCButtons;
     for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
         cJSON* pADCButton = cJSON_CreateObject();
-        cJSON_AddNumberToObject(pADCButton, "indexInDMA", ADCButtonPtr[i].indexInDMA || 0);
         cJSON_AddNumberToObject(pADCButton, "virtualPin", ADCButtonPtr[i].virtualPin || 0);
+        cJSON_AddNumberToObject(pADCButton, "topValue", ADCButtonPtr[i].topValue || 0);
+        cJSON_AddNumberToObject(pADCButton, "bottomValue", ADCButtonPtr[i].bottomValue || 0);
+        cJSON_AddNumberToObject(pADCButton, "pressAccuracy", ADCButtonPtr[i].pressAccuracy || 0);
+        cJSON_AddNumberToObject(pADCButton, "releaseAccuracy", ADCButtonPtr[i].releaseAccuracy || 0);
+        cJSON_AddNumberToObject(pADCButton, "topDeadzone", ADCButtonPtr[i].topDeadzone || 0);
+        cJSON_AddNumberToObject(pADCButton, "bottomDeadzone", ADCButtonPtr[i].bottomDeadzone || 0);
+        cJSON_AddNumberToObject(pADCButton, "keyTravel", ADCButtonPtr[i].keyTravel || 0);
+        cJSON_AddBoolToObject(pADCButton, "ready", ADCButtonPtr[i].ready || false);
         cJSON_AddItemToArray(pADCButtons, pADCButton);
     }
 
@@ -190,8 +197,15 @@ bool ConfigUtils::fromJSON(Config& config, const char* data, size_t dataLen)
         cJSON* ADCButtonObj = cJSON_GetArrayItem(ADCButtonsArray, i);
 
         ADCButton* button = (ADCButton *)malloc(sizeof(ADCButton));
-        button->indexInDMA = (uint8_t) cJSON_GetObjectItem(ADCButtonObj, "indexInDMA")->valueint;
         button->virtualPin = (uint32_t) cJSON_GetObjectItem(ADCButtonObj, "virtualPin")->valueint;
+        button->topValue = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "topValue")->valueint;
+        button->bottomValue = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "bottomValue")->valueint;
+        button->pressAccuracy = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "pressAccuracy")->valueint;
+        button->releaseAccuracy = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "releaseAccuracy")->valueint;
+        button->topDeadzone = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "topDeadzone")->valueint;
+        button->bottomDeadzone = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "topDeadzone")->valueint;
+        button->keyTravel = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "keyTravel")->valueint;
+        button->ready = cJSON_GetObjectItem(ADCButtonObj, "ready")->type == cJSON_True ? true: false;
 
         config.ADCButtons[i] = button;
     }

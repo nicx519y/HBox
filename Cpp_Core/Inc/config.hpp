@@ -78,8 +78,15 @@ typedef struct
 
 typedef struct
 {
-    uint8_t     indexInDMA;
-    uint32_t    virtualPin;
+    uint32_t    virtualPin;             // 虚拟pin 实质上是在所有buttons之内的序号
+    uint16_t    pressAccuracy;          // 按下精度 单位微米
+    uint16_t    releaseAccuracy;        // 回弹精度 单位微米
+    uint16_t    topDeadzone;            // 顶部死区 单位微米
+    uint16_t    bottomDeadzone;         // 底部死区 单位微米
+    uint16_t    keyTravel;              // 物理键程 单位微米
+    uint16_t    topValue;               // 顶部模拟值
+    uint16_t    bottomValue;            // 底部模拟值
+    bool        ready;                  // 是否校准过
 } ADCButton;
 
 typedef struct
