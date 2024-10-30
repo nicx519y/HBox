@@ -196,7 +196,7 @@ SECTIONS
     . = ALIGN(4);
   } >RAM
 
-  ._ADC_DMA_Area :
+  ._DMA_Area :
   {
     . = ALIGN(4);
     . = ALIGN(4);

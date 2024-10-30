@@ -27,15 +27,19 @@ class ADCBtnsManager {
 
         void setup();
         void deinit();
-        void process();
+        inline void process();
         void setState(const ADCButtonManagerState state);
         ADCButtonManagerState getState();
         ADCButtonState* getButtonStates();
         Mask_t getButtonIsPressed();
     private:
 
-        __attribute__((section("._ADC_DMA_Area"))) static uint32_t ADC_Values[NUM_ADC_BUTTONS];
-        __attribute__((section("._ADC_DMA_Area"))) static ADCButtonState ADC_btnStates[NUM_ADC_BUTTONS];
+        // 声明ADC DMA的内存地址，为了避免自动分配到DTCMRAM(DTCMRAM直连CPU，DMA不能访问)，所以为变量指定了内存区域为指向AXISRAM的地址
+        __attribute__((section("._DMA_Area"))) static uint32_t ADC_Values[NUM_ADC_BUTTONS];
+        __attribute__((section("._DMA_Area"))) static ADCButtonState ADC_btnStates[NUM_ADC_BUTTONS];
+        __attribute__((section("._DMA_Area"))) static uint8_t ADC_timesOfCalibrate[NUM_ADC_BUTTONS];
+        __attribute__((section("._DMA_Area"))) static int32_t ADC_tmp[NUM_ADC_BUTTONS];
+        
         __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_topValues[NUM_ADC_BUTTONS];
         __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_bottomValues[NUM_ADC_BUTTONS];
         __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_pressAccValues[NUM_ADC_BUTTONS];
@@ -45,8 +49,7 @@ class ADCBtnsManager {
         __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_virtualPinMasks[NUM_ADC_BUTTONS];
         __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_lastTriggerValues[NUM_ADC_BUTTONS];
         __attribute__((section("._DTCMRAM_Area"))) static uint8_t ADC_lastActionValues[NUM_ADC_BUTTONS];
-        __attribute__((section("._ADC_DMA_Area"))) static uint8_t ADC_timesOfCalibrate[NUM_ADC_BUTTONS];
-        __attribute__((section("._ADC_DMA_Area"))) static int32_t ADC_tmp[NUM_ADC_BUTTONS];
+        
         Mask_t virtualPinMask = 0x0;
 
         ADCBtnsManager();

@@ -35,7 +35,7 @@ void ADCBtnsManager::setup()
     switch(this->state) {
         case ADCButtonManagerState::WORKING:
             this->virtualPinMask = 0x0;
-            SCB_InvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
+            SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
 
             for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
                 ADCButton* btn = btns[i];
@@ -98,9 +98,9 @@ void ADCBtnsManager::deinit()
  * @brief 判断按下和回弹
  * 
  */
-void ADCBtnsManager::process()
+inline void ADCBtnsManager::process()
 {   
-    SCB_InvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
+    SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
 
     switch(this->state) {
         case ADCButtonManagerState::WORKING:
@@ -136,8 +136,8 @@ void ADCBtnsManager::process()
                         && value < ADC_bottomValues[i] + ADC_bottomDeadZoneValues[i])
                         || 
                         (ADC_releaseAccValues[i] >= 0 
-                        && value >= ADC_lastTriggerValues[i] + ADC_releaseAccValues[i])
-                        && value > ADC_bottomValues[i] + ADC_bottomDeadZoneValues[i]) {
+                        && value >= ADC_lastTriggerValues[i] + ADC_releaseAccValues[i]
+                        && value > ADC_bottomValues[i] + ADC_bottomDeadZoneValues[i])) {
 
                         ADC_lastTriggerValues[i] = value;
                         ADC_lastActionValues[i] = 0;

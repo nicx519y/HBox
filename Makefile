@@ -47,6 +47,7 @@ Drivers/USART \
 Drivers/LED \
 Drivers/USB \
 Drivers/ADC \
+Drivers/PWM-WS2812B \
 Libs/tinyusb/src \
 Libs/tinyusb/src/device \
 Libs/tinyusb/src/common \
@@ -151,6 +152,7 @@ C_INCLUDES =  \
 -IDrivers/USART \
 -IDrivers/USB \
 -IDrivers/ADC \
+-IDrivers/PWM-WS2812B \
 -ICpp_Core/Inc \
 -ILibs/tinyusb/src \
 -ILibs/tinyusb/hw \

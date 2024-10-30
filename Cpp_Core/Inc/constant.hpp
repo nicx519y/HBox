@@ -18,6 +18,7 @@ extern "C" {
 #define TIMES_ADC_CALIBRATION   100
 #define DELAY_ADC_CALIBRATION   10              // 校准时间 TIMES_ADC_CALIBRATION * DELAY_ADC_CALIBRATION
 #define ADC_VOLATILITY          300
+
 #define NUM_GPIO_BUTTONS        4
 
 #ifdef __cplusplus
