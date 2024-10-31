@@ -1,9 +1,8 @@
 #include "adc_btns_manager.hpp"
 #include "storagemanager.hpp"
 #include "adc.h"
+#include "pwm-ws2812b.h"
 #include "stdio.h"
-
-
 
 ADCBtnsManager::ADCBtnsManager():
     btns(Storage::getInstance().getADCButtonOptions())
@@ -29,7 +28,7 @@ void ADCBtnsManager::setup()
     } else {
         printf("ADCBtnsManager: DMA2 start success.\n");
     }
-    
+
     HAL_Delay(100);
 
     switch(this->state) {
@@ -92,6 +91,7 @@ void ADCBtnsManager::deinit()
     memset(&ADC_timesOfCalibrate[0], 0, sizeof(ADC_timesOfCalibrate));
     memset(&ADC_tmp[0], 0, sizeof(ADC_tmp));
     this->virtualPinMask = 0x0;
+
 }
 
 /**
@@ -263,6 +263,7 @@ void ADCBtnsManager::btnsConfigSave()
     }
     Storage::getInstance().save();
 }
+
 
 
 

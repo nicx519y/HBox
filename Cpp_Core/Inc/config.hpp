@@ -125,6 +125,14 @@ typedef struct
     uint32_t keyButtonA2;
     uint32_t keyButtonFn;
 
+    bool ledEnabled;
+    LEDEffect ledEffect;
+    bool isDoubleColor;
+    uint32_t ledColor1;
+    uint32_t ledColor2;
+    uint32_t ledColor3;
+    uint8_t ledBrightness;
+
 } GamepadOptions;
 
 typedef struct

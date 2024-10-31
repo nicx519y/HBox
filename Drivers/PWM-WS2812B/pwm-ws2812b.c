@@ -176,6 +176,31 @@ void WS2812B_SetLEDColor(const uint8_t r, const uint8_t g, const uint8_t b, cons
 	}
 }
 
+void WS2812B_SetLEDColorByMask(
+	const struct RGBColor frontColor, 
+    const struct RGBColor backgroundColor, 
+	const uint32_t mask)
+{
+
+	uint8_t len = NUM_LED > 32 ? 32 : NUM_LED;
+	uint16_t idx;
+
+	for(uint8_t i = 0; i < len; i ++) {
+		idx = i * 3;
+		if(mask >> i & 1 == 1) {
+			LED_Colors[idx] = frontColor.r;
+			LED_Colors[idx + 1] = frontColor.g;
+			LED_Colors[idx + 2] = frontColor.b;
+		} else {
+			LED_Colors[idx] = backgroundColor.r;
+			LED_Colors[idx + 1] = backgroundColor.g;
+			LED_Colors[idx + 2] = backgroundColor.b;
+		}
+	}
+
+	SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)LED_Colors, sizeof(LED_Colors));
+}
+
 WS2812B_StateTypeDef WS2812B_GetState()
 {
 	return WS2812B_State;

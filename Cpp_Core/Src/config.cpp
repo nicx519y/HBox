@@ -50,6 +50,14 @@ __attribute__((section("._Text_Area"))) static GamepadOptions defaultProfile = {
     .keyButtonA1    = (uint32_t) 0x0000000000000001,
     .keyButtonA2    = (uint32_t) 0x0000000000000001,
     .keyButtonFn    = (uint32_t) 0x0000000000000001,
+
+    .ledEnabled      = true,
+    .ledEffect       = LEDEffect::STATIC,
+    .isDoubleColor   = true,
+    .ledColor1       = 0xff0000,
+    .ledColor2       = 0x00ff00,
+    .ledColor3       = 0x0000ff,
+    .ledBrightness   = 0xff,
 };
 
 __attribute__((section("._Text_Area"))) static Config defaultConfig = 
@@ -171,6 +179,14 @@ char * ConfigUtils::toJSON(const Config& config)
         cJSON_AddNumberToObject(pOptions, "keyButtonA1", profilesPtr[k].keyButtonA1);
         cJSON_AddNumberToObject(pOptions, "keyButtonA2", profilesPtr[k].keyButtonA2);
         cJSON_AddNumberToObject(pOptions, "keyButtonFn", profilesPtr[k].keyButtonFn);
+
+        cJSON_AddBoolToObject(pOptions, "ledEnabled", profilesPtr[k].ledEnabled);
+        cJSON_AddNumberToObject(pOptions, "ledEffect", profilesPtr[k].ledEffect);
+        cJSON_AddBoolToObject(pOptions, "isDoubleColor", profilesPtr[k].isDoubleColor);
+        cJSON_AddNumberToObject(pOptions, "ledColor1", profilesPtr[k].ledColor1);
+        cJSON_AddNumberToObject(pOptions, "ledColor2", profilesPtr[k].ledColor2);
+        cJSON_AddNumberToObject(pOptions, "ledColor3", profilesPtr[k].ledColor3);
+        cJSON_AddNumberToObject(pOptions, "ledBrightness", profilesPtr[k].ledBrightness);
     }
 
     char* result = cJSON_Print(pRoot);
@@ -257,6 +273,14 @@ bool ConfigUtils::fromJSON(Config& config, const char* data, size_t dataLen)
         options->keyButtonA1 = (uint32_t) cJSON_GetObjectItem(profileObj, "keyButtonA1")->valueint;
         options->keyButtonA2 = (uint32_t) cJSON_GetObjectItem(profileObj, "keyButtonA2")->valueint;
         options->keyButtonFn = (uint32_t) cJSON_GetObjectItem(profileObj, "keyButtonFn")->valueint;
+
+        options->ledEnabled = cJSON_GetObjectItem(profileObj, "ledEnabled")->type == cJSON_True ? true: false;
+        options->ledEffect = (LEDEffect) cJSON_GetObjectItem(profileObj, "ledEffect")->valueint;
+        options->isDoubleColor = cJSON_GetObjectItem(profileObj, "isDoubleColor")->type == cJSON_True ? true: false;
+        options->ledColor1 = (uint32_t) cJSON_GetObjectItem(profileObj, "ledColor1")->valueint;
+        options->ledColor2 = (uint32_t) cJSON_GetObjectItem(profileObj, "ledColor2")->valueint;
+        options->ledColor3 = (uint32_t) cJSON_GetObjectItem(profileObj, "ledColor3")->valueint;
+        options->ledBrightness = (uint8_t) cJSON_GetObjectItem(profileObj, "ledBrightness")->valueint;
 
         config.profiles[k] = options;
     }

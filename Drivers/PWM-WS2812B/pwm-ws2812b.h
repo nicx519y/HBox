@@ -2,6 +2,7 @@
 #define __WS2812B_H__
 
 #include "stm32h7xx_hal.h"
+#include "utils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +27,11 @@ void WS2812B_SetAllLEDColor(const uint8_t r, const uint8_t g, const uint8_t b);
 void WS2812B_SetLEDBrightness(const uint8_t brightness, const uint16_t index);
 
 void WS2812B_SetLEDColor(const uint8_t r, const uint8_t g, const uint8_t b, const uint16_t index);
+
+void WS2812B_SetLEDColorByMask(
+    const struct RGBColor frontColor, 
+    const struct RGBColor backgroundColor, 
+    const uint32_t mask);
 
 WS2812B_StateTypeDef WS2812B_Start();
 

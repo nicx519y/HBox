@@ -7,6 +7,8 @@
 #include "usb.h"
 #include "adc.h"
 #include "dma.h"
+#include "pwm-ws2812b.h"
+#include "constant.hpp"
 
 UART_HandleTypeDef UartHandle;
 
@@ -63,6 +65,11 @@ void board_init(void) {
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
+
+  #ifdef HAS_LED
+  WS2812B_Init();
+  #endif // HAS_LED
+  
 }
 
 /**

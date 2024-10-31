@@ -159,5 +159,11 @@ enum ADCButtonState
     READY               = 3,
 };
 
+enum LEDEffect
+{
+    STATIC              = 0,        //静态 恒亮
+    BREATHE             = 1,        //呼吸
+};
+
 
 #endif /* _NET_DRIVER_H_  */
