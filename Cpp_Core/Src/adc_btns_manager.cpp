@@ -1,7 +1,7 @@
 #include "adc_btns_manager.hpp"
 #include "storagemanager.hpp"
 #include "adc.h"
-#include "stdio.h"
+#include <stdio.h>
 
 ADCBtnsManager::ADCBtnsManager():
     btns(Storage::getInstance().getADCButtonOptions())
@@ -247,11 +247,6 @@ ADCButtonManagerState ADCBtnsManager::getState()
 ADCButtonState* ADCBtnsManager::getButtonStates()
 {
     return this->ADC_btnStates;
-}
-
-Mask_t ADCBtnsManager::getButtonIsPressed()
-{
-    return this->virtualPinMask;
 }
 
 void ADCBtnsManager::btnsConfigSave()

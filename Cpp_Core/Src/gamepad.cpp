@@ -2,6 +2,7 @@
 #include "storagemanager.hpp"
 #include "drivermanager.hpp"
 #include "adc_btns_manager.hpp"
+#include "gpio_btns_manager.hpp"
 #include "leds_manager.hpp"
 
 Gamepad::Gamepad():
@@ -29,6 +30,14 @@ void Gamepad::setup()
 	mapButtonA1  = new GamepadButtonMapping(options.keyButtonA1, GAMEPAD_MASK_A1);
 	mapButtonA2  = new GamepadButtonMapping(options.keyButtonA2, GAMEPAD_MASK_A2);
 	mapButtonFn  = new GamepadButtonMapping(options.keyButtonFn, AUX_MASK_FUNCTION);
+
+	ADCBtnsManager::getInstance().setup();
+	GPIOBtnsManager::getInstance().setup();
+
+	#ifdef HAS_LED
+	LEDsManager& LEDM = LEDsManager::getInstance();
+	LEDM.setup();
+	#endif // HAS_LED
 }
 
 void Gamepad::process()
@@ -91,14 +100,24 @@ void Gamepad::reinit()
 	delete mapButtonA1;
 	delete mapButtonA2;
 	delete mapButtonFn;
-
+	
+	ADCBtnsManager::getInstance().deinit();
+	GPIOBtnsManager::getInstance().deinit();
 	// reinitialize pin mappings
 	this->setup();
 }
 
 void Gamepad::read()
 {
-	Mask_t values = Storage::getInstance().GetGamepad()->debouncedGpio;
+	ADCBtnsManager& ADCBM = ADCBtnsManager::getInstance();
+	GPIOBtnsManager& GPIOBM = GPIOBtnsManager::getInstance();
+
+	ADCBM.process();
+	GPIOBM.process();
+
+	Mask_t values = ADCBM.getButtonIsPressed() | GPIOBM.getButtonIsPressed();
+
+	LEDsManager::getInstance().process(values);
 
 	// Get the midpoint value for the current mode
 	uint16_t joystickMid = GAMEPAD_JOYSTICK_MID;
@@ -131,20 +150,6 @@ void Gamepad::read()
 		| ((values & mapButtonR3->virtualPinMask)  ? mapButtonR3->buttonMask  : 0)
 		| ((values & mapButtonA1->virtualPinMask)  ? mapButtonA1->buttonMask  : 0)
 		| ((values & mapButtonA2->virtualPinMask)  ? mapButtonA2->buttonMask  : 0)
-		| ((values & mapButtonA3->virtualPinMask)  ? mapButtonA3->buttonMask  : 0)
-		| ((values & mapButtonA4->virtualPinMask)  ? mapButtonA4->buttonMask  : 0)
-		| ((values & mapButtonE1->virtualPinMask)  ? mapButtonE1->buttonMask  : 0)
-		| ((values & mapButtonE2->virtualPinMask)  ? mapButtonE2->buttonMask  : 0)
-		| ((values & mapButtonE3->virtualPinMask)  ? mapButtonE3->buttonMask  : 0)
-		| ((values & mapButtonE4->virtualPinMask)  ? mapButtonE4->buttonMask  : 0)
-		| ((values & mapButtonE5->virtualPinMask)  ? mapButtonE5->buttonMask  : 0)
-		| ((values & mapButtonE6->virtualPinMask)  ? mapButtonE6->buttonMask  : 0)
-		| ((values & mapButtonE7->virtualPinMask)  ? mapButtonE7->buttonMask  : 0)
-		| ((values & mapButtonE8->virtualPinMask)  ? mapButtonE8->buttonMask  : 0)
-		| ((values & mapButtonE9->virtualPinMask)  ? mapButtonE9->buttonMask  : 0)
-		| ((values & mapButtonE10->virtualPinMask) ? mapButtonE10->buttonMask : 0)
-		| ((values & mapButtonE11->virtualPinMask) ? mapButtonE11->buttonMask : 0)
-		| ((values & mapButtonE12->virtualPinMask) ? mapButtonE12->buttonMask : 0)
 	;
 
 	state.lx = joystickMid;

@@ -1,6 +1,7 @@
 #include "gpio_btns_manager.hpp"
 #include "storagemanager.hpp"
 #include "constant.hpp"
+#include "gpio-btn.h"
 
 GPIOBtnsManager::GPIOBtnsManager():
     btns(Storage::getInstance().getGPIOButtonOptions())
@@ -18,10 +19,10 @@ void GPIOBtnsManager::deinit()
     this->virtualPinMask = 0x0;
 }
 
-inline void __attribute__((always_inline)) GPIOBtnsManager::process()
+void GPIOBtnsManager::process()
 {
     for(uint8_t i = 0; i < NUM_GPIO_BUTTONS; i ++) {
-        uint8_t r = readBtn(i) ? 1: 0;
+        uint8_t r = GPIO_Btn_IsPressed(i);
         if(GPIO_lastActionValues[i] != r) {
             if(GPIO_debounce_t[i] == 0) {
                 GPIO_debounce_t[i] = HAL_GetTick();
@@ -35,11 +36,3 @@ inline void __attribute__((always_inline)) GPIOBtnsManager::process()
     }
 }
 
-inline Mask_t __attribute__((always_inline)) GPIOBtnsManager::getButtonIsPressed() {
-    return this->virtualPinMask;
-}
-
-inline bool __attribute__((always_inline)) GPIOBtnsManager::readBtn(uint8_t idx)
-{
-    return HAL_GPIO_ReadPin((GPIO_TypeDef *) btns[idx]->GPIOPort, btns[idx]->GPIOPin) == 1;
-}

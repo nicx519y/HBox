@@ -1,5 +1,6 @@
 #include "gradient_color.hpp"
 #include "utils.h"
+#include <stdio.h>
 
 GradientColor::GradientColor()
 {}
@@ -41,11 +42,16 @@ struct RGBColor GradientColor::getCurrentRGB()
         radio = 1.0 - radio;
     }
 
+    // printf("e color er: %d, eg: %d, eb: %d\n", (uint8_t)er, (uint8_t)eg, (uint8_t)eb);
+    // printf("c color cr: %d, cg: %d, cb: %d\n", (uint8_t)cr, (uint8_t)cg, (uint8_t)cb);
+
     color = {
         .r = (uint8_t)round(cr + (er - cr) * radio * 2),
         .g = (uint8_t)round(cg + (eg - cg) * radio * 2),
-        .b = (uint8_t)round(cg + (eb - cb) * radio * 2),
+        .b = (uint8_t)round(cb + (eb - cb) * radio * 2),
     };
+
+    // printf("color r: %d, g: %d, b: %d\n", color.r, color.g, color.b);
     
     return color;
 }

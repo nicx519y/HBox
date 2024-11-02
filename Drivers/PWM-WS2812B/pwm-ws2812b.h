@@ -28,6 +28,12 @@ void WS2812B_SetLEDBrightness(const uint8_t brightness, const uint16_t index);
 
 void WS2812B_SetLEDColor(const uint8_t r, const uint8_t g, const uint8_t b, const uint16_t index);
 
+void WS2812B_SetLEDBrightnessByMask(
+  const uint8_t fontBrightness,
+  const uint8_t backgroundBrightness,
+  const uint32_t mask
+);
+
 void WS2812B_SetLEDColorByMask(
     const struct RGBColor frontColor, 
     const struct RGBColor backgroundColor, 

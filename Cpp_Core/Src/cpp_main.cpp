@@ -10,7 +10,8 @@
 #include "qspi-w25q64.h"
 #include "led.h"
 #include "adc.h"
-#include "pwm-ws2812b.h"
+#include "leds_manager.hpp"
+// #include "pwm-ws2812b.h"
 // #include "net_init.h"
 
 
@@ -58,10 +59,18 @@ int cpp_main(void)
     //     printf("DMA2 start success.\n");
     // }
 
-    WS2812B_Init();
-    WS2812B_Start();
-    WS2812B_SetAllLEDBrightness(5);
-    WS2812B_SetAllLEDColor(0, 255, 0);
+    // WS2812B_Init();
+    // WS2812B_Start();
+    // WS2812B_SetAllLEDBrightness(5);
+    // WS2812B_SetAllLEDColor(0, 255, 0);
+
+    
+    // LEDsManager::getInstance().setColors(0xff0000, 0x00ff00, 0x00ffff);
+    // LEDsManager::getInstance().setBrightness(150);
+    // LEDsManager::getInstance().setLedEffect(LEDEffect::BREATHE);
+    // LEDsManager::getInstance().setup();
+
+    uint32_t m = 1;
     uint32_t t = HAL_GetTick();
     uint8_t a = 0;
 
@@ -78,16 +87,19 @@ int cpp_main(void)
             
             LED1_Toggle;
 
+            // if(m >= 0x80000000) {
+            //     m = 1;
+            // } else {
+            //     m = m << 1;
+            // }
 
-            
-            
-            WS2812B_SetLEDBrightness(5, a);
-            if(a < 15) {
-                a ++;
-            } else {
-                a = 0;
-            }
-            WS2812B_SetLEDBrightness(0, a);
+            // WS2812B_SetLEDBrightness(5, a);
+            // if(a < 15) {
+            //     a ++;
+            // } else {
+            //     a = 0;
+            // }
+            // WS2812B_SetLEDBrightness(0, a);
 
             // switch(a) {
             //     case 0:
@@ -116,6 +128,8 @@ int cpp_main(void)
 
             t = HAL_GetTick();
         }
+
+        // LEDsManager::getInstance().process(m);
 
         if(configMode) {
             ConfigManager::getInstance().loop();

@@ -22,8 +22,8 @@ extern "C" {
 #define HAS_LED                                    //是否有LED
 #define NUM_LEDs_PER_ADC_BUTTON     1              //每个按钮多少个LED
 #define LEDS_BRIGHTNESS_RADIO       0.3             //默认led 亮度系数
-#define LEDS_ANIMATION_CYCLE        4000            //LED 动画长度
-#define LEDS_ANIMATION_STEP         100             //LED 动画步长，影响性能和效果
+#define LEDS_ANIMATION_CYCLE        6000            //LED 动画长度
+#define LEDS_ANIMATION_STEP         80             //LED 动画步长，影响性能和效果
 
 #define NUM_GPIO_BUTTONS            4               //GPIO按钮数量
 #define GPIO_BUTTONS_DEBOUNCE       5             //去抖动延迟(ms)

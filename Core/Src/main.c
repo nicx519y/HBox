@@ -20,7 +20,6 @@
 #include "main.h"
 #include "memorymap.h"
 #include "usart.h"
-#include "usb_device.h"
 #include "gpio.h"
 #include "stm32h750xx.h"
 

@@ -18,10 +18,10 @@ __attribute__((section("._Text_Area"))) static ADCButton defaultADCButtons[] = {
 };
 
 __attribute__((section("._Text_Area"))) static GPIOButton defaultGPIOButtons[] = {
-    { (uint32_t) GPIOA, (uint16_t) GPIO_PIN_0, (uint32_t) 16 },
-    { (uint32_t) GPIOB, (uint16_t) GPIO_PIN_1, (uint32_t) 17 },
-    { (uint32_t) GPIOC, (uint16_t) GPIO_PIN_2, (uint32_t) 18 },
-    { (uint32_t) GPIOD, (uint16_t) GPIO_PIN_3, (uint32_t) 19 },
+    { (uint32_t) 16 },
+    { (uint32_t) 17 },
+    { (uint32_t) 18 },
+    { (uint32_t) 19 },
 };
 
 __attribute__((section("._Text_Area"))) static GamepadOptions defaultProfile = {
@@ -139,8 +139,6 @@ char * ConfigUtils::toJSON(const Config& config)
     GPIOButton* GPIOButtonPtr = (GPIOButton*) config.GPIOButtons;
     for(uint8_t j = 0; j < NUM_GPIO_BUTTONS; j ++) {
         cJSON* pGPIOButton = cJSON_CreateObject();
-        cJSON_AddNumberToObject(pGPIOButton, "GPIOPort", GPIOButtonPtr[j].GPIOPort || 0);
-        cJSON_AddNumberToObject(pGPIOButton, "GPIOPin", GPIOButtonPtr[j].GPIOPin || 0);
         cJSON_AddNumberToObject(pGPIOButton, "virtualPin", GPIOButtonPtr[j].virtualPin || 0);
         cJSON_AddItemToArray(pGPIOButtons, pGPIOButton);
     }
@@ -233,8 +231,6 @@ bool ConfigUtils::fromJSON(Config& config, const char* data, size_t dataLen)
         cJSON* GPIOButtonObj = cJSON_GetArrayItem(GPIOButtonsArray, j);
         
         GPIOButton* button = (GPIOButton *) malloc(sizeof(GPIOButton));
-        button->GPIOPort = (uint32_t) cJSON_GetObjectItem(GPIOButtonObj, "GPIOPort")->valueint;
-        button->GPIOPin = (uint16_t) cJSON_GetObjectItem(GPIOButtonObj, "GPIOPin")->valueint;
         button->virtualPin = (uint32_t) cJSON_GetObjectItem(GPIOButtonObj, "virtualPin")->valueint;
 
         config.GPIOButtons[j] = button;

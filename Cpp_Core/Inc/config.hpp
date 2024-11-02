@@ -91,8 +91,6 @@ typedef struct
 
 typedef struct
 {
-    uint32_t        GPIOPort;
-    uint16_t        GPIOPin;
     uint32_t        virtualPin;
 } GPIOButton;
 

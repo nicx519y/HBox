@@ -27,8 +27,10 @@ class ADCBtnsManager {
 
         void setup();
         void deinit();
-        inline void __attribute__((always_inline)) process();
-        inline Mask_t __attribute__((always_inline)) getButtonIsPressed();
+        void process();
+        inline Mask_t __attribute__((always_inline)) getButtonIsPressed() {
+            return this->virtualPinMask;
+        }
         void setState(const ADCButtonManagerState state);
         ADCButtonManagerState getState();
         ADCButtonState* getButtonStates();

@@ -19,17 +19,13 @@ class LEDsManager {
 
         void setup();
         void deinit();
-        inline void __attribute__((always_inline)) process(const Mask_t virtualPinMask);
+        void process(const Mask_t virtualPinMask);
         void setEnabled(const bool enabled);
         void setLedEffect(const LEDEffect effect);
         void setColors(uint32_t color1, uint32_t color2, uint32_t color3);
         void setBrightness(const uint8_t brightness);
     private:
         LEDsManager();
-        RGBColor color1;
-        RGBColor color2;
-        RGBColor color3;
-        uint8_t brightness;
         uint32_t t;
         GradientColor gtc;
         GamepadOptions& opts;

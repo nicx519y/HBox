@@ -48,6 +48,7 @@ Drivers/LED \
 Drivers/USB \
 Drivers/ADC \
 Drivers/PWM-WS2812B \
+Drivers/GPIO-BTN \
 Libs/tinyusb/src \
 Libs/tinyusb/src/device \
 Libs/tinyusb/src/common \
@@ -153,6 +154,7 @@ C_INCLUDES =  \
 -IDrivers/USB \
 -IDrivers/ADC \
 -IDrivers/PWM-WS2812B \
+-IDrivers/GPIO-BTN \
 -ICpp_Core/Inc \
 -ILibs/tinyusb/src \
 -ILibs/tinyusb/hw \
