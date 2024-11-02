@@ -1,7 +1,6 @@
 #include "adc_btns_manager.hpp"
 #include "storagemanager.hpp"
 #include "adc.h"
-#include "pwm-ws2812b.h"
 #include "stdio.h"
 
 ADCBtnsManager::ADCBtnsManager():
@@ -98,7 +97,7 @@ void ADCBtnsManager::deinit()
  * @brief 判断按下和回弹
  * 
  */
-inline void ADCBtnsManager::process()
+inline void __attribute__((always_inline)) ADCBtnsManager::process()
 {   
     SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
 
@@ -110,7 +109,8 @@ inline void ADCBtnsManager::process()
                 if(ADC_btnStates[i] != ADCButtonState::READY) continue;
 
                 int32_t value = (int32_t) ADC_Values[i];
-
+                
+                // 按下
                 if(ADC_lastActionValues[i] == 0) {
                     if((ADC_pressAccValues[i] > 0 
                         && value >= ADC_lastTriggerValues[i] + ADC_pressAccValues[i] 
@@ -128,8 +128,8 @@ inline void ADCBtnsManager::process()
                         || (ADC_pressAccValues[i] <= 0 && value > ADC_lastTriggerValues[i])) {
 
                         ADC_lastTriggerValues[i] = value;
-
                     }
+                // 弹起
                 } else {
                     if((ADC_releaseAccValues[i] < 0 
                         && value <= ADC_lastTriggerValues[i] + ADC_releaseAccValues[i] 

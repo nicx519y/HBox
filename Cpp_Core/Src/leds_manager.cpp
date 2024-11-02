@@ -39,7 +39,7 @@ void LEDsManager::deinit()
     WS2812B_Stop();
 }
 
-inline void LEDsManager::process(const Mask_t virtualPinMask)
+inline void __attribute__((always_inline)) LEDsManager::process(const Mask_t virtualPinMask)
 {
     if(opts.ledEnabled == false) return;
 
@@ -51,8 +51,8 @@ inline void LEDsManager::process(const Mask_t virtualPinMask)
     if(tt - t >= LEDS_ANIMATION_STEP) {
         struct RGBColor currentColor = gtc.getCurrentRGB();
         uint8_t currentBrightness = gtc.getCurrentBrightness();
-        Mask_t m = ADCBtnsManager::getInstance().getButtonIsPressed();
-        WS2812B_SetLEDColorByMask(color1, currentColor, (uint32_t) m);
+        Mask_t mask = ADCBtnsManager::getInstance().getButtonIsPressed();
+        WS2812B_SetLEDColorByMask(color1, currentColor, (uint32_t) mask);
         WS2812B_SetAllLEDBrightness(currentBrightness);
         t = tt;
     }

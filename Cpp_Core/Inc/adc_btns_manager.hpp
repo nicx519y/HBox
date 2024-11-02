@@ -27,11 +27,11 @@ class ADCBtnsManager {
 
         void setup();
         void deinit();
-        inline void process();
+        inline void __attribute__((always_inline)) process();
+        inline Mask_t __attribute__((always_inline)) getButtonIsPressed();
         void setState(const ADCButtonManagerState state);
         ADCButtonManagerState getState();
         ADCButtonState* getButtonStates();
-        Mask_t getButtonIsPressed();
     private:
 
         // 声明ADC DMA的内存地址，为了避免自动分配到DTCMRAM(DTCMRAM直连CPU，DMA不能访问)，所以为变量指定了内存区域为指向AXISRAM的地址

@@ -20,8 +20,9 @@ public:
 
 	// Config& getConfig() { return config; }
 
-	GamepadOptions& getGamepadOptions();
+	GamepadOptions &getGamepadOptions();
 	ADCButton* (&getADCButtonOptions())[NUM_ADC_BUTTONS];
+	GPIOButton* (&getGPIOButtonOptions())[NUM_GPIO_BUTTONS];
 
 	void init();
 	bool save();

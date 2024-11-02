@@ -25,7 +25,8 @@ extern "C" {
 #define LEDS_ANIMATION_CYCLE        4000            //LED 动画长度
 #define LEDS_ANIMATION_STEP         100             //LED 动画步长，影响性能和效果
 
-#define NUM_GPIO_BUTTONS            4
+#define NUM_GPIO_BUTTONS            4               //GPIO按钮数量
+#define GPIO_BUTTONS_DEBOUNCE       5             //去抖动延迟(ms)
 
 #ifdef __cplusplus
 }

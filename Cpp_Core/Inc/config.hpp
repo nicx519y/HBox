@@ -91,9 +91,9 @@ typedef struct
 
 typedef struct
 {
-    uint32_t    GPIOPort;
-    uint16_t    GPIOPin;
-    uint32_t    virtualPin;
+    uint32_t        GPIOPort;
+    uint16_t        GPIOPin;
+    uint32_t        virtualPin;
 } GPIOButton;
 
 typedef struct
@@ -101,7 +101,7 @@ typedef struct
     InputMode inputMode {InputMode::INPUT_MODE_XINPUT}; 
     DpadMode dpadMode {DpadMode::DPAD_MODE_DIGITAL};
     SOCDMode socdMode {SOCDMode::SOCD_MODE_NEUTRAL};
-    bool invertXAxis;
+    bool invertXAxis;                                                                                                                                                                                 
     bool invertYAxis;
     bool fourWayMode;
 

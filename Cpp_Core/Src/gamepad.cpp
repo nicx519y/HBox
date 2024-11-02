@@ -1,6 +1,8 @@
 #include "gamepad.hpp"
 #include "storagemanager.hpp"
 #include "drivermanager.hpp"
+#include "adc_btns_manager.hpp"
+#include "leds_manager.hpp"
 
 Gamepad::Gamepad():
     options(Storage::getInstance().getGamepadOptions())

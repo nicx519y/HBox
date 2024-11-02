@@ -176,6 +176,15 @@ void WS2812B_SetLEDColor(const uint8_t r, const uint8_t g, const uint8_t b, cons
 	}
 }
 
+/**
+ * @brief 根据mask设置frontColor和backgroundColor
+ * example: mask = 100100010000100 
+ * 从右侧开始 0是backgroundColor, 1是frontColor
+ * mask 是一个 32位整型，也就是说 led 总数不能超过32个
+ * @param frontColor 
+ * @param backgroundColor 
+ * @param mask 
+ */
 void WS2812B_SetLEDColorByMask(
 	const struct RGBColor frontColor, 
     const struct RGBColor backgroundColor, 

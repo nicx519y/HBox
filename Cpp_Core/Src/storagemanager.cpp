@@ -22,6 +22,11 @@ ADCButton* (&Storage::getADCButtonOptions())[NUM_ADC_BUTTONS]
 	return config.ADCButtons;
 }
 
+GPIOButton* (&Storage::getGPIOButtonOptions())[NUM_GPIO_BUTTONS]
+{
+	return config.GPIOButtons;
+}
+
 void Storage::ResetSettings()
 {
 	NVIC_SystemReset();				//reboot

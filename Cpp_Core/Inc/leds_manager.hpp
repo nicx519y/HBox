@@ -19,7 +19,7 @@ class LEDsManager {
 
         void setup();
         void deinit();
-        inline void process(const Mask_t virtualPinMask);
+        inline void __attribute__((always_inline)) process(const Mask_t virtualPinMask);
         void setEnabled(const bool enabled);
         void setLedEffect(const LEDEffect effect);
         void setColors(uint32_t color1, uint32_t color2, uint32_t color3);
