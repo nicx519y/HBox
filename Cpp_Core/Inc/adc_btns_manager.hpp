@@ -6,6 +6,7 @@
 #include "config.hpp"
 #include "enums.hpp"
 
+
 /**
  * @brief ADC按钮管理
  * 初始化                         setup()
@@ -27,32 +28,19 @@ class ADCBtnsManager {
 
         void setup();
         void deinit();
-        void process();
-        inline Mask_t __attribute__((always_inline)) getButtonIsPressed() {
-            return this->virtualPinMask;
-        }
+        Mask_t read();
+        void calibrate();
         void setState(const ADCButtonManagerState state);
-        ADCButtonManagerState getState();
-        ADCButtonState* getButtonStates();
-    private:
 
-        // 声明ADC DMA的内存地址，为了避免自动分配到DTCMRAM(DTCMRAM直连CPU，DMA不能访问)，所以为变量指定了内存区域为指向AXISRAM的地址
-        __attribute__((section("._DMA_Area"))) static uint32_t ADC_Values[NUM_ADC_BUTTONS];
-        __attribute__((section("._DMA_Area"))) static ADCButtonState ADC_btnStates[NUM_ADC_BUTTONS];
-        __attribute__((section("._DMA_Area"))) static uint8_t ADC_timesOfCalibrate[NUM_ADC_BUTTONS];
-        __attribute__((section("._DMA_Area"))) static int32_t ADC_tmp[NUM_ADC_BUTTONS];
+        ADCButtonState* getButtonStates();
+        inline ADCButtonManagerState getState() { return this->state; }
+        inline Mask_t getButtonIsPressed() { return this->virtualPinMask; }
         
-        __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_topValues[NUM_ADC_BUTTONS];
-        __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_bottomValues[NUM_ADC_BUTTONS];
-        __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_pressAccValues[NUM_ADC_BUTTONS];
-        __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_releaseAccValues[NUM_ADC_BUTTONS];
-        __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_topDeadZoneValues[NUM_ADC_BUTTONS];
-        __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_bottomDeadZoneValues[NUM_ADC_BUTTONS];
-        __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_virtualPinMasks[NUM_ADC_BUTTONS];
-        __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_lastTriggerValues[NUM_ADC_BUTTONS];
-        __attribute__((section("._DTCMRAM_Area"))) static uint8_t ADC_lastActionValues[NUM_ADC_BUTTONS];
+
+    private:
         
         Mask_t virtualPinMask = 0x0;
+        uint32_t calibrate_t = 0;
 
         ADCBtnsManager();
         void btnsConfigSave();

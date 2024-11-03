@@ -130,6 +130,11 @@ typedef struct
     uint32_t ledColor2;
     uint32_t ledColor3;
     uint8_t ledBrightness;
+    uint32_t ledColorCalibrateTop;
+    uint32_t ledColorCalibrateBottom;
+    uint32_t ledColorCalibrateComplete;
+    uint8_t ledBrightnesssCalibrate;
+    
 
 } GamepadOptions;
 

@@ -8,6 +8,7 @@
 #include "drivers/shared/driverhelper.hpp"
 #include "gamepad/GamepadState.hpp"
 // #include "storagemanager.hpp"
+#include "gamepad.hpp"
 
 #define USB_SETUP_DEVICE_TO_HOST 0x80
 #define USB_SETUP_HOST_TO_DEVICE 0x00
@@ -122,15 +123,6 @@ static bool xinput_xfer_callback(uint8_t rhport, uint8_t ep_addr, xfer_result_t 
 	return true;
 }
 
-static void check_and_set_rumble(Gamepad * gamepad, uint8_t * buffer) {
-	// Check for rumble bytes - starts with 0x00 0x08
-	// if (!(buffer[0] == 0x00 && buffer[1] == 0x08))
-	// 	return;
-
-	// gamepad->rumbleState.leftMotor = buffer[3];
-	// gamepad->rumbleState.rightMotor = buffer[4];
-}
-
 void XInputDriver::initialize() {
 	xinputReport = {
 		.report_id = 0,
@@ -184,68 +176,62 @@ void XInputDriver::initializeAux() {
 // }
 
 void XInputDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
-	// xinputReport.buttons1 = 0
-	// 	| (gamepad->pressedUp()    ? XBOX_MASK_UP    : 0)
-	// 	| (gamepad->pressedDown()  ? XBOX_MASK_DOWN  : 0)
-	// 	| (gamepad->pressedLeft()  ? XBOX_MASK_LEFT  : 0)
-	// 	| (gamepad->pressedRight() ? XBOX_MASK_RIGHT : 0)
-	// 	| (gamepad->pressedS2()    ? XBOX_MASK_START : 0)
-	// 	| (gamepad->pressedS1()    ? XBOX_MASK_BACK  : 0)
-	// 	| (gamepad->pressedL3()    ? XBOX_MASK_LS    : 0)
-	// 	| (gamepad->pressedR3()    ? XBOX_MASK_RS    : 0)
-	// ;
 
-	// xinputReport.buttons2 = 0
-	// 	| (gamepad->pressedL1() ? XBOX_MASK_LB   : 0)
-	// 	| (gamepad->pressedR1() ? XBOX_MASK_RB   : 0)
-	// 	| (gamepad->pressedA1() ? XBOX_MASK_HOME : 0)
-	// 	| (gamepad->pressedB1() ? XBOX_MASK_A    : 0)
-	// 	| (gamepad->pressedB2() ? XBOX_MASK_B    : 0)
-	// 	| (gamepad->pressedB3() ? XBOX_MASK_X    : 0)
-	// 	| (gamepad->pressedB4() ? XBOX_MASK_Y    : 0)
-	// ;
+	printf("XInputDriver::process \n");
 
-	// xinputReport.lx = static_cast<int16_t>(gamepad->state.lx) + INT16_MIN;
-	// xinputReport.ly = static_cast<int16_t>(~gamepad->state.ly) + INT16_MIN;
-	// xinputReport.rx = static_cast<int16_t>(gamepad->state.rx) + INT16_MIN;
-	// xinputReport.ry = static_cast<int16_t>(~gamepad->state.ry) + INT16_MIN;
+	xinputReport.buttons1 = 0
+		| (gamepad->pressedUp()    ? XBOX_MASK_UP    : 0)
+		| (gamepad->pressedDown()  ? XBOX_MASK_DOWN  : 0)
+		| (gamepad->pressedLeft()  ? XBOX_MASK_LEFT  : 0)
+		| (gamepad->pressedRight() ? XBOX_MASK_RIGHT : 0)
+		| (gamepad->pressedS2()    ? XBOX_MASK_START : 0)
+		| (gamepad->pressedS1()    ? XBOX_MASK_BACK  : 0)
+		| (gamepad->pressedL3()    ? XBOX_MASK_LS    : 0)
+		| (gamepad->pressedR3()    ? XBOX_MASK_RS    : 0)
+	;
 
-	// if (gamepad->hasAnalogTriggers)
-	// {
-	// 	xinputReport.lt = gamepad->pressedL2() ? 0xFF : gamepad->state.lt;
-	// 	xinputReport.rt = gamepad->pressedR2() ? 0xFF : gamepad->state.rt;
-	// }
-	// else
-	// {
-	// 	xinputReport.lt = gamepad->pressedL2() ? 0xFF : 0;
-	// 	xinputReport.rt = gamepad->pressedR2() ? 0xFF : 0;
-	// }
+	xinputReport.buttons2 = 0
+		| (gamepad->pressedL1() ? XBOX_MASK_LB   : 0)
+		| (gamepad->pressedR1() ? XBOX_MASK_RB   : 0)
+		| (gamepad->pressedA1() ? XBOX_MASK_HOME : 0)
+		| (gamepad->pressedB1() ? XBOX_MASK_A    : 0)
+		| (gamepad->pressedB2() ? XBOX_MASK_B    : 0)
+		| (gamepad->pressedB3() ? XBOX_MASK_X    : 0)
+		| (gamepad->pressedB4() ? XBOX_MASK_Y    : 0)
+	;
 
-	// // compare against previous report and send new
-	// if ( memcmp(last_report, &xinputReport, sizeof(XInputReport)) != 0) {
-	// 	if ( tud_ready() &&											// Is the device ready?
-	// 		(endpoint_in != 0) && (!usbd_edpt_busy(0, endpoint_in)) ) // Is the IN endpoint available?
-	// 	{
-	// 		usbd_edpt_claim(0, endpoint_in);								// Take control of IN endpoint
-	// 		usbd_edpt_xfer(0, endpoint_in, (uint8_t *)&xinputReport, sizeof(XInputReport)); // Send report buffer
-	// 		usbd_edpt_release(0, endpoint_in);								// Release control of IN endpoint
-	// 		memcpy(last_report, &xinputReport, sizeof(XInputReport)); // save if we sent it
-	// 	}
-	// }
+	xinputReport.lx = static_cast<int16_t>(gamepad->state.lx) + INT16_MIN;
+	xinputReport.ly = static_cast<int16_t>(~gamepad->state.ly) + INT16_MIN;
+	xinputReport.rx = static_cast<int16_t>(gamepad->state.rx) + INT16_MIN;
+	xinputReport.ry = static_cast<int16_t>(~gamepad->state.ry) + INT16_MIN;
+	xinputReport.lt = gamepad->pressedL2() ? 0xFF : 0;
+	xinputReport.rt = gamepad->pressedR2() ? 0xFF : 0;
 
-	// // clear potential initial uncaught data in endpoint_out from before registration of xfer_cb
-	// if (tud_ready() &&
-	// 	(endpoint_out != 0) && (!usbd_edpt_busy(0, endpoint_out)))
-	// {
-	// 	usbd_edpt_claim(0, endpoint_out);									 // Take control of OUT endpoint
-	// 	usbd_edpt_xfer(0, endpoint_out, xinput_out_buffer, XINPUT_OUT_SIZE); 		 // Retrieve report buffer
-	// 	usbd_edpt_release(0, endpoint_out);									 // Release control of OUT endpoint
-	// }
+	// compare against previous report and send new
+	if ( memcmp(last_report, &xinputReport, sizeof(XInputReport)) != 0) {
+		if ( tud_ready() &&											// Is the device ready?
+			(endpoint_in != 0) && (!usbd_edpt_busy(0, endpoint_in)) ) // Is the IN endpoint available?
+		{
+			usbd_edpt_claim(0, endpoint_in);								// Take control of IN endpoint
+			usbd_edpt_xfer(0, endpoint_in, (uint8_t *)&xinputReport, sizeof(XInputReport)); // Send report buffer
+			usbd_edpt_release(0, endpoint_in);								// Release control of IN endpoint
+			memcpy(last_report, &xinputReport, sizeof(XInputReport)); // save if we sent it
+		}
+	}
+
+	// clear potential initial uncaught data in endpoint_out from before registration of xfer_cb
+	if (tud_ready() &&
+		(endpoint_out != 0) && (!usbd_edpt_busy(0, endpoint_out)))
+	{
+		usbd_edpt_claim(0, endpoint_out);									 // Take control of OUT endpoint
+		usbd_edpt_xfer(0, endpoint_out, xinput_out_buffer, XINPUT_OUT_SIZE); 		 // Retrieve report buffer
+		usbd_edpt_release(0, endpoint_out);									 // Release control of OUT endpoint
+	}
 
 	// if (memcmp(xinput_out_buffer, outBuffer, XINPUT_OUT_SIZE) != 0) { // check if new write to xinput_out_buffer from xinput_xfer_callback
 	// 	memcpy(outBuffer, xinput_out_buffer, XINPUT_OUT_SIZE);
 	// 	// Check if this new write to endpoint_out is a rumble packet
-	// 	check_and_set_rumble(gamepad, outBuffer);
+	// 	// check_and_set_rumble(gamepad, outBuffer);
 	// }
 }
 

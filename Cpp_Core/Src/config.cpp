@@ -58,6 +58,10 @@ __attribute__((section("._Text_Area"))) static GamepadOptions defaultProfile = {
     .ledColor2       = 0x00ff00,
     .ledColor3       = 0x0000ff,
     .ledBrightness   = 0xff,
+    .ledColorCalibrateTop       = 0xff0000,
+    .ledColorCalibrateBottom    = 0x0000ff,
+    .ledColorCalibrateComplete  = 0x00ff00,
+    .ledBrightnesssCalibrate    = 0xff
 };
 
 __attribute__((section("._Text_Area"))) static Config defaultConfig = 
@@ -185,6 +189,10 @@ char * ConfigUtils::toJSON(const Config& config)
         cJSON_AddNumberToObject(pOptions, "ledColor2", profilesPtr[k].ledColor2);
         cJSON_AddNumberToObject(pOptions, "ledColor3", profilesPtr[k].ledColor3);
         cJSON_AddNumberToObject(pOptions, "ledBrightness", profilesPtr[k].ledBrightness);
+        cJSON_AddNumberToObject(pOptions, "ledColorCalibrateTop", profilesPtr[k].ledColorCalibrateTop);
+        cJSON_AddNumberToObject(pOptions, "ledColorCalibrateBottom", profilesPtr[k].ledColorCalibrateBottom);
+        cJSON_AddNumberToObject(pOptions, "ledColorCalibrateComplete", profilesPtr[k].ledColorCalibrateComplete);
+        cJSON_AddNumberToObject(pOptions, "ledBrightnesssCalibrate", profilesPtr[k].ledBrightnesssCalibrate);
     }
 
     char* result = cJSON_Print(pRoot);
@@ -277,6 +285,10 @@ bool ConfigUtils::fromJSON(Config& config, const char* data, size_t dataLen)
         options->ledColor2 = (uint32_t) cJSON_GetObjectItem(profileObj, "ledColor2")->valueint;
         options->ledColor3 = (uint32_t) cJSON_GetObjectItem(profileObj, "ledColor3")->valueint;
         options->ledBrightness = (uint8_t) cJSON_GetObjectItem(profileObj, "ledBrightness")->valueint;
+        options->ledColorCalibrateTop = (uint32_t) cJSON_GetObjectItem(profileObj, "ledColorCalibrateTop")->valueint;
+        options->ledColorCalibrateBottom = (uint32_t) cJSON_GetObjectItem(profileObj, "ledColorCalibrateBottom")->valueint;
+        options->ledColorCalibrateComplete = (uint32_t) cJSON_GetObjectItem(profileObj, "ledColorCalibrateComplete")->valueint;
+        options->ledBrightnesssCalibrate = (uint8_t) cJSON_GetObjectItem(profileObj, "ledBrightnesssCalibrate")->valueint;
 
         config.profiles[k] = options;
     }

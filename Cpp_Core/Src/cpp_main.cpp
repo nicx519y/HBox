@@ -11,6 +11,7 @@
 #include "led.h"
 #include "adc.h"
 #include "leds_manager.hpp"
+#include "gamepad.hpp"
 // #include "pwm-ws2812b.h"
 // #include "net_init.h"
 
@@ -38,104 +39,38 @@ int cpp_main(void)
     // net_init();
 
     // InputMode inputMode = INPUT_MODE_CONFIG;
-    InputMode inputMode = INPUT_MODE_XINPUT;
-    ConfigType configType = CONFIG_TYPE_WEB;
+    InputMode inputMode = InputMode::INPUT_MODE_XINPUT;
+    ConfigType configType = ConfigType::CONFIG_TYPE_WEB;
     DriverManager::getInstance().setup(inputMode);      
     ConfigManager::getInstance().setup(configType);
 
+    Gamepad& gamepad = Gamepad::getInstance();
+    gamepad.setup();
+
+    GPDriver * inputDriver = DriverManager::getInstance().getDriver();
+
     bool configMode = false;
     
-    // HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
-    // if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Values[0], sizeof(ADC_Values) / sizeof(ADC_Values[0]) / 2) != HAL_OK) {
-    //     printf("DMA1 start fail. \n");
-    // } else {
-    //     printf("DMA1 start success.\n");
-    // }
-
-    // HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
-    // if(HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&ADC_Values[8], sizeof(ADC_Values) / sizeof(ADC_Values[0]) / 2) != HAL_OK) {
-    //     printf("DMA2 start fail. \n");
-    // } else {
-    //     printf("DMA2 start success.\n");
-    // }
-
-    // WS2812B_Init();
-    // WS2812B_Start();
-    // WS2812B_SetAllLEDBrightness(5);
-    // WS2812B_SetAllLEDColor(0, 255, 0);
-
+    static uint8_t buffer[32];
     
-    // LEDsManager::getInstance().setColors(0xff0000, 0x00ff00, 0x00ffff);
-    // LEDsManager::getInstance().setBrightness(150);
-    // LEDsManager::getInstance().setLedEffect(LEDEffect::BREATHE);
-    // LEDsManager::getInstance().setup();
-
-    uint32_t m = 1;
     uint32_t t = HAL_GetTick();
-    uint8_t a = 0;
-
 
     while(1) {
-        // LED1_Toggle;
-        // printf("FS_ROOT\r\n");
-        
-        // HAL_Delay(1000);
 
-        if(HAL_GetTick() - t >= 1000)
+        if(HAL_GetTick() - t >= 1)
         {
-
-            
-            LED1_Toggle;
-
-            // if(m >= 0x80000000) {
-            //     m = 1;
-            // } else {
-            //     m = m << 1;
-            // }
-
-            // WS2812B_SetLEDBrightness(5, a);
-            // if(a < 15) {
-            //     a ++;
-            // } else {
-            //     a = 0;
-            // }
-            // WS2812B_SetLEDBrightness(0, a);
-
-            // switch(a) {
-            //     case 0:
-            //         WS2812B_SetAllLEDColor(255, 0, 0);
-            //         break;
-            //     case 1:
-            //         WS2812B_SetAllLEDColor(0, 255, 0);
-            //         break;
-            //     default:
-            //         WS2812B_SetAllLEDColor(0, 0, 255);
-            //         break;
-            // }
-            
-            // WS2812B_SetAllLEDColor((uint8_t) (random() * 255), (uint8_t) (random() * 255), (uint8_t) (random() * 255));
-            // 因为开启了DCache，所以每次DMA每次更新完读取是需要使DCache失效
-            // SCB_InvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
-
-            // printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-            //     ADC_Values[0], ADC_Values[1], ADC_Values[2], ADC_Values[3], ADC_Values[4], ADC_Values[5], ADC_Values[6], ADC_Values[7],
-            //     ADC_Values[8], ADC_Values[9], ADC_Values[10], ADC_Values[11], ADC_Values[12], ADC_Values[13], ADC_Values[14], ADC_Values[15]
-            //     );
-            // a ++;
-
-            // printf("%d,%d\n", ADC1_Values[0], ADC1_Values[1]);
-
+            gamepad.runHandler();
+            // LED1_Toggle;
 
             t = HAL_GetTick();
         }
 
-        // LEDsManager::getInstance().process(m);
-
         if(configMode) {
             ConfigManager::getInstance().loop();
-        } else {
-            tud_task();
         }
+
+        inputDriver->process(&gamepad, buffer);
+        tud_task();
     }
 
     return 0;

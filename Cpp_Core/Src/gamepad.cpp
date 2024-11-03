@@ -1,9 +1,6 @@
 #include "gamepad.hpp"
 #include "storagemanager.hpp"
 #include "drivermanager.hpp"
-#include "adc_btns_manager.hpp"
-#include "gpio_btns_manager.hpp"
-#include "leds_manager.hpp"
 
 Gamepad::Gamepad():
     options(Storage::getInstance().getGamepadOptions())
@@ -35,8 +32,7 @@ void Gamepad::setup()
 	GPIOBtnsManager::getInstance().setup();
 
 	#ifdef HAS_LED
-	LEDsManager& LEDM = LEDsManager::getInstance();
-	LEDM.setup();
+	LEDsManager::getInstance().setup();
 	#endif // HAS_LED
 }
 
@@ -45,10 +41,10 @@ void Gamepad::process()
 	memcpy(&rawState, &state, sizeof(GamepadState));
 
 	// Get the midpoint value for the current mode
-	uint16_t joystickMid = GAMEPAD_JOYSTICK_MID;
-	if ( DriverManager::getInstance().getDriver() != nullptr ) {
-		joystickMid = DriverManager::getInstance().getDriver()->GetJoystickMidValue();
-	}
+	// uint16_t joystickMid = GAMEPAD_JOYSTICK_MID;
+	// if ( DriverManager::getInstance().getDriver() != nullptr ) {
+	// 	joystickMid = DriverManager::getInstance().getDriver()->GetJoystickMidValue();
+	// }
 
 	// NOTE: Inverted X/Y-axis must run before SOCD and Dpad processing
 	if (options.invertXAxis) {
@@ -101,23 +97,21 @@ void Gamepad::reinit()
 	delete mapButtonA2;
 	delete mapButtonFn;
 	
+	this->clearState();
+
 	ADCBtnsManager::getInstance().deinit();
-	GPIOBtnsManager::getInstance().deinit();
+
+	#ifdef HAS_LED
+	LEDsManager::getInstance().deinit();
+	#endif //HAS_LED
+
 	// reinitialize pin mappings
 	this->setup();
 }
 
 void Gamepad::read()
 {
-	ADCBtnsManager& ADCBM = ADCBtnsManager::getInstance();
-	GPIOBtnsManager& GPIOBM = GPIOBtnsManager::getInstance();
-
-	ADCBM.process();
-	GPIOBM.process();
-
-	Mask_t values = ADCBM.getButtonIsPressed() | GPIOBM.getButtonIsPressed();
-
-	LEDsManager::getInstance().process(values);
+	Mask_t values = ADCBtnsManager::getInstance().read() | GPIOBtnsManager::getInstance().read();
 
 	// Get the midpoint value for the current mode
 	uint16_t joystickMid = GAMEPAD_JOYSTICK_MID;
@@ -177,3 +171,15 @@ void Gamepad::clearState()
 	state.lt = 0;
 	state.rt = 0;
 }
+
+void Gamepad::runHandler()
+{
+	read();		//读取按钮按下状态 生成buttonMask
+	process();	//做反向设置以及SOCD的数据处理
+	ADCBtnsManager::getInstance().calibrate();	//ADC按钮校正逻辑
+
+	#ifdef HAS_LED
+	LEDsManager::getInstance().runAnimate();
+	#endif // HAS_LED
+}
+

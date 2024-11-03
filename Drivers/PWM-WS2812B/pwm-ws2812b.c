@@ -161,7 +161,7 @@ void WS2812B_SetLEDBrightness(const uint8_t brightness, const uint16_t index)
 {
 	if(index >= 0 && index < NUM_LED) {
 		LED_Brightness[index] = brightness;
-		SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)LED_Brightness, sizeof(LED_Brightness));
+		SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)LED_Brightness[index], sizeof(LED_Brightness[0]));
 	}
 }
 
@@ -172,7 +172,7 @@ void WS2812B_SetLEDColor(const uint8_t r, const uint8_t g, const uint8_t b, cons
 		LED_Colors[idx] = r;
 		LED_Colors[idx + 1] = g;
 		LED_Colors[idx + 2] = b;
-		SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)LED_Colors, sizeof(LED_Colors));
+		SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)LED_Colors[idx], sizeof(LED_Colors[0]) * 3);
 	}
 }
 

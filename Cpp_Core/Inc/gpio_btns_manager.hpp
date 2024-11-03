@@ -14,16 +14,8 @@ class GPIOBtnsManager {
         }
         
         void setup();
-        void deinit();
-        void process();
-        inline Mask_t __attribute__((always_inline)) getButtonIsPressed()
-        {
-            return this->virtualPinMask;
-        }
+        Mask_t read();
     private:
-
-        __attribute__((section("._DTCMRAM_Area"))) static uint8_t GPIO_lastActionValues[NUM_GPIO_BUTTONS];
-        __attribute__((section("._DTCMRAM_Area"))) static uint32_t GPIO_debounce_t[NUM_GPIO_BUTTONS];
 
         Mask_t virtualPinMask = 0x0;
         GPIOButton* (&btns)[NUM_GPIO_BUTTONS];

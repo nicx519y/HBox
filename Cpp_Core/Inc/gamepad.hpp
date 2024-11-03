@@ -3,8 +3,11 @@
 
 #include "types.hpp"
 #include "enums.hpp"
-#include "gamepad/GamepadState.hpp"
 #include "config.hpp"
+#include "gamepad/GamepadState.hpp"
+#include "adc_btns_manager.hpp"
+#include "leds_manager.hpp"
+#include "gpio_btns_manager.hpp"
 
 struct GamepadButtonMapping
 {
@@ -21,13 +24,28 @@ struct GamepadButtonMapping
 
 class Gamepad {
     public:
-        Gamepad();
+        Gamepad(Gamepad const&) = delete;
+        void operator=(Gamepad const&) = delete;
+        static Gamepad& getInstance() {
+            static Gamepad instance;
+            return instance;
+        }
+
         void setup();
-        void process();
         void reinit();
-        void read();
         void save();
         void clearState();
+        void runHandler();
+
+        inline void __attribute__((always_inline)) ADCBtnsCalibrateStart()
+        {
+            ADCBtnsManager::getInstance().setState(ADCButtonManagerState::CALIBRATING);
+        }
+
+        inline void __attribute__((always_inline)) ADCBtnsCalibrateStop()
+        {
+            ADCBtnsManager::getInstance().setState(ADCButtonManagerState::WORKING);
+        }
 
         /**
          * @brief Check for a button press. Used by `pressed[Button]` helper methods.
@@ -68,20 +86,7 @@ class Gamepad {
         inline bool __attribute__((always_inline)) pressedR3()    { return pressedButton(GAMEPAD_MASK_R3); }
         inline bool __attribute__((always_inline)) pressedA1()    { return pressedButton(GAMEPAD_MASK_A1); }
         inline bool __attribute__((always_inline)) pressedA2()    { return pressedButton(GAMEPAD_MASK_A2); }
-        inline bool __attribute__((always_inline)) pressedA3()    { return pressedButton(GAMEPAD_MASK_A3); }
-        inline bool __attribute__((always_inline)) pressedA4()    { return pressedButton(GAMEPAD_MASK_A4); }
-        inline bool __attribute__((always_inline)) pressedE1()    { return pressedButton(GAMEPAD_MASK_E1); }
-        inline bool __attribute__((always_inline)) pressedE2()    { return pressedButton(GAMEPAD_MASK_E2); }
-        inline bool __attribute__((always_inline)) pressedE3()    { return pressedButton(GAMEPAD_MASK_E3); }
-        inline bool __attribute__((always_inline)) pressedE4()    { return pressedButton(GAMEPAD_MASK_E4); }
-        inline bool __attribute__((always_inline)) pressedE5()    { return pressedButton(GAMEPAD_MASK_E5); }
-        inline bool __attribute__((always_inline)) pressedE6()    { return pressedButton(GAMEPAD_MASK_E6); }
-        inline bool __attribute__((always_inline)) pressedE7()    { return pressedButton(GAMEPAD_MASK_E7); }
-        inline bool __attribute__((always_inline)) pressedE8()    { return pressedButton(GAMEPAD_MASK_E8); }
-        inline bool __attribute__((always_inline)) pressedE9()    { return pressedButton(GAMEPAD_MASK_E9); }
-        inline bool __attribute__((always_inline)) pressedE10()   { return pressedButton(GAMEPAD_MASK_E10); }
-        inline bool __attribute__((always_inline)) pressedE11()   { return pressedButton(GAMEPAD_MASK_E11); }
-        inline bool __attribute__((always_inline)) pressedE12()   { return pressedButton(GAMEPAD_MASK_E12); }
+        
 
         const GamepadOptions& getOptions() const { return options; }
 
@@ -109,20 +114,6 @@ class Gamepad {
         GamepadButtonMapping *mapButtonR3;
         GamepadButtonMapping *mapButtonA1;
         GamepadButtonMapping *mapButtonA2;
-        GamepadButtonMapping *mapButtonA3;
-        GamepadButtonMapping *mapButtonA4;
-        GamepadButtonMapping *mapButtonE1;
-        GamepadButtonMapping *mapButtonE2;
-        GamepadButtonMapping *mapButtonE3;
-        GamepadButtonMapping *mapButtonE4;
-        GamepadButtonMapping *mapButtonE5;
-        GamepadButtonMapping *mapButtonE6;
-        GamepadButtonMapping *mapButtonE7;
-        GamepadButtonMapping *mapButtonE8;
-        GamepadButtonMapping *mapButtonE9;
-        GamepadButtonMapping *mapButtonE10;
-        GamepadButtonMapping *mapButtonE11;
-        GamepadButtonMapping *mapButtonE12;
         GamepadButtonMapping *mapButtonFn;
 
         // gamepad specific proxy of debounced buttons --- 1 = active (inverse of the raw GPIO)
@@ -139,7 +130,12 @@ class Gamepad {
         };
     
     private:
+        Gamepad();
+
         GamepadOptions & options;
+
+        void process();
+        void read();
 
 };
 

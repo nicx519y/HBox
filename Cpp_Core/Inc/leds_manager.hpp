@@ -7,6 +7,7 @@
 #include "constant.hpp"
 #include "config.hpp"
 #include "gradient_color.hpp"
+#include "adc_btns_manager.hpp"
 
 class LEDsManager {
     public:
@@ -19,11 +20,7 @@ class LEDsManager {
 
         void setup();
         void deinit();
-        void process(const Mask_t virtualPinMask);
-        void setEnabled(const bool enabled);
-        void setLedEffect(const LEDEffect effect);
-        void setColors(uint32_t color1, uint32_t color2, uint32_t color3);
-        void setBrightness(const uint8_t brightness);
+        void runAnimate();
     private:
         LEDsManager();
         uint32_t t;
