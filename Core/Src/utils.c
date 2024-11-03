@@ -1,7 +1,7 @@
 #include "utils.h"
 #include <stdio.h>
 
-double max(double a, double b)
+double_t max(double a, double b)
 {
     if(a < b) {
         return b;
@@ -10,7 +10,7 @@ double max(double a, double b)
     }
 }
 
-double min(double a, double b)
+double_t min(double a, double b)
 {
     if(a > b) {
         return b;
@@ -19,7 +19,7 @@ double min(double a, double b)
     }
 }
 
-double range(double x, double start, double end)
+double_t range(double x, double start, double end)
 {
     if(start <= end) {
         if(x <= start) {
