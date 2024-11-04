@@ -51,11 +51,12 @@ Drivers/PWM-WS2812B \
 Drivers/GPIO-BTN \
 Libs/tinyusb/src \
 Libs/tinyusb/src/device \
+Libs/tinyusb/src/host \
 Libs/tinyusb/src/common \
 Libs/tinyusb/lib/networking \
 Libs/tinyusb/src/portable/synopsys/dwc2 \
+Libs/tinyusb/src/class/net \
 Libs/rndis \
-TinyusbUser \
 USB_DEVICE/App \
 USB_DEVICE/Target \
 Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src \
@@ -67,12 +68,6 @@ Libs/stm32_mw_lwip/src/core/ipv4 \
 Libs/FatFS \
 Libs/cJSON \
 Libs/httpd \
-
-# TinyusbUser/net \
-
-# CPP sources
-# CPP_SOURCES = \
-# Cpp_Core/Src/cpp_main.cpp \
 
 # Cpp cource dir
 CPP_SOURCE_DIRS = \

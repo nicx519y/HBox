@@ -12,8 +12,6 @@
 #include "adc.h"
 #include "leds_manager.hpp"
 #include "gamepad.hpp"
-// #include "pwm-ws2812b.h"
-// #include "net_init.h"
 
 
 // static __attribute__((section("._ADC_DMA_Area"))) uint32_t ADC_Values[16] = {0};
@@ -34,11 +32,8 @@ int cpp_main(void)
     board_init();
     printf("board_init success ... \r\n");
     
-    // tusb_init();
-    // tud_init(BOARD_TUD_RHPORT);
-    // net_init();
 
-    // InputMode inputMode = INPUT_MODE_CONFIG;
+    // InputMode inputMode = InputMode::INPUT_MODE_CONFIG;
     InputMode inputMode = InputMode::INPUT_MODE_XINPUT;
     ConfigType configType = ConfigType::CONFIG_TYPE_WEB;
     DriverManager::getInstance().setup(inputMode);      
@@ -51,26 +46,27 @@ int cpp_main(void)
 
     bool configMode = false;
     
-    static uint8_t buffer[32];
-    
+    // Start the TinyUSB Device functionality
+    tud_init(TUD_OPT_RHPORT);
+
     uint32_t t = HAL_GetTick();
 
     while(1) {
 
         if(HAL_GetTick() - t >= 1)
         {
-            gamepad.runHandler();
-            // LED1_Toggle;
+            // LED1_Toggle;s
 
+            gamepad.runHandler();
             t = HAL_GetTick();
         }
 
         if(configMode) {
             ConfigManager::getInstance().loop();
+        } else {
+            inputDriver->process(&gamepad);
+            tud_task();
         }
-
-        inputDriver->process(&gamepad, buffer);
-        tud_task();
     }
 
     return 0;

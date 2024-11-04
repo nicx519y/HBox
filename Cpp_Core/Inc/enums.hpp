@@ -165,5 +165,12 @@ enum LEDEffect
     BREATHE             = 1,        //呼吸
 };
 
+enum InputModeAuthType
+{
+    INPUT_MODE_AUTH_TYPE_NONE = 0,
+    INPUT_MODE_AUTH_TYPE_KEYS = 1,
+    INPUT_MODE_AUTH_TYPE_USB = 2,
+    INPUT_MODE_AUTH_TYPE_I2C = 3,
+};
 
 #endif /* _NET_DRIVER_H_  */

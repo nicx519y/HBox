@@ -26,11 +26,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-// #include "bsp/board_api.h"
-// #include "tusb.h"
-// #include "net_init.h"
-// #include "led.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

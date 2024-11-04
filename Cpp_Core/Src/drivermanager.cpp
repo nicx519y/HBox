@@ -76,6 +76,4 @@ void DriverManager::setup(InputMode mode) {
     driver->initialize();
     inputMode = mode;
 
-    // Start the TinyUSB Device functionality
-    tud_init(TUD_OPT_RHPORT);
 }

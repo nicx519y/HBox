@@ -27,6 +27,7 @@
 #define _TUSB_XINPUT_HOST_H_
 
 #include <stdint.h>
+#include "common/tusb_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,6 +45,8 @@ extern "C" {
 #ifndef CFG_TUH_XINPUT_EPOUT_BUFSIZE
 #define CFG_TUH_XINPUT_EPOUT_BUFSIZE 64
 #endif
+
+#define TU_ATTR_WEAK              __attribute__ ((weak))
 
 //--------------------------------------------------------------------+
 // Enumeration
