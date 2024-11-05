@@ -40,7 +40,7 @@ void board_init(void) {
 
 #if CFG_TUSB_OS == OPT_OS_NONE
   // 1ms tick timer
-  SysTick_Config(SystemCoreClock / 1000);
+  SysTick_Config(SYSTEM_CLOCK_FREQ / 1000);
 
 #elif CFG_TUSB_OS == OPT_OS_FREERTOS
   // Explicitly disable systick to prevent its ISR runs before scheduler start

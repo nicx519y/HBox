@@ -174,8 +174,8 @@ void Gamepad::clearState()
 
 void Gamepad::runHandler()
 {
-	read();		//读取按钮按下状态 生成buttonMask
-	process();	//做反向设置以及SOCD的数据处理
+	read();		//读取按钮按下状态 生成buttonMask  可以通过 ADCBtnsManager::getInstance().getIsPressed() 和 GPIOBtnsManager::getInstance() 获取
+	process();	//做反向设置以及SOCD的数据处理	按钮状态存在 state
 	ADCBtnsManager::getInstance().calibrate();	//ADC按钮校正逻辑
 
 	#ifdef HAS_LED

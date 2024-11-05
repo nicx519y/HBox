@@ -7,11 +7,11 @@ extern "C" {
 
 #include "stm32h7xx_hal.h"
 
-double max(double_t a, double_t b);
+double_t max(double_t a, double_t b);
 
-double min(double_t a, double_t b);
+double_t min(double_t a, double_t b);
 
-double range(double_t x, double_t start, double_t end);
+double_t range(double_t x, double_t start, double_t end);
 
 uint32_t RGBToHex(uint8_t red, uint8_t green, uint8_t blue);
 

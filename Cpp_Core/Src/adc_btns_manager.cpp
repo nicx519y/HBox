@@ -19,6 +19,13 @@ __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_virtualPinMasks[NU
 __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_lastTriggerValues[NUM_ADC_BUTTONS];
 __attribute__((section("._DTCMRAM_Area"))) static uint8_t ADC_lastActionValues[NUM_ADC_BUTTONS];
 
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+    // printf("ADC Conv;\n");
+}
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc){
+    printf("Sorry, ADC error!\n");
+}
 
 ADCBtnsManager::ADCBtnsManager():
     btns(Storage::getInstance().getADCButtonOptions())

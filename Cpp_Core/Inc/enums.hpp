@@ -3,12 +3,17 @@
 
 #include "stdint.h"
 
-typedef enum
+enum MainState
 {
-	CONFIG_TYPE_WEB = 0,
-	CONFIG_TYPE_SERIAL,
-	CONFIG_TYPE_DISPLAY
-} ConfigType;
+    WEB_CONFIG = 0,
+    ADC_BTNS_CALIBRATING,
+    INPUT,
+};
+
+enum ConfigType
+{
+    CONFIG_TYPE_WEB = 0,
+};
 
 enum InputMode
 {

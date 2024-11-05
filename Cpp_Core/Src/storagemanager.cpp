@@ -12,6 +12,31 @@ bool Storage::save()
 	return ConfigUtils::save(config);
 }
 
+MainState Storage::getMainState()
+{
+	return config.mainState;
+}
+
+bool Storage::setMainState(MainState state)
+{
+	if(state == config.mainState)
+		return false;
+	else {
+		config.mainState = state;
+		return true;
+	}
+}
+
+bool Storage::setProfileIndex(uint8_t idx)
+{
+	if(config.profileIndex == idx)
+		return false;
+	else {
+		config.profileIndex = idx;
+		return true;
+	}
+}
+
 GamepadOptions& Storage::getGamepadOptions()
 {
 	return *(config.profiles[config.profileIndex]);
@@ -32,12 +57,3 @@ void Storage::ResetSettings()
 	NVIC_SystemReset();				//reboot
 }
 
-void Storage::SetGamepad(Gamepad * newpad)
-{
-	gamepad = newpad;
-}
-
-Gamepad * Storage::GetGamepad()
-{
-	return gamepad;
-}

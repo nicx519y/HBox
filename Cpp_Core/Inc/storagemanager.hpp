@@ -20,15 +20,16 @@ public:
 
 	// Config& getConfig() { return config; }
 
+	MainState getMainState();
+	bool setMainState(MainState state);
+	bool setProfileIndex(uint8_t idx);
+
 	GamepadOptions &getGamepadOptions();
 	ADCButton* (&getADCButtonOptions())[NUM_ADC_BUTTONS];
 	GPIOButton* (&getGPIOButtonOptions())[NUM_GPIO_BUTTONS];
 
 	void init();
 	bool save();
-
-	void SetGamepad(Gamepad *); 		// MPGS Gamepad Get/Set
-	Gamepad * GetGamepad();
 
 	void ResetSettings(); 				// EEPROM Reset Feature
 

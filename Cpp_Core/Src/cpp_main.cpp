@@ -14,17 +14,6 @@
 #include "gamepad.hpp"
 
 
-// static __attribute__((section("._ADC_DMA_Area"))) uint32_t ADC_Values[16] = {0};
-
-
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
-{
-    // printf("ADC Conv;\n");
-}
-void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc){
-    printf("Sorry, ADC error!\n");
-}
-
 
 int cpp_main(void) 
 {   

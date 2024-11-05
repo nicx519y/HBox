@@ -11,43 +11,6 @@
 extern "C" {
 #endif
 
-
-// struct LEDOptions
-// {
-//     bool useUserDefinedLEDs;
-//     int dataPin;
-//     LEDFormat ledFormat;
-//     ButtonLayout ledLayout;
-//     uint8_t ledsPerButton;
-//     uint8_t brightnessMaximum;
-//     uint8_t brightnessSteps;
-//     int indexUp;
-//     int indexDown;
-//     int indexLeft;
-//     int indexRight;
-//     int indexB1;
-//     int indexB2;
-//     int indexB3;
-//     int indexB4;
-//     int indexL1;
-//     int indexR1;
-//     int indexL2;
-//     int indexR2;
-//     int indexS1;
-//     int indexS2;
-//     int indexL3;
-//     int indexR3;
-//     int indexA1;
-//     int indexA2;
-//     int pledType;
-//     int pledPin1;
-//     int pledPin2;
-//     int pledPin3;
-//     int pledPin4;
-//     RGB pledColor;
-//     uint32_t checksum;
-// };
-
 // struct PS4Options
 // {
 //     uint8_t serial[16];
@@ -140,8 +103,9 @@ typedef struct
 
 typedef struct
 {
-    /* data */
+    MainState mainState;
     uint8_t profileIndex;
+    bool isCalibrateCompleted;
     ADCButton * ADCButtons[NUM_ADC_BUTTONS];
     GPIOButton * GPIOButtons[NUM_GPIO_BUTTONS];
     GamepadOptions * profiles[NUM_PROFILES];

@@ -57,10 +57,6 @@ Libs/tinyusb/lib/networking \
 Libs/tinyusb/src/portable/synopsys/dwc2 \
 Libs/tinyusb/src/class/net \
 Libs/rndis \
-USB_DEVICE/App \
-USB_DEVICE/Target \
-Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src \
-Middlewares/ST/STM32_USB_Device_Library/Core/Src \
 Libs/stm32_mw_lwip/src/apps \
 Libs/stm32_mw_lwip/src/core \
 Libs/stm32_mw_lwip/src/netif \
@@ -68,6 +64,10 @@ Libs/stm32_mw_lwip/src/core/ipv4 \
 Libs/FatFS \
 Libs/cJSON \
 Libs/httpd \
+USB_DEVICE/App \
+USB_DEVICE/Target \
+Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src \
+Middlewares/ST/STM32_USB_Device_Library/Core/Src \
 
 # Cpp cource dir
 CPP_SOURCE_DIRS = \
@@ -154,19 +154,19 @@ C_INCLUDES =  \
 -ILibs/tinyusb/src \
 -ILibs/tinyusb/hw \
 -ILibs/tinyusb/lib/networking \
--IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
--IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
 -ILibs/rndis \
 -ILibs/httpd \
 -ILibs/lwip-port \
 -ITinyusbUser \
--IUSB_DEVICE/App \
--IUSB_DEVICE/Target \
 -ICpp_Core/Inc \
 -ILibs/stm32_mw_lwip/src/include \
 -ILibs/FatFS \
 -ILibs/cJSON \
 -ILibs/CRC32/src \
+-IUSB_DEVICE/App \
+-IUSB_DEVICE/Target \
+-IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
+-IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
 
 # -ITinyusbUser/net \
 # -ILibs/stm32_mw_lwip/src/include/lwip/apps \

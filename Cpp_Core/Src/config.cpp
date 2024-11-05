@@ -67,6 +67,7 @@ __attribute__((section("._Text_Area"))) static GamepadOptions defaultProfile = {
 __attribute__((section("._Text_Area"))) static Config defaultConfig = 
 {
     .profileIndex   = 0,
+    .isCalibrateCompleted = false,
     .ADCButtons     = defaultADCButtons,
     .GPIOButtons    = defaultGPIOButtons,
     .profiles       = {}
@@ -117,7 +118,9 @@ char * ConfigUtils::toJSON(const Config& config)
 {
     cJSON* pRoot = cJSON_CreateObject();
 
-    cJSON_AddNumberToObject(pRoot, "profileIndex", (double) config.profileIndex);
+    cJSON_AddNumberToObject(pRoot, "mainState", (double_t) config.mainState);
+    cJSON_AddNumberToObject(pRoot, "profileIndex",(double_t) config.profileIndex);
+    cJSON_AddBoolToObject(pRoot, "isCalibrateCompleted", config.isCalibrateCompleted);
 
     cJSON* pADCButtons = cJSON_CreateArray();
     cJSON_AddItemToObject(pRoot, "ADCButtons", pADCButtons);
@@ -210,7 +213,9 @@ bool ConfigUtils::fromJSON(Config& config, const char* data, size_t dataLen)
         return false;
     }
     
+    config.mainState = (MainState) cJSON_GetObjectItem(root, "mainState")->valueint;
     config.profileIndex = (uint8_t) cJSON_GetObjectItem(root, "profileIndex")->valueint;
+    config.isCalibrateCompleted = cJSON_GetObjectItem(root, "isCalibrateCompleted")->type == cJSON_True? true: false;
 
     cJSON* ADCButtonsArray = cJSON_GetObjectItem(root, "ADCButtons");
     uint8_t ADCButtonsSize = (uint8_t) cJSON_GetArraySize(ADCButtonsArray);

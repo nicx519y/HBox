@@ -33,6 +33,8 @@
 
 #include "stm32h7xx_hal_rcc.h"
 
+#define SYSTEM_CLOCK_FREQ      480000000
+
 #define LED_PORT              GPIOC
 #define LED_PIN               GPIO_PIN_13
 #define LED_STATE_ON          0
