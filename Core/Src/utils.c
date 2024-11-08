@@ -1,6 +1,36 @@
 #include "utils.h"
 #include <stdio.h>
 
+uint16_t uint8ToUint16(uint8_t* n)
+{
+    return n[0] << 8 | n[1];
+}
+
+uint32_t uint8ToUint32(uint8_t * n)
+{
+    return n[0] << 24 | n[1] << 16 | n[2] << 8 | n[3];
+}
+
+uint64_t uint8ToUint64(uint8_t * n)
+{
+    return n[0] << 56 | n[1] << 48 | n[2] << 40 | n[3] << 32 | n[4] << 24 | n[5] << 16 | n[6] << 8 | n[7];
+}
+
+void uint64ToUint8Array(uint8_t* r, uint64_t n)
+{
+    for(uint8_t i = 0; i < 8; i ++) {
+        r[i] = n >> (8 * (8 - i - 1));
+    }
+}
+
+void uint32ToUint8Array(uint8_t* r, uint32_t n)
+{
+    for(uint8_t i = 0; i < 4; i ++) {
+        r[i] = n >> (8 * (4 - i - 1));
+    }
+}
+
+
 double_t max(double a, double b)
 {
     if(a < b) {

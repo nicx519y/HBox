@@ -19,14 +19,6 @@ __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_virtualPinMasks[NU
 __attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_lastTriggerValues[NUM_ADC_BUTTONS];
 __attribute__((section("._DTCMRAM_Area"))) static uint8_t ADC_lastActionValues[NUM_ADC_BUTTONS];
 
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
-{
-    // printf("ADC Conv;\n");
-}
-void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc){
-    printf("Sorry, ADC error!\n");
-}
-
 ADCBtnsManager::ADCBtnsManager():
     btns(Storage::getInstance().getADCButtonOptions())
 {}
@@ -37,7 +29,6 @@ ADCBtnsManager::ADCBtnsManager():
  */
 void ADCBtnsManager::setup()
 {
-
     HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
     if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Values[0], NUM_ADC1_BUTTONS) != HAL_OK) {
         printf("ADCBtnsManager: DMA1 start fail. \n");

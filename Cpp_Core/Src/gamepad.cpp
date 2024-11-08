@@ -172,7 +172,7 @@ void Gamepad::clearState()
 	state.rt = 0;
 }
 
-void Gamepad::runHandler()
+void Gamepad::loop()
 {
 	read();		//读取按钮按下状态 生成buttonMask  可以通过 ADCBtnsManager::getInstance().getIsPressed() 和 GPIOBtnsManager::getInstance() 获取
 	process();	//做反向设置以及SOCD的数据处理	按钮状态存在 state

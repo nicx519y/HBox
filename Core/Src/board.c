@@ -53,15 +53,16 @@ void board_init(void) {
   NVIC_SetPriority(OTG_HS_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY );
 #endif
 
+  MX_TIM2_Init(); // 8000频率定时器 并开启中断模式
+
   USART1_Init();    //USART for debug
   LED_Init();
-  printf("LED_Init success... \r\n");
+
   QSPI_W25Qxx_Init();
-  int8_t mmmResult = QSPI_W25Qxx_MemoryMappedMode(); 	// 配置QSPI为内存映射模
-  printf("QSPI MemoryMappedMode result: %d\r\n", mmmResult);
+  // int8_t mmmResult = QSPI_W25Qxx_MemoryMappedMode(); 	// 配置QSPI为内存映射模
+  // printf("QSPI MemoryMappedMode result: %d\r\n", mmmResult);
   
   USB_init();
-
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();

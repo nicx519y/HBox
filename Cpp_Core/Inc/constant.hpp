@@ -5,11 +5,14 @@
 extern "C" {
 #endif
 
-#define CONFIG_LABEL                        "Version:"
-#define CONFIG_VERSION                      1
+#define CONFIG_VERSION                      (uint32_t)0x010000 // 三位版本号 0x aa bb cc
 
-#define EX_FSDATA_ADDR                      0x90000000  // 0x90000000 ~ 0x903FFFFF      (4MB)
-#define EX_CONFIG_ADDR                      0x90800000  // 0x90400000 ~ 0x905FFFFF      (2MB)
+#define EX_ADDR                             0x90000000
+#define FSDATA_ADDR                         0x0
+#define CONFIG_ADDR                         0x00400000
+
+#define EX_FSDATA_ADDR                      (EX_ADDR + FSDATA_ADDR)  // 0x90000000 ~ 0x903FFFFF      (4MB)
+#define EX_CONFIG_ADDR                      (EX_ADDR + CONFIG_ADDR)  // 0x90400000 ~ 0x905FFFFF      (2MB)
 
 #define NUM_PROFILES                        8
 #define NUM_ADC1_BUTTONS                    8

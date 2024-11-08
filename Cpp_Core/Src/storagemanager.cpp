@@ -1,9 +1,11 @@
 #include "storagemanager.hpp"
 #include "config.hpp"
 #include "stm32h750xx.h"
+#include <stdio.h>
 
 
 void Storage::init() {
+	printf("================== Storage::init begin ==========================\n");
 	ConfigUtils::load(config);
 }
 
@@ -37,9 +39,9 @@ bool Storage::setProfileIndex(uint8_t idx)
 	}
 }
 
-GamepadOptions& Storage::getGamepadOptions()
+GamepadOptions &Storage::getGamepadOptions()
 {
-	return *(config.profiles[config.profileIndex]);
+	return *config.profiles[config.profileIndex];
 }
 
 ADCButton* (&Storage::getADCButtonOptions())[NUM_ADC_BUTTONS]
@@ -52,8 +54,11 @@ GPIOButton* (&Storage::getGPIOButtonOptions())[NUM_GPIO_BUTTONS]
 	return config.GPIOButtons;
 }
 
+
 void Storage::ResetSettings()
 {
-	NVIC_SystemReset();				//reboot
+	printf("================== Storage::resettings begin ==========================\n");
+	ConfigUtils::reset(config);
+	// NVIC_SystemReset();				//reboot
 }
 

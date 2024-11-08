@@ -46,6 +46,8 @@
 
 #include "qspi-w25q64.h"
 #include <stdio.h>
+#include <string.h>
+#include "utils.h"
 
 QSPI_HandleTypeDef hqspi;	// 定义QSPI句柄，这里保留使用cubeMX生成的变量命名，方便用户参考和移植
 
@@ -803,3 +805,53 @@ int8_t QSPI_W25Qxx_ReadBuffer(uint8_t* pBuffer, uint32_t ReadAddr, uint32_t NumB
 
 /********************************************************************************************************************************************************************************************************FANKE**********/
 
+int8_t QSPI_W25Qxx_WriteString(char* string, uint32_t ReadAddr)
+{
+	int8_t result;
+	size_t size = strlen(string) + 1;
+	uint8_t sizeBuffer[] = { (size>>24)&0xff, (size>>16)&0xff, (size>>8)&0xff, size&0xff };
+	result = QSPI_W25Qxx_WriteBuffer(sizeBuffer, ReadAddr, sizeof(&sizeBuffer));	// 吸入len
+	if(result != QSPI_W25Qxx_OK) {
+		printf("QSPI_W25Qxx_WriteString write size failure. error: %d\n", result);
+		return result;
+	} else {
+		printf("QSPI_W25Qxx_WriteString write size success. size: %d, 0x%02x%02x%02x%02x\n", size, sizeBuffer[0], sizeBuffer[1], sizeBuffer[2], sizeBuffer[3]);
+	}
+	result = QSPI_W25Qxx_WriteBuffer((uint8_t*)string, ReadAddr+sizeof(&sizeBuffer), size);
+	if(result != QSPI_W25Qxx_OK) {
+		printf("QSPI_W25Qxx_WriteString write content failure. error: %d\n", result);
+		return result;
+	} else {
+		return QSPI_W25Qxx_OK;
+	}
+}
+
+int8_t QSPI_W25Qxx_ReadString(char* buffer, uint32_t ReadAddr)
+{
+	int8_t result;
+	uint8_t sizeBuffer[4];
+	uint32_t size;
+	result = QSPI_W25Qxx_ReadBuffer(sizeBuffer, ReadAddr, sizeof(&sizeBuffer));
+	if(result != QSPI_W25Qxx_OK) {
+		printf("QSPI_W25Qxx_ReadString read size failure. error: %d\n", result);
+		return result;
+	}
+	
+	size = ((uint32_t)sizeBuffer[0]<<24|(uint32_t)sizeBuffer[1]<<16|(uint32_t)sizeBuffer[2]<<8|(uint32_t)sizeBuffer[3]);
+
+	// printf("QSPI_W25Qxx_ReadString read size %x, %x, %x, %x, %x\n", (uint32_t)size, sizeBuffer[0], sizeBuffer[1], sizeBuffer[2], sizeBuffer[3]);
+
+	printf("QSPI_W25Qxx_ReadString read size: %d, 0x%08x, 0x%02x%02x%02x%02x\n", size, size, sizeBuffer[0], sizeBuffer[1], sizeBuffer[2], sizeBuffer[3]);
+
+	if(size == 0xffffffff) {
+		return -1;
+	}
+
+	result = QSPI_W25Qxx_ReadBuffer(buffer, ReadAddr + sizeof(uint32_t), size);
+	if(result != QSPI_W25Qxx_OK) {
+		printf("QSPI_W25Qxx_ReadString read content failure. error: %d\n", result);
+		return result;
+	} else {
+		return QSPI_W25Qxx_OK;
+	}
+}

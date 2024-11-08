@@ -5,9 +5,10 @@
 
 enum MainState
 {
-    WEB_CONFIG = 0,
-    ADC_BTNS_CALIBRATING,
-    INPUT,
+    MAIN_STATE_NONE                     = 0,
+    MAIN_STATE_WEB_CONFIG               = 1,
+    MAIN_STATE_ADC_BTNS_CALIBRATING     = 2,
+    MAIN_STATE_INPUT                    = 3
 };
 
 enum ConfigType

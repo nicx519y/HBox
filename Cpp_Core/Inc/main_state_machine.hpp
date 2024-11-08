@@ -20,14 +20,17 @@ class MainStateMachine {
             static MainStateMachine instance;
             return instance;
         }
-
         void setup();
 
     private:
+        uint32_t ust;
+        
+        DriverManager& driverManager;
+        ConfigManager& configManager;
+        Gamepad& gamepad;
+        Storage& storage;
+
         MainStateMachine();
-        void webConfigRun();
-        void calibratingRun();
-        void inputRun();
 };
 
 #endif // ! _MAIN_STATE_MACHINE_

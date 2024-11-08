@@ -51,6 +51,7 @@ void LEDsManager::setup()
 void LEDsManager::deinit()
 {
     WS2812B_SetAllLEDBrightness(0);
+    HAL_Delay(50);
     WS2812B_Stop();
 }
 

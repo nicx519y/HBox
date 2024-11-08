@@ -7,6 +7,17 @@ extern "C" {
 
 #include "stm32h7xx_hal.h"
 
+uint16_t uint8ToUint16(uint8_t* n);
+
+uint32_t uint8ToUint32(uint8_t* n);
+
+uint64_t uint8ToUint64(uint8_t* n);
+
+void uint64ToUint8Array(uint8_t* r, uint64_t);
+
+void uint32ToUint8Array(uint8_t* r, uint32_t);
+
+
 double_t max(double_t a, double_t b);
 
 double_t min(double_t a, double_t b);

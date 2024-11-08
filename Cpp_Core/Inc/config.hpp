@@ -103,21 +103,24 @@ typedef struct
 
 typedef struct
 {
+    uint32_t version;
     MainState mainState;
     uint8_t profileIndex;
     bool isCalibrateCompleted;
-    ADCButton * ADCButtons[NUM_ADC_BUTTONS];
-    GPIOButton * GPIOButtons[NUM_GPIO_BUTTONS];
-    GamepadOptions * profiles[NUM_PROFILES];
+    ADCButton* ADCButtons[NUM_ADC_BUTTONS];
+    GPIOButton* GPIOButtons[NUM_GPIO_BUTTONS];
+    GamepadOptions* profiles[NUM_PROFILES];
 } Config;
 
 namespace ConfigUtils {
     bool load(Config& config);
     bool save(Config& config);
+    bool reset(Config& config);
     
-    char * toJSON(const Config& config);
-    bool fromJSON(Config& config, const char* data, size_t dataLen);
+    void toJSON(char* buffer, Config& config);
+    bool fromJSON(Config& config, char* data, size_t dataLen);
     bool fromStorage(Config& config);
+    
 };
 
 #ifdef __cplusplus

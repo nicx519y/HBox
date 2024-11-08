@@ -35,7 +35,7 @@ class Gamepad {
         void reinit();
         void save();
         void clearState();
-        void runHandler();
+        void loop();
 
         inline void __attribute__((always_inline)) ADCBtnsCalibrateStart()
         {
@@ -116,10 +116,6 @@ class Gamepad {
         GamepadButtonMapping *mapButtonA2;
         GamepadButtonMapping *mapButtonFn;
 
-        // gamepad specific proxy of debounced buttons --- 1 = active (inverse of the raw GPIO)
-        // see GP2040::debounceGpioGetAll for details
-        Mask_t debouncedGpio;
-
         // These are special to SOCD
         inline static const SOCDMode resolveSOCDMode(const GamepadOptions& options) {
             return (options.socdMode == SOCD_MODE_BYPASS &&
@@ -132,7 +128,7 @@ class Gamepad {
     private:
         Gamepad();
 
-        GamepadOptions & options;
+        GamepadOptions& options;
 
         void process();
         void read();

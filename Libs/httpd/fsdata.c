@@ -26,7 +26,7 @@
 #include "fsdata_alignment.h"
 #endif
 
-#define ex_fsdata_addr EX_FSDATA_ADDR
+#define ex_fsdata_addr FSDATA_ADDR
 
 #define __Text_Area__ __attribute__((section("._Text_Area")))
 
@@ -114,46 +114,38 @@ FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_SSI
 const struct fsdata_file * getFSRoot(void)
 {
 	if(fsdata_inited == false) {
-		uint32_t *fsptr = (uint32_t*) ex_fsdata_addr;
-		uint32_t len = *fsptr;                 // 文件数量
-        uint32_t size = 0;
-		uint32_t addr = ex_fsdata_addr + (1 + len) * 4;
-	
+		int8_t result;
+        uint8_t d[4];
+        uint32_t len;
+        uint32_t addr;
+        uint32_t size;
+
+		result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr, 4);
+        len = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]); // 文件数量
+	addr = ex_fsdata_addr + 4 * (len + 1);
+        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 0), sizeof(uint32_t));
+        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
+        result = QSPI_W25Qxx_ReadBuffer(data__assets_index_2a2af97b_css, addr, size);
 		addr += size;
-        uint8_t* dataptr0 = (uint8_t*) addr;
-        uint32_t* sizeptr0 = (uint32_t*) (ex_fsdata_addr + 4 * (0 + 1));
-        size = *sizeptr0;
-        memcpy(data__assets_index_2a2af97b_css, dataptr0, size);
-		
+        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 1), sizeof(uint32_t));
+        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
+        result = QSPI_W25Qxx_ReadBuffer(data__assets_index_3470b205_js, addr, size);
 		addr += size;
-        uint8_t* dataptr1 = (uint8_t*) addr;
-        uint32_t* sizeptr1 = (uint32_t*) (ex_fsdata_addr + 4 * (1 + 1));
-        size = *sizeptr1;
-        memcpy(data__assets_index_3470b205_js, dataptr1, size);
-		
+        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 2), sizeof(uint32_t));
+        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
+        result = QSPI_W25Qxx_ReadBuffer(data__favicon_ico, addr, size);
 		addr += size;
-        uint8_t* dataptr2 = (uint8_t*) addr;
-        uint32_t* sizeptr2 = (uint32_t*) (ex_fsdata_addr + 4 * (2 + 1));
-        size = *sizeptr2;
-        memcpy(data__favicon_ico, dataptr2, size);
-		
+        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 3), sizeof(uint32_t));
+        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
+        result = QSPI_W25Qxx_ReadBuffer(data__images_logo_png, addr, size);
 		addr += size;
-        uint8_t* dataptr3 = (uint8_t*) addr;
-        uint32_t* sizeptr3 = (uint32_t*) (ex_fsdata_addr + 4 * (3 + 1));
-        size = *sizeptr3;
-        memcpy(data__images_logo_png, dataptr3, size);
-		
+        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 4), sizeof(uint32_t));
+        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
+        result = QSPI_W25Qxx_ReadBuffer(data__index_html, addr, size);
 		addr += size;
-        uint8_t* dataptr4 = (uint8_t*) addr;
-        uint32_t* sizeptr4 = (uint32_t*) (ex_fsdata_addr + 4 * (4 + 1));
-        size = *sizeptr4;
-        memcpy(data__index_html, dataptr4, size);
-		
-		addr += size;
-        uint8_t* dataptr5 = (uint8_t*) addr;
-        uint32_t* sizeptr5 = (uint32_t*) (ex_fsdata_addr + 4 * (5 + 1));
-        size = *sizeptr5;
-        memcpy(data__manifest_json, dataptr5, size);
+        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 5), sizeof(uint32_t));
+        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
+        result = QSPI_W25Qxx_ReadBuffer(data__manifest_json, addr, size);
 		
 		fsdata_inited = true;
 	}

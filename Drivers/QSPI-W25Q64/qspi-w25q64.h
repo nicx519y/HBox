@@ -94,6 +94,10 @@ int8_t	QSPI_W25Qxx_WritePage(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumB
 int8_t	QSPI_W25Qxx_WriteBuffer(uint8_t* pData, uint32_t WriteAddr, uint32_t Size);				// 写入数据，最大不能超过flash芯片的大小
 int8_t 	QSPI_W25Qxx_ReadBuffer(uint8_t* pBuffer, uint32_t ReadAddr, uint32_t NumByteToRead);	// 读取数据，最大不能超过flash芯片的大小
 
+int8_t QSPI_W25Qxx_WriteString(char* string, uint32_t ReadAddr);
+int8_t QSPI_W25Qxx_ReadString(char* buffer, uint32_t ReadAddr);
+
+
 #ifdef __cplusplus
 }
 #endif

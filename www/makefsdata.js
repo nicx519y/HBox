@@ -203,7 +203,7 @@ function makeAllFileData(buffers) {
 	const sizeArr = buffers.map(buffer => buffer.byteLength);
 	sizeArr.unshift(buffers.length);
 	const uint32a = new DataView(new ArrayBuffer(sizeArr.length * 4));
-	sizeArr.forEach((value, index) => uint32a.setUint32(index * 4, value, true));	//stm32都是littleEndian
+	sizeArr.forEach((value, index) => uint32a.setUint32(index * 4, value, false));	//stm32都是littleEndian
 	const firstBuffer = Buffer.from(uint32a.buffer);
 	buffers.unshift(firstBuffer);
 	return concatenateArrayBuffers( buffers );
@@ -239,7 +239,7 @@ function makefsdata() {
 	fsdata += '#include "fsdata_alignment.h"\n';
 	fsdata += '#endif\n';
 	fsdata += '\n';
-	fsdata += '#define ex_fsdata_addr EX_FSDATA_ADDR\n';
+	fsdata += '#define ex_fsdata_addr FSDATA_ADDR\n';
 	fsdata += '\n';
 	fsdata += `#define __Text_Area__ __attribute__((section("${memory_section}")))\n`;
 	fsdata += '\n';
@@ -361,19 +361,26 @@ function makefsdata() {
 const struct fsdata_file * getFSRoot(void)
 {
 	if(fsdata_inited == false) {
-		uint32_t *fsptr = (uint32_t*) ex_fsdata_addr;
-		uint32_t len = *fsptr;                 // 文件数量
-        uint32_t size = 0;
-		uint32_t addr = ex_fsdata_addr + (1 + len) * 4;
+		int8_t result;
+        uint8_t d[4];
+        uint32_t len;
+        uint32_t addr;
+        uint32_t size;
+
+		result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr, 4);
+        len = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]); // 文件数量
 	`;
 	
 	fileInfos.forEach((fileInfo, index) => {
+		if(index == 0) {
+			fsdata += `addr = ex_fsdata_addr + 4 * (len + 1);`;
+		} else {
+			fsdata += `addr += size;`;
+		}
 		fsdata += `
-		addr += size;
-        uint8_t* dataptr${index} = (uint8_t*) addr;
-        uint32_t* sizeptr${index} = (uint32_t*) (ex_fsdata_addr + 4 * (${index} + 1));
-        size = *sizeptr${index};
-        memcpy(data_${fileInfo.varName}, dataptr${index}, size);
+        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + ${index}), sizeof(uint32_t));
+        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
+        result = QSPI_W25Qxx_ReadBuffer(data_${fileInfo.varName}, addr, size);
 		`;
 	});
 
