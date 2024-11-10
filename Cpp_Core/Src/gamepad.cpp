@@ -3,30 +3,30 @@
 #include "drivermanager.hpp"
 
 Gamepad::Gamepad():
-    options(Storage::getInstance().getGamepadOptions())
+    options(Storage::getInstance().config.profiles[Storage::getInstance().config.profileIndex])
 {}
 
 void Gamepad::setup()
 {
-    mapDpadUp    = new GamepadButtonMapping(options.keyDpadUp, GAMEPAD_MASK_UP);
-	mapDpadDown  = new GamepadButtonMapping(options.keyDpadDown, GAMEPAD_MASK_DOWN);
-	mapDpadLeft  = new GamepadButtonMapping(options.keyDpadLeft, GAMEPAD_MASK_LEFT);
-	mapDpadRight = new GamepadButtonMapping(options.keyDpadRight, GAMEPAD_MASK_RIGHT);
-	mapButtonB1  = new GamepadButtonMapping(options.keyButtonB1, GAMEPAD_MASK_B1);
-	mapButtonB2  = new GamepadButtonMapping(options.keyButtonB2, GAMEPAD_MASK_B2);
-	mapButtonB3  = new GamepadButtonMapping(options.keyButtonB3, GAMEPAD_MASK_B3);
-	mapButtonB4  = new GamepadButtonMapping(options.keyButtonB4, GAMEPAD_MASK_B4);
-	mapButtonL1  = new GamepadButtonMapping(options.keyButtonL1, GAMEPAD_MASK_L1);
-	mapButtonR1  = new GamepadButtonMapping(options.keyButtonR1, GAMEPAD_MASK_R1);
-	mapButtonL2  = new GamepadButtonMapping(options.keyButtonL2, GAMEPAD_MASK_L2);
-	mapButtonR2  = new GamepadButtonMapping(options.keyButtonR2, GAMEPAD_MASK_R2);
-	mapButtonS1  = new GamepadButtonMapping(options.keyButtonS1, GAMEPAD_MASK_S1);
-	mapButtonS2  = new GamepadButtonMapping(options.keyButtonS2, GAMEPAD_MASK_S2);
-	mapButtonL3  = new GamepadButtonMapping(options.keyButtonL3, GAMEPAD_MASK_L3);
-	mapButtonR3  = new GamepadButtonMapping(options.keyButtonR3, GAMEPAD_MASK_R3);
-	mapButtonA1  = new GamepadButtonMapping(options.keyButtonA1, GAMEPAD_MASK_A1);
-	mapButtonA2  = new GamepadButtonMapping(options.keyButtonA2, GAMEPAD_MASK_A2);
-	mapButtonFn  = new GamepadButtonMapping(options.keyButtonFn, AUX_MASK_FUNCTION);
+    mapDpadUp    = new GamepadButtonMapping(options->keyDpadUp, GAMEPAD_MASK_UP);
+	mapDpadDown  = new GamepadButtonMapping(options->keyDpadDown, GAMEPAD_MASK_DOWN);
+	mapDpadLeft  = new GamepadButtonMapping(options->keyDpadLeft, GAMEPAD_MASK_LEFT);
+	mapDpadRight = new GamepadButtonMapping(options->keyDpadRight, GAMEPAD_MASK_RIGHT);
+	mapButtonB1  = new GamepadButtonMapping(options->keyButtonB1, GAMEPAD_MASK_B1);
+	mapButtonB2  = new GamepadButtonMapping(options->keyButtonB2, GAMEPAD_MASK_B2);
+	mapButtonB3  = new GamepadButtonMapping(options->keyButtonB3, GAMEPAD_MASK_B3);
+	mapButtonB4  = new GamepadButtonMapping(options->keyButtonB4, GAMEPAD_MASK_B4);
+	mapButtonL1  = new GamepadButtonMapping(options->keyButtonL1, GAMEPAD_MASK_L1);
+	mapButtonR1  = new GamepadButtonMapping(options->keyButtonR1, GAMEPAD_MASK_R1);
+	mapButtonL2  = new GamepadButtonMapping(options->keyButtonL2, GAMEPAD_MASK_L2);
+	mapButtonR2  = new GamepadButtonMapping(options->keyButtonR2, GAMEPAD_MASK_R2);
+	mapButtonS1  = new GamepadButtonMapping(options->keyButtonS1, GAMEPAD_MASK_S1);
+	mapButtonS2  = new GamepadButtonMapping(options->keyButtonS2, GAMEPAD_MASK_S2);
+	mapButtonL3  = new GamepadButtonMapping(options->keyButtonL3, GAMEPAD_MASK_L3);
+	mapButtonR3  = new GamepadButtonMapping(options->keyButtonR3, GAMEPAD_MASK_R3);
+	mapButtonA1  = new GamepadButtonMapping(options->keyButtonA1, GAMEPAD_MASK_A1);
+	mapButtonA2  = new GamepadButtonMapping(options->keyButtonA2, GAMEPAD_MASK_A2);
+	mapButtonFn  = new GamepadButtonMapping(options->keyButtonFn, AUX_MASK_FUNCTION);
 
 	ADCBtnsManager::getInstance().setup();
 	GPIOBtnsManager::getInstance().setup();
@@ -47,7 +47,7 @@ void Gamepad::process()
 	// }
 
 	// NOTE: Inverted X/Y-axis must run before SOCD and Dpad processing
-	if (options.invertXAxis) {
+	if (options->invertXAxis) {
 		bool left = (state.dpad & mapDpadLeft->buttonMask) != 0;
 		bool right = (state.dpad & mapDpadRight->buttonMask) != 0;
 		state.dpad &= ~(mapDpadLeft->buttonMask | mapDpadRight->buttonMask);
@@ -57,7 +57,7 @@ void Gamepad::process()
 			state.dpad |= mapDpadLeft->buttonMask;
 	}
 
-	if (options.invertYAxis) {
+	if (options->invertYAxis) {
 		bool up = (state.dpad & mapDpadUp->buttonMask) != 0;
 		bool down = (state.dpad & mapDpadDown->buttonMask) != 0;
 		state.dpad &= ~(mapDpadUp->buttonMask | mapDpadDown->buttonMask);
@@ -68,11 +68,11 @@ void Gamepad::process()
 	}
 
 	// 4-way before SOCD, might have better history without losing any coherent functionality
-	if (options.fourWayMode) {
+	if (options->fourWayMode) {
 		state.dpad = filterToFourWayMode(state.dpad);
 	}
 
-	state.dpad = runSOCDCleaner(resolveSOCDMode(options), state.dpad);
+	state.dpad = runSOCDCleaner(resolveSOCDMode(*options), state.dpad);
 }
 
 void Gamepad::reinit()

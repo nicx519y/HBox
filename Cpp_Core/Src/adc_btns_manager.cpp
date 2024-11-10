@@ -2,25 +2,26 @@
 #include "storagemanager.hpp"
 #include "adc.h"
 #include <stdio.h>
+#include "constant.hpp"
 
 // 声明ADC DMA的内存地址，为了避免自动分配到DTCMRAM(DTCMRAM直连CPU，DMA不能访问)，所以为变量指定了内存区域为指向AXISRAM的地址
-__attribute__((section("._DMA_Area"))) static ADCButtonState ADC_btnStates[NUM_ADC_BUTTONS];
-__attribute__((section("._DMA_Area"))) static uint8_t ADC_timesOfCalibrate[NUM_ADC_BUTTONS];
-__attribute__((section("._DMA_Area"))) static int32_t ADC_tmp[NUM_ADC_BUTTONS];
-__attribute__((section("._DMA_Area"))) static uint32_t ADC_Values[NUM_ADC_BUTTONS];
-__attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_topValues[NUM_ADC_BUTTONS];
+__RAM_Area__ static ADCButtonState ADC_btnStates[NUM_ADC_BUTTONS];
+__RAM_Area__ static uint8_t ADC_timesOfCalibrate[NUM_ADC_BUTTONS];
+__RAM_Area__ static int32_t ADC_tmp[NUM_ADC_BUTTONS];
+__RAM_Area__ static uint32_t ADC_Values[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static int32_t ADC_topValues[NUM_ADC_BUTTONS];
 
-__attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_bottomValues[NUM_ADC_BUTTONS];
-__attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_pressAccValues[NUM_ADC_BUTTONS];
-__attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_releaseAccValues[NUM_ADC_BUTTONS];
-__attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_topDeadZoneValues[NUM_ADC_BUTTONS];
-__attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_bottomDeadZoneValues[NUM_ADC_BUTTONS];
-__attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_virtualPinMasks[NUM_ADC_BUTTONS];
-__attribute__((section("._DTCMRAM_Area"))) static int32_t ADC_lastTriggerValues[NUM_ADC_BUTTONS];
-__attribute__((section("._DTCMRAM_Area"))) static uint8_t ADC_lastActionValues[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static int32_t ADC_bottomValues[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static int32_t ADC_pressAccValues[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static int32_t ADC_releaseAccValues[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static int32_t ADC_topDeadZoneValues[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static int32_t ADC_bottomDeadZoneValues[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static int32_t ADC_virtualPinMasks[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static int32_t ADC_lastTriggerValues[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static uint8_t ADC_lastActionValues[NUM_ADC_BUTTONS];
 
 ADCBtnsManager::ADCBtnsManager():
-    btns(Storage::getInstance().getADCButtonOptions())
+    btns((&Storage::getInstance().config)->ADCButtons)
 {}
 
 /**
@@ -218,7 +219,7 @@ void ADCBtnsManager::calibrate()
 
                     // 如果当前读取的adc value 和 topValue相差过小 并且跟之前的值比跳动过大，则校准失败。需要连续到相近的adc values才算标定成功
                     if(abs((int32_t)ADC_Values[i] - ADC_topValues[i]) < ADC_VOLATILITY
-                        || (ADC_timesOfCalibrate[i] > 0 && abs((int32_t)ADC_Values[i] - (int32_t)abs((double_t) ADC_tmp[i-1] / (double_t)ADC_timesOfCalibrate[i]))) > ADC_VOLATILITY) {
+                        || (ADC_timesOfCalibrate[i] > 0 && abs((int32_t)ADC_Values[i] - (int32_t)round((double_t)ADC_tmp[i-1]/(double_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY)) {
                         // 校准失败 这个按钮重新校准
                         ADC_tmp[i] = 0;
                         ADC_timesOfCalibrate[i] = 0;

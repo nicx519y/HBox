@@ -3,6 +3,13 @@
 
 #include "stdint.h"
 
+enum STORAGE_ERROR_NO {
+    ACTION_SUCCESS      = 0,
+    ACTION_FAILURE      = 1,
+    PARAMETERS_ERROR    = 2,
+};
+
+
 enum MainState
 {
     MAIN_STATE_NONE                     = 0,

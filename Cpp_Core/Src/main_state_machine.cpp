@@ -18,7 +18,7 @@ void MainStateMachine::setup()
     Storage::getInstance().init();
     printf("Storage init success.\n");
 
-    MainState mainState = Storage::getInstance().getMainState();
+    MainState mainState = Storage::getInstance().config.mainState;
     printf("MainState: %d\n", mainState);
     // mainState = MainState::MAIN_STATE_WEB_CONFIG;
 

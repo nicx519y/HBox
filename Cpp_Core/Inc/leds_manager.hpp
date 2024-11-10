@@ -25,7 +25,7 @@ class LEDsManager {
         LEDsManager();
         uint32_t t;
         GradientColor gtc;
-        GamepadOptions& opts;
+        GamepadOptions* opts;
 };
 
 #endif // _LEDS_MANAGER_H_

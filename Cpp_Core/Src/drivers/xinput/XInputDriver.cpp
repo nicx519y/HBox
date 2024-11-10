@@ -156,7 +156,7 @@ void XInputDriver::initialize() {
 void XInputDriver::initializeAux() {
 	xAuthDriver = nullptr;
 	// AUTH DRIVER NON-FUNCTIONAL FOR NOW
-	GamepadOptions & gamepadOptions = Storage::getInstance().getGamepadOptions();
+	GamepadOptions & gamepadOptions = *Storage::getInstance().config.profiles[Storage::getInstance().config.profileIndex];
 	// if ( gamepadOptions.xinputAuthType == InputModeAuthType::INPUT_MODE_AUTH_TYPE_USB )  {
 	// 	xAuthDriver = new XInputAuth();
 	// 	if ( xAuthDriver->available() ) {

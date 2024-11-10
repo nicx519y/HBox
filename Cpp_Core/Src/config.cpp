@@ -10,7 +10,7 @@
 
 #define config_version      CONFIG_VERSION
 
-__attribute__((section("._DMA_Area"))) static char ConfigJSONBuffer[20*1024];
+__RAM_Area__ static char ConfigJSONBuffer[20*1024];
 
 static ADCButton defaultADCButtons[] = {
     {
@@ -251,7 +251,6 @@ static Config defaultConfig =
 
 bool ConfigUtils::load(Config& config)
 {
-    cJSON json;
     bool fjResult;
 
     fjResult = fromStorage(config);
@@ -309,7 +308,7 @@ bool ConfigUtils::load(Config& config)
 bool ConfigUtils::save(Config& config)
 {
     printf("ConfigUtils::save begin\n");
-    memset(ConfigJSONBuffer, 0, sizeof(ConfigJSONBuffer));
+    memset(ConfigJSONBuffer, '\0', sizeof(ConfigJSONBuffer));
     toJSON(ConfigJSONBuffer, config);
 
     if(strchr(ConfigJSONBuffer, '\0') == NULL || strcmp(ConfigJSONBuffer, "") == 0) {
@@ -368,7 +367,6 @@ void ConfigUtils::toJSON(char* buffer, Config& config)
     cJSON* pGPIOButtons = cJSON_CreateArray();
     cJSON_AddItemToObject(pRoot, "GPIOButtons", pGPIOButtons);
 
-    GPIOButton* GPIOButtonPtr = (GPIOButton*) config.GPIOButtons;
     for(uint8_t j = 0; j < NUM_GPIO_BUTTONS; j ++) {
         cJSON* pGPIOButton = cJSON_CreateObject();
         cJSON_AddNumberToObject(pGPIOButton, "virtualPin", config.GPIOButtons[j]->virtualPin);
@@ -538,7 +536,7 @@ bool ConfigUtils::fromStorage(Config& config)
 {
     int8_t result;
     printf("ConfigUtils::fromStorage begin.\n");
-    memset(ConfigJSONBuffer, 0, sizeof(ConfigJSONBuffer));
+    memset(ConfigJSONBuffer, '\0', sizeof(ConfigJSONBuffer));
     result = QSPI_W25Qxx_ReadString(ConfigJSONBuffer, CONFIG_ADDR);
     if(result == QSPI_W25Qxx_OK && strchr(ConfigJSONBuffer, '\0') != NULL) {
         // printf("fromStorage strlen: %d, content: %s\n", strlen(ConfigJSONBuffer), ConfigJSONBuffer);

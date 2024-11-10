@@ -5,7 +5,8 @@
 extern "C" {
 #endif
 
-#define CONFIG_VERSION                      (uint32_t)0x010000 // 三位版本号 0x aa bb cc
+#define FIRMWARE_VERSION                    (uint32_t)0x010000  //固件版本
+#define CONFIG_VERSION                      (uint32_t)0x010000  //配置版本 三位版本号 0x aa bb cc
 
 #define EX_ADDR                             0x90000000
 #define FSDATA_ADDR                         0x0
@@ -30,6 +31,9 @@ extern "C" {
 
 #define NUM_GPIO_BUTTONS            4               //GPIO按钮数量
 #define GPIO_BUTTONS_DEBOUNCE       5             //去抖动延迟(ms)
+
+#define __RAM_Area__                __attribute__((section("._RAM_Area")))
+#define __DTCMRAM_Area__            __attribute__((section("._DTCMRAM_Area")))
 
 #ifdef __cplusplus
 }

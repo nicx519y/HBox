@@ -88,11 +88,11 @@ class Gamepad {
         inline bool __attribute__((always_inline)) pressedA2()    { return pressedButton(GAMEPAD_MASK_A2); }
         
 
-        const GamepadOptions& getOptions() const { return options; }
+        const GamepadOptions* getOptions() const { return options; }
 
-        void setInputMode(InputMode inputMode) { options.inputMode = inputMode; }
-        void setSOCDMode(SOCDMode socdMode) { options.socdMode = socdMode; }
-        void setDpadMode(DpadMode dpadMode) { options.dpadMode = dpadMode; }
+        void setInputMode(InputMode inputMode) { options->inputMode = inputMode; }
+        void setSOCDMode(SOCDMode socdMode) { options->socdMode = socdMode; }
+        void setDpadMode(DpadMode dpadMode) { options->dpadMode = dpadMode; }
 
         GamepadState rawState;
         GamepadState state;
@@ -128,7 +128,7 @@ class Gamepad {
     private:
         Gamepad();
 
-        GamepadOptions& options;
+        GamepadOptions* options;
 
         void process();
         void read();

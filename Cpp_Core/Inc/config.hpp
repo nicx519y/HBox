@@ -11,22 +11,6 @@
 extern "C" {
 #endif
 
-// struct PS4Options
-// {
-//     uint8_t serial[16];
-//     uint8_t signature[256];
-//     mbedtls_mpi_uint rsa_n[64];
-//     mbedtls_mpi_uint rsa_e[1];
-//     mbedtls_mpi_uint rsa_d[64];
-//     mbedtls_mpi_uint rsa_p[32];
-//     mbedtls_mpi_uint rsa_q[32];
-//     mbedtls_mpi_uint rsa_dp[32];
-//     mbedtls_mpi_uint rsa_dq[32];
-//     mbedtls_mpi_uint rsa_qp[32];
-//     mbedtls_mpi_uint rsa_rn[64];
-//     uint32_t checksum;
-// };
-
 typedef struct 
 {
     uint8_t data[16*64];

@@ -7,7 +7,7 @@ __attribute__((section("._DTCMRAM_Area"))) static uint8_t GPIO_lastActionValues[
 __attribute__((section("._DTCMRAM_Area"))) static uint32_t GPIO_debounce_t[NUM_GPIO_BUTTONS];
 
 GPIOBtnsManager::GPIOBtnsManager():
-    btns(Storage::getInstance().getGPIOButtonOptions())
+    btns((&Storage::getInstance().config)->GPIOButtons)
 {}
 
 void GPIOBtnsManager::setup()

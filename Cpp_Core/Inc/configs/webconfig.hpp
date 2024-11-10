@@ -8,12 +8,6 @@ class WebConfig : public GPConfig
 public:
     virtual void setup();
     virtual void loop();
-
-    enum BootModes {
-        GAMEPAD,
-        WEBCONFIG,
-        BOOTSEL
-    };
 private:
 };
 

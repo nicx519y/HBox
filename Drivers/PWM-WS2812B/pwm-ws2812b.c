@@ -33,7 +33,7 @@ static uint8_t LED_Colors[NUM_LED * 3];
 
 static uint8_t LED_Brightness[NUM_LED];
 
-__attribute__((section("._DMA_Area"))) static uint32_t DMA_LED_Buffer[DMA_BUFFER_LEN]; 
+__RAM_Area__ static uint32_t DMA_LED_Buffer[DMA_BUFFER_LEN];
 
 
 void LEDDataToDMABuffer(const uint16_t start, const uint16_t length)

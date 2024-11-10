@@ -4,6 +4,7 @@
 // #include "config.hpp"
 #include "gamepad.hpp"
 #include <stdint.h>
+#include <string>
 
 #define SI Storage::getInstance()
 
@@ -20,22 +21,15 @@ public:
 
 	// Config& getConfig() { return config; }
 
-	MainState getMainState();
-	bool setMainState(MainState state);
-	bool setProfileIndex(uint8_t idx);
-
-	GamepadOptions &getGamepadOptions();
-	ADCButton* (&getADCButtonOptions())[NUM_ADC_BUTTONS];
-	GPIOButton* (&getGPIOButtonOptions())[NUM_GPIO_BUTTONS];
-
 	void init();
 	bool save();
 
-	void ResetSettings(); 				// EEPROM Reset Feature
-
+	bool ResetSettings(); 				// EEPROM Reset Feature
+	
+	Config config;
 private:
 	Storage() {}
-	Config config;
+	
 	Gamepad* gamepad;
 };
 
