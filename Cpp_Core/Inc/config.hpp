@@ -26,14 +26,13 @@ typedef struct
 typedef struct
 {
     uint32_t    virtualPin;             // 虚拟pin 实质上是在所有buttons之内的序号
-    uint16_t    pressAccuracy;          // 按下精度 单位微米
-    uint16_t    releaseAccuracy;        // 回弹精度 单位微米
-    uint16_t    topDeadzone;            // 顶部死区 单位微米
-    uint16_t    bottomDeadzone;         // 底部死区 单位微米
-    uint16_t    keyTravel;              // 物理键程 单位微米
-    uint16_t    topValue;               // 顶部模拟值
-    uint16_t    bottomValue;            // 底部模拟值
-    bool        ready;                  // 是否校准过
+    double_t    pressAccuracy;          // 按下精度 单位毫米
+    double_t    releaseAccuracy;        // 回弹精度 单位毫米
+    double_t    topDeadzone;            // 顶部死区 单位毫米
+    double_t    bottomDeadzone;         // 底部死区 单位毫米
+    double_t    magnettization;         // 磁化强度 单位特斯拉
+    double_t    topPosition;            // 顶部位置 单位毫米
+    double_t    bottomPosition;         // 底部位置 单位毫米
 } ADCButton;
 
 typedef struct

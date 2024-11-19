@@ -12,192 +12,6 @@
 
 __RAM_Area__ static char ConfigJSONBuffer[20*1024];
 
-static ADCButton defaultADCButtons[] = {
-    {
-        .virtualPin         = 0,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 1,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 2,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 3,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 4,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 5,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 6,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 7,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 8,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 9,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 10,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 11,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 12,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 13,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 14,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-    {
-        .virtualPin         = 15,
-        .pressAccuracy      = 0,
-        .releaseAccuracy    = 0,
-        .topDeadzone        = 0,
-        .bottomDeadzone     = 0,
-        .keyTravel          = 0,
-        .topValue           = 0,
-        .bottomValue        = 0,
-        .ready              = false,
-    },
-};
-
-static GPIOButton defaultGPIOButtons[] = {
-    { .virtualPin           = 16 },
-    { .virtualPin           = 17 },
-    { .virtualPin           = 18 },
-    { .virtualPin           = 19 },
-};
-
 static GamepadOptions defaultProfile = {
     .inputMode      = INPUT_MODE_XINPUT,
     .dpadMode       = DPAD_MODE_DIGITAL,
@@ -255,7 +69,6 @@ bool ConfigUtils::load(Config& config)
 
     fjResult = fromStorage(config);
 
-
     if(fjResult == true) {
         uint32_t ver = config.version;
         printf("Config Version: %d.%d.%d\n", (ver>>16) & 0xff, (ver>>8) & 0xff, ver & 0xff);
@@ -272,7 +85,12 @@ bool ConfigUtils::load(Config& config)
             free(config.ADCButtons[i]);
             ADCButton* ptr = (ADCButton*) malloc(sizeof(ADCButton));
             if(ptr != NULL) {
-                memcpy(ptr, &defaultADCButtons[i], sizeof(ADCButton));
+                ptr->virtualPin = i;
+                ptr->pressAccuracy = MAGNETIC_DEFAULT_PRESS_ACCURACY;
+                ptr->releaseAccuracy = MAGNETIC_DEFAULT_RELEASE_ACCURACY;
+                ptr->topDeadzone = MAGNETIC_DEFAULT_TOP_DEADZONE;
+                ptr->bottomDeadzone = MAGNETIC_DEFAULT_BOTTOM_DEADZONE;
+                ptr->magnettization = 0;
                 config.ADCButtons[i] = ptr;
             } else {
                 printf("ConfigUtils::load - malloc falure.\n");
@@ -283,7 +101,7 @@ bool ConfigUtils::load(Config& config)
             free(config.GPIOButtons[j]);
             GPIOButton* ptr = (GPIOButton*) malloc(sizeof(GPIOButton));
             if(ptr != NULL) {
-                memcpy(ptr, &defaultGPIOButtons[j], sizeof(GPIOButton));
+                ptr->virtualPin = j;
                 config.GPIOButtons[j] = ptr;
             } else {
                 printf("ConfigUtils::load - malloc falure.\n");
@@ -353,14 +171,13 @@ void ConfigUtils::toJSON(char* buffer, Config& config)
     for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
         cJSON* pADCButton = cJSON_CreateObject();
         cJSON_AddNumberToObject(pADCButton, "virtualPin", config.ADCButtons[i]->virtualPin);
-        cJSON_AddNumberToObject(pADCButton, "topValue", config.ADCButtons[i]->topValue);
-        cJSON_AddNumberToObject(pADCButton, "bottomValue", config.ADCButtons[i]->bottomValue);
         cJSON_AddNumberToObject(pADCButton, "pressAccuracy", config.ADCButtons[i]->pressAccuracy);
         cJSON_AddNumberToObject(pADCButton, "releaseAccuracy", config.ADCButtons[i]->releaseAccuracy);
         cJSON_AddNumberToObject(pADCButton, "topDeadzone", config.ADCButtons[i]->topDeadzone);
         cJSON_AddNumberToObject(pADCButton, "bottomDeadzone", config.ADCButtons[i]->bottomDeadzone);
-        cJSON_AddNumberToObject(pADCButton, "keyTravel", config.ADCButtons[i]->keyTravel);
-        cJSON_AddBoolToObject(pADCButton, "ready", config.ADCButtons[i]->ready);
+        cJSON_AddNumberToObject(pADCButton, "magnettization", config.ADCButtons[i]->magnettization);
+        cJSON_AddNumberToObject(pADCButton, "topPosition", config.ADCButtons[i]->topPosition);
+        cJSON_AddNumberToObject(pADCButton, "bottomPosition", config.ADCButtons[i]->bottomPosition);
         cJSON_AddItemToArray(pADCButtons, pADCButton);
     }
 
@@ -454,14 +271,13 @@ bool ConfigUtils::fromJSON(Config& config, char* data, size_t dataLen)
         ADCButton* ptr = (ADCButton*)malloc(sizeof(ADCButton));
         
         ptr->virtualPin = (uint32_t) cJSON_GetObjectItem(ADCButtonObj, "virtualPin")->valueint;
-        ptr->topValue = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "topValue")->valueint;
-        ptr->bottomValue = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "bottomValue")->valueint;
-        ptr->pressAccuracy = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "pressAccuracy")->valueint;
-        ptr->releaseAccuracy = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "releaseAccuracy")->valueint;
-        ptr->topDeadzone = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "topDeadzone")->valueint;
-        ptr->bottomDeadzone = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "topDeadzone")->valueint;
-        ptr->keyTravel = (uint16_t) cJSON_GetObjectItem(ADCButtonObj, "keyTravel")->valueint;
-        ptr->ready = cJSON_GetObjectItem(ADCButtonObj, "ready")->type == cJSON_True ? true: false;
+        ptr->pressAccuracy = (double_t) cJSON_GetObjectItem(ADCButtonObj, "pressAccuracy")->valuedouble;
+        ptr->releaseAccuracy = (double_t) cJSON_GetObjectItem(ADCButtonObj, "releaseAccuracy")->valuedouble;
+        ptr->topDeadzone = (double_t) cJSON_GetObjectItem(ADCButtonObj, "topDeadzone")->valuedouble;
+        ptr->bottomDeadzone = (double_t) cJSON_GetObjectItem(ADCButtonObj, "bottomDeadzone")->valuedouble;
+        ptr->magnettization = (double_t) cJSON_GetObjectItem(ADCButtonObj, "magnettization")->valuedouble;
+        ptr->topPosition = (double_t) cJSON_GetObjectItem(ADCButtonObj, "topPosition")->valuedouble;
+        ptr->bottomPosition = (double_t) cJSON_GetObjectItem(ADCButtonObj, "bottomPosition")->valuedouble;
 
         config.ADCButtons[i] = ptr;
     }

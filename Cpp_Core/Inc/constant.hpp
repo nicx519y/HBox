@@ -30,7 +30,16 @@ extern "C" {
 #define LEDS_ANIMATION_STEP         80             //LED 动画步长，影响性能和效果
 
 #define NUM_GPIO_BUTTONS            4               //GPIO按钮数量
-#define GPIO_BUTTONS_DEBOUNCE       5             //去抖动延迟(ms)
+#define GPIO_BUTTONS_DEBOUNCE       5             //去抖动延迟(ms) 
+
+#define MAGNETIC_TICKNESS                   (double_t)10    // 磁芯长度 单位毫米
+#define MAGNETIC_RADIUS                     (double_t)2     // 磁芯半径 单位毫米
+#define MAGNETIC_DISTANCE                   (double_t)3.5   // 磁轴行程 单位毫米
+#define MAGNETIC_DEFAULT_PRESS_ACCURACY     (double_t)0.1   // 默认按下精度 单位毫米
+#define MAGNETIC_DEFAULT_RELEASE_ACCURACY   (double_t)0.1   // 默认回弹精度 单位毫米
+#define MAGNETIC_DEFAULT_TOP_DEADZONE       (double_t)0.1   // 默认顶部死区 单位毫米
+#define MAGNETIC_DEFAULT_BOTTOM_DEADZONE    (double_t)0.1   // 默认底部死区 单位毫米
+#define MAGNETIC_BASE_VALUE                 (uint32_t)0    // 磁芯归零值
 
 #define __RAM_Area__                __attribute__((section("._RAM_Area")))
 #define __DTCMRAM_Area__            __attribute__((section("._DTCMRAM_Area")))

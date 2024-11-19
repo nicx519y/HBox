@@ -7,22 +7,6 @@ extern "C" {
 
 #include "stm32h7xx_hal.h"
 
-uint16_t uint8ToUint16(uint8_t* n);
-
-uint32_t uint8ToUint32(uint8_t* n);
-
-uint64_t uint8ToUint64(uint8_t* n);
-
-void uint64ToUint8Array(uint8_t* r, uint64_t);
-
-void uint32ToUint8Array(uint8_t* r, uint32_t);
-
-
-double_t max(double_t a, double_t b);
-
-double_t min(double_t a, double_t b);
-
-double_t range(double_t x, double_t start, double_t end);
 
 uint32_t RGBToHex(uint8_t red, uint8_t green, uint8_t blue);
 
@@ -34,6 +18,27 @@ struct RGBColor {
 
 struct RGBColor hexToRGB(uint32_t color);
 
+/**
+ * 已知两个测试点的磁场强度以及这两个测试点的距离、磁芯半径、磁芯长度，求解磁化强度和第一个测试点的位置
+ * 用牛顿-拉夫森法求解方程组
+ * @param vars 磁化强度和第一个测试点的位置  vars[0] = M, vars[1] = z1
+ * @param B1 第一个测试点的磁场强度
+ * @param B2 第二个测试点的磁场强度
+ * @param L 磁芯长度
+ * @param R 磁芯半径
+ * @param d 两个测试点的距离
+ */
+void newton_raphson(double vars[], double B1, double B2, double L, double R, double d);
+
+/**
+ * 已知磁芯长度、磁芯半径、磁化强度，求解磁芯轴向磁场为某个值时，磁芯轴向距离
+ * @param L 磁芯长度
+ * @param R 磁芯半径
+ * @param M 磁化强度
+ * @param B_target 目标磁场
+ * @return 磁芯轴向距离
+ */
+double find_distance_for_axial_field(double L, double R, double M, double B_target);
 
 /******************************** hack 解决 未定义的符号__aeabi_assert 报错 begin ******************************************/
 __attribute__((weak, noreturn)) void __aeabi_assert(const char *expr, const char *file, int line);

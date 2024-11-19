@@ -1,12 +1,12 @@
 #include "configs/webconfig.hpp"
 // #include "config.pb.h"
-#include "configs/base64.hpp"
+// #include "configs/base64.hpp"
 #include "configmanager.hpp"
-#include <cstring>
+// #include <cstring>
 #include <string>
-#include <vector>
-#include <memory>
-#include <set>
+// #include <vector>
+// #include <memory>
+// #include <set>
 #include "cJSON.h"
 
 // HTTPD Includes
@@ -369,11 +369,9 @@ std::string getADCButtons()
         cJSON_AddNumberToObject(btn, "releaseAccuracy", configBtns[i]->releaseAccuracy);
         cJSON_AddNumberToObject(btn, "topDeadzone", configBtns[i]->topDeadzone);
         cJSON_AddNumberToObject(btn, "bottomDeadzone", configBtns[i]->bottomDeadzone);
-        cJSON_AddNumberToObject(btn, "keyTravel", configBtns[i]->keyTravel);
-        cJSON_AddNumberToObject(btn, "topValue", configBtns[i]->topValue);
-        cJSON_AddNumberToObject(btn, "bottomValue", configBtns[i]->bottomValue);
-        cJSON_AddBoolToObject(btn, "ready", configBtns[i]->ready?1:0);
-
+        cJSON_AddNumberToObject(btn, "magnettization", configBtns[i]->magnettization);
+        cJSON_AddNumberToObject(btn, "topPosition", configBtns[i]->topPosition);
+        cJSON_AddNumberToObject(btn, "bottomPosition", configBtns[i]->bottomPosition);
     }
 
     std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);

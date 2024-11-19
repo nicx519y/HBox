@@ -43,7 +43,7 @@ class ADCBtnsManager {
         uint32_t calibrate_t = 0;
 
         ADCBtnsManager();
-        void btnsConfigSave();
+        double_t getOriginValue(uint8_t idx);
         ADCButtonManagerState state = ADCButtonManagerState::WORKING;
         ADCButton* (&btns)[NUM_ADC_BUTTONS];
         

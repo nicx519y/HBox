@@ -5,20 +5,13 @@
 #include "constant.hpp"
 
 // 声明ADC DMA的内存地址，为了避免自动分配到DTCMRAM(DTCMRAM直连CPU，DMA不能访问)，所以为变量指定了内存区域为指向AXISRAM的地址
-__RAM_Area__ static ADCButtonState ADC_btnStates[NUM_ADC_BUTTONS];
-__RAM_Area__ static uint8_t ADC_timesOfCalibrate[NUM_ADC_BUTTONS];
-__RAM_Area__ static int32_t ADC_tmp[NUM_ADC_BUTTONS];
 __RAM_Area__ static uint32_t ADC_Values[NUM_ADC_BUTTONS];
-__DTCMRAM_Area__ static int32_t ADC_topValues[NUM_ADC_BUTTONS];
 
-__DTCMRAM_Area__ static int32_t ADC_bottomValues[NUM_ADC_BUTTONS];
-__DTCMRAM_Area__ static int32_t ADC_pressAccValues[NUM_ADC_BUTTONS];
-__DTCMRAM_Area__ static int32_t ADC_releaseAccValues[NUM_ADC_BUTTONS];
-__DTCMRAM_Area__ static int32_t ADC_topDeadZoneValues[NUM_ADC_BUTTONS];
-__DTCMRAM_Area__ static int32_t ADC_bottomDeadZoneValues[NUM_ADC_BUTTONS];
-__DTCMRAM_Area__ static int32_t ADC_virtualPinMasks[NUM_ADC_BUTTONS];
-__DTCMRAM_Area__ static int32_t ADC_lastTriggerValues[NUM_ADC_BUTTONS];
-__DTCMRAM_Area__ static uint8_t ADC_lastActionValues[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static ADCButtonState ADC_btnStates[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static uint8_t ADC_timesOfCalibrate[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static double_t ADC_tmp[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static double_t ADC_lastTriggerPositions[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static bool ADC_lastActions[NUM_ADC_BUTTONS];
 
 ADCBtnsManager::ADCBtnsManager():
     btns((&Storage::getInstance().config)->ADCButtons)
@@ -47,40 +40,28 @@ void ADCBtnsManager::setup()
     HAL_Delay(50);
 
     switch(this->state) {
+        // 工作状态
         case ADCButtonManagerState::WORKING:
             this->virtualPinMask = 0x0;
-            SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
+            memset(&ADC_lastTriggerPositions[0], 0, sizeof(ADC_lastTriggerPositions));
+            memset(&ADC_lastActions[0], false, sizeof(ADC_lastActions));
 
             for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
                 ADCButton* btn = btns[i];
                 
-                if(btn->ready) {
+                if(btn->magnettization > 0) {
                     ADC_btnStates[i] = ADCButtonState::READY;
                 } else {
                     ADC_btnStates[i] = ADCButtonState::NOT_READY;
                 }
-
-                ADC_topValues[i] = (int32_t) btn->topValue;
-                ADC_bottomValues[i] = (int32_t) btn->bottomValue;
-                double_t valuePerMicron = (double)((ADC_bottomValues[i] - ADC_topValues[i]) / btn->keyTravel);
-                ADC_pressAccValues[i] = (int32_t) round((double_t)btn->pressAccuracy * valuePerMicron);
-                ADC_releaseAccValues[i] = (int32_t) (- round((double_t)btn->releaseAccuracy * valuePerMicron));
-                ADC_topDeadZoneValues[i] = (int32_t) round((double_t)btn->topDeadzone * valuePerMicron);
-                ADC_bottomDeadZoneValues[i] = (int32_t) (- round((double_t)btn->bottomDeadzone * valuePerMicron)); 
-                ADC_virtualPinMasks[i] = (uint32_t) (1 << btn->virtualPin);
-                ADC_lastTriggerValues[i] = (int32_t) ADC_Values[i];
-
-                uint16_t t = (int32_t) abs((int32_t)ADC_Values[i] - ADC_bottomValues[i]);
-
-                // 如果当前adc值在bottom值附近，则认为目前是按下状态 否则是弹起状态
-                if(t <= ADC_VOLATILITY) {
-                    ADC_lastActionValues[i] = 1;
-                    this->virtualPinMask |= ADC_virtualPinMasks[i];
-                } else {
-                    ADC_lastActionValues[i] = 0;
-                }
             }
 
+            break;
+        // 校准状态
+        case ADCButtonManagerState::CALIBRATING:
+            this->calibrate_t = 0;
+            memset(&ADC_timesOfCalibrate[0], 0, sizeof(ADC_timesOfCalibrate));
+            memset(&ADC_tmp[0], 0, sizeof(ADC_tmp));
             break;
         default:
 
@@ -92,72 +73,53 @@ void ADCBtnsManager::deinit()
 {
     HAL_ADC_Stop_DMA(&hadc1);
     HAL_ADC_Stop_DMA(&hadc2);
-    memset(&ADC_Values[0], 0, sizeof(ADC_Values));
-    memset(&ADC_btnStates[0], ADCButtonState::NOT_READY, sizeof(ADC_btnStates));
-    memset(&ADC_topValues[0], 0, sizeof(ADC_topValues));
-    memset(&ADC_bottomValues[0], 0, sizeof(ADC_bottomValues));
-    memset(&ADC_pressAccValues[0], 0, sizeof(ADC_pressAccValues));
-    memset(&ADC_releaseAccValues[0], 0, sizeof(ADC_releaseAccValues));
-    memset(&ADC_topDeadZoneValues[0], 0, sizeof(ADC_topDeadZoneValues));
-    memset(&ADC_bottomDeadZoneValues[0], 0, sizeof(ADC_bottomDeadZoneValues));
-    memset(&ADC_virtualPinMasks[0], 0, sizeof(ADC_virtualPinMasks));
-    memset(&ADC_lastTriggerValues[0], 0, sizeof(ADC_lastTriggerValues));
-    memset(&ADC_lastActionValues[0], 0, sizeof(ADC_lastActionValues));
-    memset(&ADC_timesOfCalibrate[0], 0, sizeof(ADC_timesOfCalibrate));
-    memset(&ADC_tmp[0], 0, sizeof(ADC_tmp));
-    this->virtualPinMask = 0x0;
 
+    HAL_Delay(50);
 }
 
 
 Mask_t ADCBtnsManager::read()
 {
     if(this->state == ADCButtonManagerState::WORKING) {
+
+        SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
+        // 遍历所有按钮
         for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
             
             // 如果当前按钮状态时未校准 则不读取
-            if(ADC_btnStates[i] != ADCButtonState::READY) continue;
+            if(btns[i]->magnettization <= 0) continue;
 
-            int32_t value = (int32_t) ADC_Values[i];
+            // 获取当前磁场强度
+            double_t value = (double_t) abs((int32_t)ADC_Values[i] - (int32_t)MAGNETIC_BASE_VALUE);
+            // 获取当前测试点位置
+            double_t pos = find_distance_for_axial_field(
+                MAGNETIC_TICKNESS,
+                MAGNETIC_RADIUS,
+                btns[i]->magnettization, 
+                value
+            );
             
             // 按下
-            if(ADC_lastActionValues[i] == 0) {
-                if((ADC_pressAccValues[i] > 0 
-                    && value >= ADC_lastTriggerValues[i] + ADC_pressAccValues[i] 
-                    && value > ADC_topValues[i] + ADC_topDeadZoneValues[i])
-                    || 
-                    (ADC_pressAccValues[i] <= 0 
-                    && value <= ADC_lastTriggerValues[i] + ADC_pressAccValues[i] 
-                    && value < ADC_topValues[i] + ADC_topDeadZoneValues[i])) {
-                    
-                    ADC_lastTriggerValues[i] = value;
-                    ADC_lastActionValues[i] = 1;
-                    this->virtualPinMask |= ADC_virtualPinMasks[i];
-
-                } else if((ADC_pressAccValues[i] > 0 && value < ADC_lastTriggerValues[i])
-                    || (ADC_pressAccValues[i] <= 0 && value > ADC_lastTriggerValues[i])) {
-
-                    ADC_lastTriggerValues[i] = value;
+            if(ADC_lastActions[i] == false) {
+                // 如果当前测试点位置和上次测试点位置的差值大于等于按键的按下精度，则认为按键按下
+                if(ADC_lastTriggerPositions[i] - pos >= btns[i]->pressAccuracy && pos < btns[i]->topPosition - btns[i]->topDeadzone) {
+                    ADC_lastTriggerPositions[i] = pos;
+                    ADC_lastActions[i] = true;
+                    this->virtualPinMask |= btns[i]->virtualPin;
+                // 如果当前测试点位置和上次测试点位置的差值大于0，则更新测试点位置
+                } else if(pos - ADC_lastTriggerPositions[i] > 0) {
+                    ADC_lastTriggerPositions[i] = pos;
                 }
             // 弹起
             } else {
-                if((ADC_releaseAccValues[i] < 0 
-                    && value <= ADC_lastTriggerValues[i] + ADC_releaseAccValues[i] 
-                    && value < ADC_bottomValues[i] + ADC_bottomDeadZoneValues[i])
-                    || 
-                    (ADC_releaseAccValues[i] >= 0 
-                    && value >= ADC_lastTriggerValues[i] + ADC_releaseAccValues[i]
-                    && value > ADC_bottomValues[i] + ADC_bottomDeadZoneValues[i])) {
-
-                    ADC_lastTriggerValues[i] = value;
-                    ADC_lastActionValues[i] = 0;
-                    this->virtualPinMask &= ~ ADC_virtualPinMasks[i];
-
-                } else if((ADC_releaseAccValues[i] < 0 && value > ADC_lastTriggerValues[i])
-                    || (ADC_releaseAccValues[i] >= 0 && value < ADC_lastTriggerValues[i])) {
-
-                    ADC_lastTriggerValues[i] = value;
-
+                // 如果当前测试点位置和上次测试点位置的差值大于等于按键的回弹精度，则认为按键弹起
+                if(pos - ADC_lastTriggerPositions[i] >= btns[i]->releaseAccuracy && pos > btns[i]->bottomPosition + btns[i]->bottomDeadzone) {
+                    ADC_lastTriggerPositions[i] = pos;
+                    ADC_lastActions[i] = false;
+                    this->virtualPinMask &= ~ btns[i]->virtualPin;
+                // 如果当前测试点位置和上次测试点位置的差值大于0，则更新测试点位置
+                } else if(ADC_lastTriggerPositions[i] - pos > 0) {
+                    ADC_lastTriggerPositions[i] = pos;
                 }
             }
         }
@@ -177,9 +139,7 @@ void ADCBtnsManager::calibrate()
 
         #if DELAY_ADC_CALIBRATION > 0
         
-        uint32_t t = HAL_GetTick();
-        
-        if(this->calibrate_t == 0 || t - this->calibrate_t >= DELAY_ADC_CALIBRATION) {
+        if(this->calibrate_t == 0 || HAL_GetTick() - this->calibrate_t >= DELAY_ADC_CALIBRATION) {
             this->calibrate_t = HAL_GetTick();
         } else {  // 不到校准间隔不执行校准
             return;
@@ -187,7 +147,16 @@ void ADCBtnsManager::calibrate()
 
         #endif //DELAY_ADC_CALIBRATION
 
+        int32_t value = 0;
+        double_t vars[2];
+
+        // 刷新ADC值
+        SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
+
         for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
+
+            value = abs((int32_t) ADC_Values[i] - (int32_t) MAGNETIC_BASE_VALUE);
+
             switch(ADC_btnStates[i]) {
                 case ADCButtonState::NOT_READY:
                     ADC_btnStates[i] = ADCButtonState::CALIBRATING_TOP;
@@ -196,19 +165,18 @@ void ADCBtnsManager::calibrate()
                     break;
                 case ADCButtonState::CALIBRATING_TOP:
                     // 如果当前读取的adc value跟之前比跳动过大，则校准失败。需要连续到相近的adc values才算标定成功
-                    if(ADC_timesOfCalibrate[i] > 0 && abs((int32_t)ADC_Values[i] - (int32_t) round((double_t)ADC_tmp[i-1]/(double_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY) {
+                    if(ADC_timesOfCalibrate[i] > 0 && abs(value - (int32_t) round(ADC_tmp[i-1]/(double_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY) {
                         // 校准失败 这个按钮重新校准
                         ADC_tmp[i] = 0;
                         ADC_timesOfCalibrate[i] = 0;
                     } else {
-                        ADC_tmp[i] += (int32_t)ADC_Values[i] ;
+                        ADC_tmp[i] += (double_t) value ;
                         ADC_timesOfCalibrate[i] ++;
                     }
                     
                     if(ADC_timesOfCalibrate[i] >= TIMES_ADC_CALIBRATION) {
-                        // 校准成功 ADC_topValues[i]
-                        ADC_topValues[i] = (int32_t) round((double_t)ADC_tmp[i] / (double_t)ADC_timesOfCalibrate[i]);
-
+                        // 校准成功 ADC_topPositions[i]
+                        btns[i]->topPosition = round(ADC_tmp[i] / (double_t)ADC_timesOfCalibrate[i]);
                         ADC_btnStates[i] = ADCButtonState::CALIBRATING_BOTTOM;
                         ADC_tmp[i] = 0;
                         ADC_timesOfCalibrate[i] = 0;
@@ -218,19 +186,22 @@ void ADCBtnsManager::calibrate()
                 case ADCButtonState::CALIBRATING_BOTTOM:
 
                     // 如果当前读取的adc value 和 topValue相差过小 并且跟之前的值比跳动过大，则校准失败。需要连续到相近的adc values才算标定成功
-                    if(abs((int32_t)ADC_Values[i] - ADC_topValues[i]) < ADC_VOLATILITY
-                        || (ADC_timesOfCalibrate[i] > 0 && abs((int32_t)ADC_Values[i] - (int32_t)round((double_t)ADC_tmp[i-1]/(double_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY)) {
+                    if(abs((double_t)value - btns[i]->topPosition) < ADC_VOLATILITY
+                        || (ADC_timesOfCalibrate[i] > 0 && abs(value - (int32_t)round(ADC_tmp[i-1]/(double_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY)) {
                         // 校准失败 这个按钮重新校准
                         ADC_tmp[i] = 0;
                         ADC_timesOfCalibrate[i] = 0;
                     } else {
-                        ADC_tmp[i] += (int32_t) ADC_Values[i];
+                        ADC_tmp[i] += (double_t) value;
                         ADC_timesOfCalibrate[i] ++;
                     }
 
                     if(ADC_timesOfCalibrate[i] >= TIMES_ADC_CALIBRATION) {
                         // 校准成功
-                        ADC_bottomValues[i] = (int32_t) round((double_t)ADC_tmp[i] / (double_t)ADC_timesOfCalibrate[i]);
+                        btns[i]->bottomPosition = round(ADC_tmp[i] / (double_t)ADC_timesOfCalibrate[i]);
+
+                        newton_raphson(vars, btns[i]->topPosition, btns[i]->bottomPosition, MAGNETIC_TICKNESS, MAGNETIC_RADIUS, MAGNETIC_DISTANCE);
+                        btns[i]->magnettization = vars[0];
 
                         ADC_btnStates[i] = ADCButtonState::READY;
                         ADC_tmp[i] = 0;
@@ -250,40 +221,17 @@ void ADCBtnsManager::calibrate()
 
 void ADCBtnsManager::setState(const ADCButtonManagerState state)
 {
-    switch(state) {
-        case ADCButtonManagerState::WORKING:
-            if(this->state == ADCButtonManagerState::WORKING) return;
-            this->btnsConfigSave();
-            this->state = ADCButtonManagerState::WORKING;
-            this->deinit();
-            this->setup();
-            break;
-        case ADCButtonManagerState::CALIBRATING:
-            if(this->state == ADCButtonManagerState::CALIBRATING) return;
-            this->calibrate_t = 0;
-            this->state = ADCButtonManagerState::CALIBRATING;
-            this->deinit();
-            this->setup();
-            break;
-        default:
-            break;
-    }
+    if(state == this->state) return;
+    this->state = state;
+    this->deinit();
+    this->setup();
 }
-
-void ADCBtnsManager::btnsConfigSave()
-{
-    for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
-        this->btns[i]->ready = ADC_btnStates[i] == ADCButtonState::READY? true: false;
-        this->btns[i]->topValue = (uint16_t) ADC_topValues[i];
-        this->btns[i]->bottomValue = (uint16_t) ADC_bottomValues[i];
-    }
-}
-
 
 ADCButtonState* ADCBtnsManager::getButtonStates()
 {
     return ADC_btnStates;
 }
+
 
 
 
