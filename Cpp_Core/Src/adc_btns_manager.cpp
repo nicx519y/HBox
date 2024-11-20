@@ -39,21 +39,28 @@ void ADCBtnsManager::setup()
 
     HAL_Delay(50);
 
+    SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
+
     switch(this->state) {
         // 工作状态
         case ADCButtonManagerState::WORKING:
             this->virtualPinMask = 0x0;
-            memset(&ADC_lastTriggerPositions[0], 0, sizeof(ADC_lastTriggerPositions));
             memset(&ADC_lastActions[0], false, sizeof(ADC_lastActions));
 
             for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
                 ADCButton* btn = btns[i];
-                
-                if(btn->magnettization > 0) {
-                    ADC_btnStates[i] = ADCButtonState::READY;
-                } else {
-                    ADC_btnStates[i] = ADCButtonState::NOT_READY;
-                }
+                if(btn->magnettization <= 0) continue;
+                // 获取当前磁场强度
+                double_t value = (double_t) abs((int32_t)ADC_Values[i] - (int32_t)MAGNETIC_BASE_VALUE);
+                // 获取当前测试点位置
+                double_t pos = find_distance_for_axial_field(
+                    MAGNETIC_TICKNESS,
+                    MAGNETIC_RADIUS,
+                    btns[i]->magnettization, 
+                    value
+                );
+                // 初始化最后触发位置等于当前位置
+                ADC_lastTriggerPositions[i] = pos;
             }
 
             break;
@@ -62,6 +69,16 @@ void ADCBtnsManager::setup()
             this->calibrate_t = 0;
             memset(&ADC_timesOfCalibrate[0], 0, sizeof(ADC_timesOfCalibrate));
             memset(&ADC_tmp[0], 0, sizeof(ADC_tmp));
+
+            for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
+                ADCButton* btn = btns[i];
+                if(btn->magnettization > 0) {
+                    ADC_btnStates[i] = ADCButtonState::READY;
+                } else {
+                    ADC_btnStates[i] = ADCButtonState::NOT_READY;
+                }
+            }
+
             break;
         default:
 
@@ -78,7 +95,7 @@ void ADCBtnsManager::deinit()
 }
 
 
-Mask_t ADCBtnsManager::read()
+void ADCBtnsManager::read()
 {
     if(this->state == ADCButtonManagerState::WORKING) {
 
@@ -123,11 +140,6 @@ Mask_t ADCBtnsManager::read()
                 }
             }
         }
-
-        return this->virtualPinMask;
-
-    } else {
-        return (Mask_t) 0x0;
     }
 }
 
@@ -170,7 +182,7 @@ void ADCBtnsManager::calibrate()
                         ADC_tmp[i] = 0;
                         ADC_timesOfCalibrate[i] = 0;
                     } else {
-                        ADC_tmp[i] += (double_t) value ;
+                        ADC_tmp[i] += (double_t) value;
                         ADC_timesOfCalibrate[i] ++;
                     }
                     

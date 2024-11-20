@@ -28,7 +28,7 @@ class ADCBtnsManager {
 
         void setup();
         void deinit();
-        Mask_t read();
+        void read();
         void calibrate();
         void setState(const ADCButtonManagerState state);
 
