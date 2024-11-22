@@ -16,6 +16,7 @@ __RAM_Area__ static char ConfigJSONBuffer[20*1024];
  * @brief 默认的profile配置
  */
 static GamepadOptions defaultProfile = {
+    .name           = "Default Profile",
     .inputMode      = INPUT_MODE_XINPUT,
     .dpadMode       = DPAD_MODE_DIGITAL,
     .socdMode       = SOCD_MODE_NEUTRAL,
@@ -129,6 +130,12 @@ bool ConfigUtils::load(Config& config)
             GamepadOptions* ptr = (GamepadOptions*) malloc(sizeof(GamepadOptions));
             if(ptr != NULL) {
                 memcpy(ptr, &defaultProfile, sizeof(defaultProfile));
+                if(k != 0) {
+                    strcpy(ptr->name, "Profile ");
+                    ptr->name[7] = '0' + k;
+                } else {
+                    strcpy(ptr->name, defaultProfile.name);
+                }
                 for(uint8_t l = 0; l < NUM_ADC_BUTTONS; l ++) {
                     ptr->RTProfiles[l] = (RipidTriggerProfile*) malloc(sizeof(defaultRTProfiles));
                     memcpy(ptr->RTProfiles[l], &defaultRTProfiles, sizeof(defaultRTProfiles));
@@ -226,6 +233,7 @@ void ConfigUtils::toJSON(char* buffer, Config& config)
         cJSON* pOptions = cJSON_CreateObject();
         cJSON_AddItemToArray(pProfiles, pOptions);
 
+        cJSON_AddStringToObject(pOptions, "name", config.profiles[k]->name);
         cJSON_AddNumberToObject(pOptions, "inputMode", config.profiles[k]->inputMode);
         cJSON_AddNumberToObject(pOptions, "dpadMode", config.profiles[k]->dpadMode);
         cJSON_AddNumberToObject(pOptions, "socdMode", config.profiles[k]->socdMode);
@@ -346,6 +354,7 @@ bool ConfigUtils::fromJSON(Config& config, char* data, size_t dataLen)
         free(config.profiles[k]);
         GamepadOptions* ptr = (GamepadOptions*)malloc(sizeof(GamepadOptions));
 
+        strcpy(ptr->name, cJSON_GetObjectItem(profileObj, "name")->valuestring);
         ptr->inputMode = (InputMode) cJSON_GetObjectItem(profileObj, "inputMode")->valueint;
         ptr->dpadMode = (DpadMode) cJSON_GetObjectItem(profileObj, "dpadMode")->valueint;
         ptr->socdMode = (SOCDMode) cJSON_GetObjectItem(profileObj, "socdMode")->valueint;

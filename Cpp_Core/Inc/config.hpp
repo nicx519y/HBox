@@ -46,6 +46,7 @@ typedef struct
 
 typedef struct
 {
+    char name[16];
     InputMode inputMode {InputMode::INPUT_MODE_XINPUT}; 
     DpadMode dpadMode {DpadMode::DPAD_MODE_DIGITAL};
     SOCDMode socdMode {SOCDMode::SOCD_MODE_NEUTRAL};
