@@ -17,6 +17,7 @@ __RAM_Area__ static char ConfigJSONBuffer[20*1024];
  */
 static GamepadOptions defaultProfile = {
     .name           = "Default Profile",
+    .enabled        = false,
     .inputMode      = INPUT_MODE_XINPUT,
     .dpadMode       = DPAD_MODE_DIGITAL,
     .socdMode       = SOCD_MODE_NEUTRAL,
@@ -133,8 +134,10 @@ bool ConfigUtils::load(Config& config)
                 if(k != 0) {
                     strcpy(ptr->name, "Profile ");
                     ptr->name[7] = '0' + k;
+                    ptr->enabled = false;
                 } else {
                     strcpy(ptr->name, defaultProfile.name);
+                    ptr->enabled = true;
                 }
                 for(uint8_t l = 0; l < NUM_ADC_BUTTONS; l ++) {
                     ptr->RTProfiles[l] = (RipidTriggerProfile*) malloc(sizeof(defaultRTProfiles));
@@ -234,6 +237,7 @@ void ConfigUtils::toJSON(char* buffer, Config& config)
         cJSON_AddItemToArray(pProfiles, pOptions);
 
         cJSON_AddStringToObject(pOptions, "name", config.profiles[k]->name);
+        cJSON_AddBoolToObject(pOptions, "enabled", config.profiles[k]->enabled);
         cJSON_AddNumberToObject(pOptions, "inputMode", config.profiles[k]->inputMode);
         cJSON_AddNumberToObject(pOptions, "dpadMode", config.profiles[k]->dpadMode);
         cJSON_AddNumberToObject(pOptions, "socdMode", config.profiles[k]->socdMode);
@@ -355,6 +359,7 @@ bool ConfigUtils::fromJSON(Config& config, char* data, size_t dataLen)
         GamepadOptions* ptr = (GamepadOptions*)malloc(sizeof(GamepadOptions));
 
         strcpy(ptr->name, cJSON_GetObjectItem(profileObj, "name")->valuestring);
+        ptr->enabled = cJSON_GetObjectItem(profileObj, "enabled")->type == cJSON_True ? true: false;
         ptr->inputMode = (InputMode) cJSON_GetObjectItem(profileObj, "inputMode")->valueint;
         ptr->dpadMode = (DpadMode) cJSON_GetObjectItem(profileObj, "dpadMode")->valueint;
         ptr->socdMode = (SOCDMode) cJSON_GetObjectItem(profileObj, "socdMode")->valueint;
