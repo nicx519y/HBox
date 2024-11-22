@@ -12,6 +12,9 @@
 
 __RAM_Area__ static char ConfigJSONBuffer[20*1024];
 
+/**
+ * @brief 默认的profile配置
+ */
 static GamepadOptions defaultProfile = {
     .inputMode      = INPUT_MODE_XINPUT,
     .dpadMode       = DPAD_MODE_DIGITAL,
@@ -39,6 +42,8 @@ static GamepadOptions defaultProfile = {
     .keyButtonA2    = (uint32_t) 1 << 17,
     .keyButtonFn    = (uint32_t) 1 << 18,
 
+    .RTProfiles = {},
+
     .ledEnabled      = true,
     .ledEffect       = LEDEffect::STATIC,
     .isDoubleColor   = true,
@@ -52,6 +57,9 @@ static GamepadOptions defaultProfile = {
     .ledBrightnesssCalibrate    = 0xff
 };
 
+/**
+ * @brief 默认的配置
+ */
 static Config defaultConfig = 
 {
     .version        = CONFIG_VERSION,
@@ -61,6 +69,16 @@ static Config defaultConfig =
     .ADCButtons     = {},
     .GPIOButtons    = {},
     .profiles       = {}
+};
+
+/**
+ * @brief 默认的RT触发器配置
+ */
+static RipidTriggerProfile defaultRTProfiles = {
+    .pressAccuracy = MAGNETIC_DEFAULT_PRESS_ACCURACY,
+    .releaseAccuracy = MAGNETIC_DEFAULT_RELEASE_ACCURACY,
+    .topDeadzone = MAGNETIC_DEFAULT_TOP_DEADZONE,
+    .bottomDeadzone = MAGNETIC_DEFAULT_BOTTOM_DEADZONE
 };
 
 bool ConfigUtils::load(Config& config)
@@ -86,11 +104,9 @@ bool ConfigUtils::load(Config& config)
             ADCButton* ptr = (ADCButton*) malloc(sizeof(ADCButton));
             if(ptr != NULL) {
                 ptr->virtualPin = i;
-                ptr->pressAccuracy = MAGNETIC_DEFAULT_PRESS_ACCURACY;
-                ptr->releaseAccuracy = MAGNETIC_DEFAULT_RELEASE_ACCURACY;
-                ptr->topDeadzone = MAGNETIC_DEFAULT_TOP_DEADZONE;
-                ptr->bottomDeadzone = MAGNETIC_DEFAULT_BOTTOM_DEADZONE;
-                ptr->magnettization = 0;
+                ptr->topPosition = 0;
+                ptr->bottomPosition = 0;
+                ptr->magnettization = -1;
                 config.ADCButtons[i] = ptr;
             } else {
                 printf("ConfigUtils::load - malloc falure.\n");
@@ -113,6 +129,10 @@ bool ConfigUtils::load(Config& config)
             GamepadOptions* ptr = (GamepadOptions*) malloc(sizeof(GamepadOptions));
             if(ptr != NULL) {
                 memcpy(ptr, &defaultProfile, sizeof(defaultProfile));
+                for(uint8_t l = 0; l < NUM_ADC_BUTTONS; l ++) {
+                    ptr->RTProfiles[l] = (RipidTriggerProfile*) malloc(sizeof(defaultRTProfiles));
+                    memcpy(ptr->RTProfiles[l], &defaultRTProfiles, sizeof(defaultRTProfiles));
+                }
                 config.profiles[k] = ptr;
             } else {
                 printf("ConfigUtils::load - malloc falure.\n");
@@ -146,6 +166,13 @@ bool ConfigUtils::save(Config& config)
     }
 }
 
+/**
+ * @brief 重置配置
+ * 
+ * @param config 
+ * @return true 
+ * @return false 
+ */
 bool ConfigUtils::reset(Config& config)
 {
     int8_t result = QSPI_W25Qxx_BlockErase_32K(CONFIG_ADDR);
@@ -156,6 +183,12 @@ bool ConfigUtils::reset(Config& config)
     return ConfigUtils::load(config);
 }
 
+/**
+ * @brief 将配置转换为JSON字符串
+ * 
+ * @param buffer 
+ * @param config 
+ */
 void ConfigUtils::toJSON(char* buffer, Config& config)
 {
     cJSON* pRoot = cJSON_CreateObject();
@@ -171,10 +204,6 @@ void ConfigUtils::toJSON(char* buffer, Config& config)
     for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
         cJSON* pADCButton = cJSON_CreateObject();
         cJSON_AddNumberToObject(pADCButton, "virtualPin", config.ADCButtons[i]->virtualPin);
-        cJSON_AddNumberToObject(pADCButton, "pressAccuracy", config.ADCButtons[i]->pressAccuracy);
-        cJSON_AddNumberToObject(pADCButton, "releaseAccuracy", config.ADCButtons[i]->releaseAccuracy);
-        cJSON_AddNumberToObject(pADCButton, "topDeadzone", config.ADCButtons[i]->topDeadzone);
-        cJSON_AddNumberToObject(pADCButton, "bottomDeadzone", config.ADCButtons[i]->bottomDeadzone);
         cJSON_AddNumberToObject(pADCButton, "magnettization", config.ADCButtons[i]->magnettization);
         cJSON_AddNumberToObject(pADCButton, "topPosition", config.ADCButtons[i]->topPosition);
         cJSON_AddNumberToObject(pADCButton, "bottomPosition", config.ADCButtons[i]->bottomPosition);
@@ -235,12 +264,32 @@ void ConfigUtils::toJSON(char* buffer, Config& config)
         cJSON_AddNumberToObject(pOptions, "ledColorCalibrateBottom", config.profiles[k]->ledColorCalibrateBottom);
         cJSON_AddNumberToObject(pOptions, "ledColorCalibrateComplete", config.profiles[k]->ledColorCalibrateComplete);
         cJSON_AddNumberToObject(pOptions, "ledBrightnesssCalibrate", config.profiles[k]->ledBrightnesssCalibrate);
+
+        for(uint8_t l = 0; l < NUM_ADC_BUTTONS; l ++) {
+            cJSON* pRTProfiles = cJSON_CreateObject();
+            cJSON_AddItemToObject(pOptions, "RTProfiles", pRTProfiles);
+
+            cJSON_AddNumberToObject(pRTProfiles, "pressAccuracy", config.profiles[k]->RTProfiles[l]->pressAccuracy);
+            cJSON_AddNumberToObject(pRTProfiles, "releaseAccuracy", config.profiles[k]->RTProfiles[l]->releaseAccuracy);
+            cJSON_AddNumberToObject(pRTProfiles, "topDeadzone", config.profiles[k]->RTProfiles[l]->topDeadzone);
+            cJSON_AddNumberToObject(pRTProfiles, "bottomDeadzone", config.profiles[k]->RTProfiles[l]->bottomDeadzone);
+
+        }  
     }
     
     strcpy(buffer, cJSON_PrintUnformatted(pRoot));
     cJSON_Delete(pRoot);
 }
 
+/**
+ * @brief 将JSON字符串转换为配置
+ * 
+ * @param config 
+ * @param data 
+ * @param dataLen 
+ * @return true 
+ * @return false 
+ */
 bool ConfigUtils::fromJSON(Config& config, char* data, size_t dataLen)
 {
     char str[dataLen + 1];
@@ -271,10 +320,6 @@ bool ConfigUtils::fromJSON(Config& config, char* data, size_t dataLen)
         ADCButton* ptr = (ADCButton*)malloc(sizeof(ADCButton));
         
         ptr->virtualPin = (uint32_t) cJSON_GetObjectItem(ADCButtonObj, "virtualPin")->valueint;
-        ptr->pressAccuracy = (double_t) cJSON_GetObjectItem(ADCButtonObj, "pressAccuracy")->valuedouble;
-        ptr->releaseAccuracy = (double_t) cJSON_GetObjectItem(ADCButtonObj, "releaseAccuracy")->valuedouble;
-        ptr->topDeadzone = (double_t) cJSON_GetObjectItem(ADCButtonObj, "topDeadzone")->valuedouble;
-        ptr->bottomDeadzone = (double_t) cJSON_GetObjectItem(ADCButtonObj, "bottomDeadzone")->valuedouble;
         ptr->magnettization = (double_t) cJSON_GetObjectItem(ADCButtonObj, "magnettization")->valuedouble;
         ptr->topPosition = (double_t) cJSON_GetObjectItem(ADCButtonObj, "topPosition")->valuedouble;
         ptr->bottomPosition = (double_t) cJSON_GetObjectItem(ADCButtonObj, "bottomPosition")->valuedouble;
@@ -340,6 +385,14 @@ bool ConfigUtils::fromJSON(Config& config, char* data, size_t dataLen)
         ptr->ledColorCalibrateComplete = (uint32_t) cJSON_GetObjectItem(profileObj, "ledColorCalibrateComplete")->valueint;
         ptr->ledBrightnesssCalibrate = (uint8_t) cJSON_GetObjectItem(profileObj, "ledBrightnesssCalibrate")->valueint;
 
+        for(uint8_t l = 0; l < NUM_ADC_BUTTONS; l ++) {
+            cJSON* pRTProfiles = cJSON_GetObjectItem(profileObj, "RTProfiles");
+            ptr->RTProfiles[l]->pressAccuracy = (double_t) cJSON_GetObjectItem(pRTProfiles, "pressAccuracy")->valuedouble;
+            ptr->RTProfiles[l]->releaseAccuracy = (double_t) cJSON_GetObjectItem(pRTProfiles, "releaseAccuracy")->valuedouble;
+            ptr->RTProfiles[l]->topDeadzone = (double_t) cJSON_GetObjectItem(pRTProfiles, "topDeadzone")->valuedouble;
+            ptr->RTProfiles[l]->bottomDeadzone = (double_t) cJSON_GetObjectItem(pRTProfiles, "bottomDeadzone")->valuedouble;
+        }
+
         config.profiles[k] = ptr;
     }
     
@@ -348,6 +401,13 @@ bool ConfigUtils::fromJSON(Config& config, char* data, size_t dataLen)
     return true;
 }
 
+/**
+ * @brief 从存储中读取配置
+ * 
+ * @param config 
+ * @return true 
+ * @return false 
+ */
 bool ConfigUtils::fromStorage(Config& config)
 {
     int8_t result;

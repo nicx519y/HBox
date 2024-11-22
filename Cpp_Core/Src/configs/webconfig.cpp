@@ -365,10 +365,6 @@ std::string getADCButtons()
         cJSON_AddItemToArray(dataJSON, btn);
 
         cJSON_AddNumberToObject(btn, "virtualPin", configBtns[i]->virtualPin);
-        cJSON_AddNumberToObject(btn, "pressAccuracy", configBtns[i]->pressAccuracy);
-        cJSON_AddNumberToObject(btn, "releaseAccuracy", configBtns[i]->releaseAccuracy);
-        cJSON_AddNumberToObject(btn, "topDeadzone", configBtns[i]->topDeadzone);
-        cJSON_AddNumberToObject(btn, "bottomDeadzone", configBtns[i]->bottomDeadzone);
         cJSON_AddNumberToObject(btn, "magnettization", configBtns[i]->magnettization);
         cJSON_AddNumberToObject(btn, "topPosition", configBtns[i]->topPosition);
         cJSON_AddNumberToObject(btn, "bottomPosition", configBtns[i]->bottomPosition);

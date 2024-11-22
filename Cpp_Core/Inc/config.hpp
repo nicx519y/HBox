@@ -26,14 +26,18 @@ typedef struct
 typedef struct
 {
     uint32_t    virtualPin;             // 虚拟pin 实质上是在所有buttons之内的序号
-    double_t    pressAccuracy;          // 按下精度 单位毫米
-    double_t    releaseAccuracy;        // 回弹精度 单位毫米
-    double_t    topDeadzone;            // 顶部死区 单位毫米
-    double_t    bottomDeadzone;         // 底部死区 单位毫米
     double_t    magnettization;         // 磁化强度 单位特斯拉
     double_t    topPosition;            // 顶部位置 单位毫米
     double_t    bottomPosition;         // 底部位置 单位毫米
 } ADCButton;
+
+typedef struct
+{
+    double_t    pressAccuracy;          // 按下精度 单位毫米
+    double_t    releaseAccuracy;        // 回弹精度 单位毫米
+    double_t    topDeadzone;            // 顶部死区 单位毫米
+    double_t    bottomDeadzone;         // 底部死区 单位毫米
+} RipidTriggerProfile;
 
 typedef struct
 {
@@ -68,6 +72,8 @@ typedef struct
     uint32_t keyButtonA1;
     uint32_t keyButtonA2;
     uint32_t keyButtonFn;
+
+    RipidTriggerProfile* RTProfiles[NUM_ADC_BUTTONS];
 
     bool ledEnabled;
     LEDEffect ledEffect;

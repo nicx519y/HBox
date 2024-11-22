@@ -14,7 +14,8 @@ __DTCMRAM_Area__ static double_t ADC_lastTriggerPositions[NUM_ADC_BUTTONS];
 __DTCMRAM_Area__ static bool ADC_lastActions[NUM_ADC_BUTTONS];
 
 ADCBtnsManager::ADCBtnsManager():
-    btns((&Storage::getInstance().config)->ADCButtons)
+    btns((&Storage::getInstance().config)->ADCButtons),
+    RTProfiles(Storage::getInstance().config.profiles[Storage::getInstance().config.profileIndex]->RTProfiles)
 {}
 
 /**
@@ -119,7 +120,7 @@ void ADCBtnsManager::read()
             // 按下
             if(ADC_lastActions[i] == false) {
                 // 如果当前测试点位置和上次测试点位置的差值大于等于按键的按下精度，则认为按键按下
-                if(ADC_lastTriggerPositions[i] - pos >= btns[i]->pressAccuracy && pos < btns[i]->topPosition - btns[i]->topDeadzone) {
+                if(ADC_lastTriggerPositions[i] - pos >= RTProfiles[i]->pressAccuracy && pos < btns[i]->topPosition - RTProfiles[i]->topDeadzone) {
                     ADC_lastTriggerPositions[i] = pos;
                     ADC_lastActions[i] = true;
                     this->virtualPinMask |= btns[i]->virtualPin;
@@ -130,7 +131,7 @@ void ADCBtnsManager::read()
             // 弹起
             } else {
                 // 如果当前测试点位置和上次测试点位置的差值大于等于按键的回弹精度，则认为按键弹起
-                if(pos - ADC_lastTriggerPositions[i] >= btns[i]->releaseAccuracy && pos > btns[i]->bottomPosition + btns[i]->bottomDeadzone) {
+                if(pos - ADC_lastTriggerPositions[i] >= RTProfiles[i]->releaseAccuracy && pos > btns[i]->bottomPosition + RTProfiles[i]->bottomDeadzone) {
                     ADC_lastTriggerPositions[i] = pos;
                     ADC_lastActions[i] = false;
                     this->virtualPinMask &= ~ btns[i]->virtualPin;

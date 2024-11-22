@@ -46,6 +46,7 @@ class ADCBtnsManager {
         double_t getOriginValue(uint8_t idx);
         ADCButtonManagerState state = ADCButtonManagerState::WORKING;
         ADCButton* (&btns)[NUM_ADC_BUTTONS];
+        RipidTriggerProfile* (&RTProfiles)[NUM_ADC_BUTTONS];
         
 };
 
