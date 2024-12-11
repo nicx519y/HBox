@@ -5,7 +5,6 @@ import {
     Center,
     Stack,
     Fieldset,
-    Button,
     Text,
 } from "@chakra-ui/react";
 import { useEffect, useState, useMemo } from "react";
@@ -19,13 +18,12 @@ import HotkeysField from "./hotkeys-field";
 import { toaster } from "@/components/ui/toaster";
 import { useGamepadConfig } from "@/contexts/gamepad-config-context";
 import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
-import { openDialog as openRebootDialog } from "@/components/dialog-cannot-close";
-import { openConfirm as openRebootConfirmDialog } from "@/components/dialog-confirm";
 import { useLanguage } from "@/contexts/language-context";
+import { ContentActionButtons } from "@/components/content-action-buttons";
 
 export function HotkeysSettingContent() {
     const { t } = useLanguage();
-    const { hotkeysConfig, updateHotkeysConfig, fetchHotkeysConfig, rebootSystem } = useGamepadConfig();
+    const { hotkeysConfig, updateHotkeysConfig, fetchHotkeysConfig } = useGamepadConfig();
     const [_isDirty, setIsDirty] = useUnsavedChangesWarning();
 
     const [hotkeys, setHotkeys] = useState<Hotkey[]>([]);
@@ -113,48 +111,12 @@ export function HotkeysSettingContent() {
                                     />
                                 ))}
 
-                                <Stack direction="row" gap={4} justifyContent="flex-start" padding="32px 0px">
-                                    <Button
-                                        colorPalette="teal"
-                                        variant="surface"
-                                        size="lg"
-                                        width="140px"
-                                        onClick={fetchHotkeysConfig}
-                                    >
-                                        {t.BUTTON_RESET}
-                                    </Button>
-                                    <Button
-                                        colorPalette="green"
-                                        size="lg"
-                                        width="140px"
-                                        onClick={saveHotkeysConfigHandler}
-                                    >
-                                        {t.BUTTON_SAVE}
-                                    </Button>
-                                    <Button
-                                        colorPalette="blue"
-                                        variant="surface"
-                                        size={"lg"}
-                                        width={"180px"}
-                                        onClick={async () => {
-                                            const confirmed = await openRebootConfirmDialog({
-                                                title: t.DIALOG_REBOOT_CONFIRM_TITLE,
-                                                message: t.DIALOG_REBOOT_CONFIRM_MESSAGE,
-                                        });
-                                            if (confirmed) {
-                                                await saveHotkeysConfigHandler();
-                                                await rebootSystem();
-                                                openRebootDialog({
-                                                    title: t.DIALOG_REBOOT_SUCCESS_TITLE,
-                                                    status: "success",
-                                                    message: t.DIALOG_REBOOT_SUCCESS_MESSAGE,
-                                                });
-                                            }
-                                        }}
-                                    >
-                                        {t.BUTTON_REBOOT_WITH_SAVING}
-                                    </Button>
-                                </Stack>
+                                <ContentActionButtons
+                                    resetLabel={t.BUTTON_RESET}
+                                    saveLabel={t.BUTTON_SAVE}
+                                    resetHandler={fetchHotkeysConfig}
+                                    saveHandler={saveHotkeysConfigHandler}
+                                />
                             </Stack>
                         </Fieldset.Content>
                     </Stack>

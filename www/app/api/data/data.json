@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "defaultProfileId": "profile-1733882408986",
+  "defaultProfileId": "profile-1733499833211",
   "isCalibrateCompleted": false,
   "numProfilesMax": 10,
   "profiles": [
@@ -321,21 +321,35 @@
       "name": "NewProfile1112",
       "keysConfig": {
         "invertXAxis": false,
-        "invertYAxis": false,
+        "invertYAxis": true,
         "fourWayMode": false,
         "socdMode": "SOCD_MODE_SECOND_INPUT_PRIORITY",
-        "inputMode": "XINPUT",
+        "inputMode": "PS4",
         "keyMapping": {
           "DPAD_UP": [
             14
           ],
-          "DPAD_DOWN": [
+          "DPAD_DOWN": [],
+          "DPAD_RIGHT": [],
+          "L1": [
             12
+          ],
+          "L2": [
+            8
+          ],
+          "B3": [
+            2
+          ],
+          "R3": [
+            5
+          ],
+          "B2": [
+            4
           ]
         }
       },
       "ledsConfigs": {
-        "ledEnabled": false,
+        "ledEnabled": true,
         "ledsEffectStyle": "STATIC",
         "ledColors": [
           "#000000",
@@ -346,7 +360,104 @@
       },
       "triggerConfigs": {
         "isAllBtnsConfiguring": true,
-        "triggerConfigs": []
+        "triggerConfigs": [
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          },
+          {
+            "topDeadzone": 0.2,
+            "bottomDeadzone": 0.2,
+            "pressAccuracy": 0.2,
+            "releaseAccuracy": 0.4
+          }
+        ]
       }
     },
     {
@@ -1082,8 +1193,8 @@
       "isLocked": false
     },
     {
-      "key": -1,
-      "action": "None",
+      "key": 7,
+      "action": "LedsBrightnessUp",
       "isLocked": false
     },
     {
@@ -1102,12 +1213,12 @@
       "isLocked": false
     },
     {
-      "key": -1,
-      "action": "None",
+      "key": 1,
+      "action": "LedsEnableSwitch",
       "isLocked": false
     },
     {
-      "key": -1,
+      "key": 4,
       "action": "None",
       "isLocked": false
     },

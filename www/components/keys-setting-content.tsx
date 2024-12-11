@@ -34,13 +34,12 @@ import { LuInfo } from "react-icons/lu";
 import { ToggleTip } from "@/components/ui/toggle-tip"
 import { useGamepadConfig } from "@/contexts/gamepad-config-context";
 import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
-import { openDialog as openRebootDialog } from "@/components/dialog-cannot-close";
-import { openConfirm as openRebootConfirmDialog } from "@/components/dialog-confirm";
 import { useLanguage } from "@/contexts/language-context";
+import { ContentActionButtons } from "@/components/content-action-buttons";
 
 export function KeysSettingContent() {
 
-    const { defaultProfile, updateProfileDetails, resetProfileDetails, rebootSystem } = useGamepadConfig();
+    const { defaultProfile, updateProfileDetails, resetProfileDetails } = useGamepadConfig();
     const [_isDirty, setIsDirty] = useUnsavedChangesWarning();  
     const { t } = useLanguage();
 
@@ -65,7 +64,7 @@ export function KeysSettingContent() {
 
 
     /**
-     * set key mapping
+ * set key mapping
      * @param key - game controller button
      * @param hitboxButtons - hitbox buttons
      */
@@ -80,7 +79,7 @@ export function KeysSettingContent() {
         setInputKey(keyId);
     }
 
-    const saveProfileDetailHandler = () => {
+    const saveProfileDetailHandler = (): Promise<void> => {
 
         const newProfile: GameProfile = {
             id: defaultProfile.id,
@@ -94,7 +93,7 @@ export function KeysSettingContent() {
             },
         }
 
-        updateProfileDetails(defaultProfile.id, newProfile);
+        return updateProfileDetails(defaultProfile.id, newProfile);
     }
 
     return (
@@ -235,37 +234,14 @@ export function KeysSettingContent() {
                                 </HStack>
 
                             </Fieldset.Content>
-                            <Stack direction={"row"} gap={4} justifyContent={"flex-start"} padding={"32px 0px"} >
-                                <Button colorPalette={"teal"} variant={"surface"} size={"lg"} width={"140px"} onClick={resetProfileDetails}>
-                                    {t.BUTTON_RESET}
-                                </Button>
-                                <Button colorPalette={"green"} size={"lg"} width={"140px"} onClick={saveProfileDetailHandler}>
-                                    {t.BUTTON_SAVE}
-                                </Button>
-                                <Button 
-                                    colorPalette="blue" 
-                                    variant="surface"
-                                    size={"lg"} 
-                                    width={"180px"} 
-                                    onClick={async () => {
-                                        const confirmed = await openRebootConfirmDialog({
-                                            title: t.DIALOG_REBOOT_CONFIRM_TITLE,
-                                            message: t.DIALOG_REBOOT_CONFIRM_MESSAGE,
-                                        });
-                                        if (confirmed) {
-                                            await saveProfileDetailHandler();
-                                            await rebootSystem();
-                                            openRebootDialog({
-                                                title: t.DIALOG_REBOOT_SUCCESS_TITLE,
-                                                status: "success",
-                                                message: t.DIALOG_REBOOT_SUCCESS_MESSAGE,
-                                            });
-                                        }
-                                    }} 
-                                >
-                                    {t.BUTTON_REBOOT_WITH_SAVING}
-                                </Button>
-                            </Stack>
+
+                            <ContentActionButtons
+                                resetLabel={t.BUTTON_RESET}
+                                saveLabel={t.BUTTON_SAVE}
+                                resetHandler={resetProfileDetails}
+                                saveHandler={saveProfileDetailHandler}
+                            />
+
                         </Stack>
                     </Fieldset.Root>
                 </Center>

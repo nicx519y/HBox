@@ -19,17 +19,20 @@ import { ColorModeSwitcher } from "@/components/color-mode-switcher";
 function AppContent({ children }: { children: React.ReactNode }) {
     const { isLoading } = useGamepadConfig();
     const [showLoading, setShowLoading] = useState(false);
-    const { error } = useGamepadConfig();
+    const { error, setError } = useGamepadConfig();
 
+    // 全局错误处理
     useEffect(() => {
         if (error) {
             toaster.error({
                 title: "Error",
                 description: error,
             });
+            setError(null);
         }
     }, [error]);
 
+    // 全局loading处理
     useEffect(() => {
         let timer: NodeJS.Timeout;
         // 延迟300ms显示loading

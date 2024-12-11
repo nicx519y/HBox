@@ -5,7 +5,6 @@ import {
     Center,
     Stack,
     Fieldset,
-    Button,
     Text,
 } from "@chakra-ui/react";
 import { Slider } from "@/components/ui/slider";
@@ -15,9 +14,8 @@ import { RapidTriggerConfig } from "@/types/gamepad-config";
 import Hitbox from "@/components/hitbox";
 import { useGamepadConfig } from "@/contexts/gamepad-config-context";
 import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
-import { openDialog as openRebootDialog } from "@/components/dialog-cannot-close";
-import { openConfirm as openRebootConfirmDialog } from "@/components/dialog-confirm";
 import { useLanguage } from "@/contexts/language-context";
+import { ContentActionButtons } from "@/components/content-action-buttons";
 
 interface TriggerConfig {
     topDeadzone: number;
@@ -34,7 +32,7 @@ const defaultTriggerConfig: TriggerConfig = {
 };
 
 export function RapidTriggerContent() {
-    const { defaultProfile, updateProfileDetails, resetProfileDetails, rebootSystem } = useGamepadConfig();
+    const { defaultProfile, updateProfileDetails, resetProfileDetails } = useGamepadConfig();
     const [_isDirty, setIsDirty] = useUnsavedChangesWarning();
     const { t } = useLanguage();
 
@@ -105,7 +103,7 @@ export function RapidTriggerContent() {
     /**
      * 保存配置
      */
-    const saveProfileDetailHandler = async () => {
+    const saveProfileDetailHandler = async (): Promise<void> => {
         const profileId = defaultProfile.id;
         if (isAllBtnsConfiguring) {
             const newTriggerConfigs: RapidTriggerConfig[] = [];
@@ -113,7 +111,7 @@ export function RapidTriggerContent() {
                 newTriggerConfigs[index] = allBtnsConfig;
             });
 
-            await updateProfileDetails(profileId, {
+            return await updateProfileDetails(profileId, {
                 id: profileId,
                 triggerConfigs: {
                     isAllBtnsConfiguring: isAllBtnsConfiguring,
@@ -121,7 +119,7 @@ export function RapidTriggerContent() {
                 }
             });
         } else {
-            await updateProfileDetails(profileId, {
+            return await updateProfileDetails(profileId, {
                 id: profileId,
                 triggerConfigs: {
                     isAllBtnsConfiguring: isAllBtnsConfiguring,
@@ -226,48 +224,12 @@ export function RapidTriggerContent() {
                                 ))}
 
                                 {/* Buttons */}
-                                <Stack direction="row" gap={4} justifyContent="flex-start" padding="32px 0px">
-                                    <Button
-                                        colorPalette="teal"
-                                        variant="surface"
-                                        size="lg"
-                                        width="140px"
-                                        onClick={resetProfileDetails}
-                                    >
-                                        {t.BUTTON_RESET}
-                                    </Button>
-                                    <Button
-                                        colorPalette="green"
-                                        size="lg"
-                                        width="140px"
-                                        onClick={saveProfileDetailHandler}
-                                    >
-                                        {t.BUTTON_SAVE}
-                                    </Button>
-                                    <Button
-                                        colorPalette="blue"
-                                        variant="surface"
-                                        size={"lg"}
-                                        width={"180px"}
-                                        onClick={async () => {
-                                            const confirmed = await openRebootConfirmDialog({
-                                                title: t.DIALOG_REBOOT_CONFIRM_TITLE,
-                                                message: t.DIALOG_REBOOT_CONFIRM_MESSAGE,
-                                            });
-                                            if (confirmed) {
-                                                await saveProfileDetailHandler();
-                                                await rebootSystem();
-                                                openRebootDialog({
-                                                    title: t.DIALOG_REBOOT_SUCCESS_TITLE,
-                                                    status: "success",
-                                                    message: t.DIALOG_REBOOT_SUCCESS_MESSAGE,
-                                                });
-                                            }
-                                        }}
-                                    >
-                                        {t.BUTTON_REBOOT_WITH_SAVING}
-                                    </Button>
-                                </Stack>
+                                <ContentActionButtons
+                                    resetLabel={t.BUTTON_RESET}
+                                    saveLabel={t.BUTTON_SAVE}
+                                    resetHandler={resetProfileDetails}
+                                    saveHandler={saveProfileDetailHandler}
+                                />
                             </Stack>
                         </Fieldset.Content>
                     </Stack>

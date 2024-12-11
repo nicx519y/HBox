@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { GamepadConfig, GameProfile, LedsEffectStyle, Platform, NUM_PROFILES_MAX, GameSocdMode, GameControllerButton, Hotkey, RapidTriggerConfig, GameProfileList } from '@/types/gamepad-config';
+import { GameProfile, LedsEffectStyle, Platform, GameSocdMode, GameControllerButton, Hotkey, RapidTriggerConfig, GameProfileList } from '@/types/gamepad-config';
 
 interface GamepadConfigContextType {
     contextJsReady: boolean;
@@ -20,6 +20,7 @@ interface GamepadConfigContextType {
     updateHotkeysConfig: (hotkeysConfig: Hotkey[]) => Promise<void>;
     isLoading: boolean;
     error: string | null;
+    setError: (error: string | null) => void;
     rebootSystem: () => Promise<void>;
 }
 
@@ -115,12 +116,13 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             });
             const data = await processResponse(response, setError);
             if (!data) {
-                return;
+                return Promise.reject(new Error("Failed to fetch default profile"));
             };
             setDefaultProfile(converProfileDetails(data.profileDetails) ?? {});
-            setError(null);
+            return Promise.resolve();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to fetch default profile"));
         } finally {
             setIsLoading(false);
         }
@@ -138,12 +140,13 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             }); 
             const data = await processResponse(response, setError);
             if (!data) {
-                return;
+                return Promise.reject(new Error("Failed to fetch profile list"))    ;
             };
             setProfileList(data.profileList);
-            setError(null);
+            return Promise.resolve();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to fetch profile list"));
         } finally {
             setIsLoading(false);
         }
@@ -161,12 +164,13 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             });
             const data = await processResponse(response, setError);
             if (!data) {
-                return;
+                return Promise.reject(new Error("Failed to fetch hotkeys config"));
             };
             setHotkeysConfig(data.hotkeysConfig);
-            setError(null);
+            return Promise.resolve();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to fetch hotkeys config"));
         } finally {
             setIsLoading(false);
         }
@@ -186,7 +190,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
 
             const data = await processResponse(response, setError);
             if (!data) {
-                return;
+                return Promise.reject(new Error("Failed to update profile details"));
             };
 
             // 如果更新的是 profile 的 name，则需要重新获取 profile list
@@ -196,8 +200,10 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
                 setDefaultProfile(converProfileDetails(data.profileDetails) ?? {});
             }
             setError(null);
+            return Promise.resolve();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to update profile details"));
         } finally {
             setIsLoading(false);
         }
@@ -222,12 +228,14 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
 
             const data = await processResponse(response, setError);
             if (!data) {
-                return;
+                return Promise.reject(new Error("Failed to create profile"));
             };
             setProfileList(data.profileList);
             setError(null);
+            return Promise.resolve();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to create profile"));
         } finally {
             setIsLoading(false);
         }
@@ -247,12 +255,14 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
 
             const data = await processResponse(response, setError);
             if (!data) {
-                return;
+                return Promise.reject(new Error("Failed to delete profile"));
             };
             setProfileList(data.profileList);
             setError(null);
+            return Promise.resolve();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to delete profile"));
         } finally {
             setIsLoading(false);
         }
@@ -271,12 +281,14 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             });
             const data = await processResponse(response, setError);
             if (!data) {
-                return;
+                return Promise.reject(new Error("Failed to switch profile"));
             };
             setProfileList(data.profileList);
             setError(null);
+            return Promise.resolve();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to switch profile"));
         } finally {
             setIsLoading(false);
         }
@@ -295,12 +307,14 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             });
             const data = await processResponse(response, setError);
             if (!data) {
-                return;
+                return Promise.reject(new Error("Failed to update hotkeys config"));
             }
             setHotkeysConfig(data.hotkeysConfig);
             setError(null);
+            return Promise.resolve();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to update hotkeys config"));
         } finally {
             setIsLoading(false);
         }
@@ -316,12 +330,13 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
 
             const data = await processResponse(response, setError);
             if (!data) {
-                return;
+                return Promise.reject(new Error("Failed to reboot system"));
             }
-            
             setError(null);
+            return Promise.resolve();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to reboot system"));
         } finally {
             setIsLoading(false);
         }
@@ -345,6 +360,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             updateHotkeysConfig,
             isLoading,
             error,
+            setError,
             rebootSystem,
         }}>
             {children}

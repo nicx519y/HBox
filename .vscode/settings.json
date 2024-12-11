@@ -1,7 +1,7 @@
 {
     "files.autoSave": "afterDelay",
     "workbench.iconTheme": "vscode-icons",
-    "workbench.colorTheme": "Visual Studio 2017 Dark - C++",
+    // "workbench.colorTheme": "Visual Studio 2017 Dark - C++",
     // "editor.formatOnPaste": true,
     // "editor.formatOnSave": true,
     "editor.fontSize": 14,

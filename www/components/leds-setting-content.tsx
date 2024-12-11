@@ -5,7 +5,6 @@ import {
     Center,
     Stack,
     Fieldset,
-    Button,
     RadioCardLabel,
     SimpleGrid,
     Icon,
@@ -45,16 +44,15 @@ import { LuSunDim, LuActivity } from "react-icons/lu";
 import Hitbox from "./hitbox";
 import { useGamepadConfig } from "@/contexts/gamepad-config-context";
 import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
-import { openDialog as openRebootDialog } from "@/components/dialog-cannot-close";
-import { openConfirm as openRebootConfirmDialog } from "@/components/dialog-confirm";
 import { useLanguage } from "@/contexts/language-context";
 import { useColorMode } from "./ui/color-mode";
+import { ContentActionButtons } from "@/components/content-action-buttons";
 
 export function LEDsSettingContent() {
     const { t } = useLanguage();
 
     const [_isDirty, setIsDirty] = useUnsavedChangesWarning();
-    const { defaultProfile, updateProfileDetails, resetProfileDetails, rebootSystem } = useGamepadConfig();
+    const { defaultProfile, updateProfileDetails, resetProfileDetails } = useGamepadConfig();
     const { colorMode } = useColorMode();
     const defaultFrontColor = useMemo(() => {
         if(colorMode === "dark") {
@@ -91,7 +89,7 @@ export function LEDsSettingContent() {
     }, [defaultProfile]);
 
     // Save the profile details
-    const saveProfileDetailsHandler = () => {
+    const saveProfileDetailsHandler = (): Promise<void> => {
         const newProfileDetails = {
             id: defaultProfile.id,
             ledsConfigs: {
@@ -103,7 +101,7 @@ export function LEDsSettingContent() {
         }
 
         console.log("saveProfileDetailHandler: ", newProfileDetails);
-        updateProfileDetails(defaultProfile.id, newProfileDetails as GameProfile);
+        return updateProfileDetails(defaultProfile.id, newProfileDetails as GameProfile);
     }
 
     const colorPickerDisabled = (index: number) => {
@@ -264,37 +262,12 @@ export function LEDsSettingContent() {
                                 </Stack>
 
                             </Fieldset.Content>
-                            <Stack direction={"row"} gap={4} justifyContent={"flex-start"} padding={"32px 0px"} >
-                                <Button colorPalette={"teal"} variant={"surface"} size={"lg"} width={"140px"} onClick={resetProfileDetails} >
-                                    {t.BUTTON_RESET}
-                                </Button>
-                                <Button colorPalette={"green"} size={"lg"} width={"140px"} onClick={saveProfileDetailsHandler} >
-                                    {t.BUTTON_SAVE}
-                                </Button>
-                                <Button
-                                    colorPalette="blue"
-                                    variant="surface"
-                                    size={"lg"}
-                                    width={"180px"}
-                                    onClick={async () => {
-                                        const confirmed = await openRebootConfirmDialog({
-                                            title: t.DIALOG_REBOOT_CONFIRM_TITLE,
-                                            message: t.DIALOG_REBOOT_CONFIRM_MESSAGE,
-                                        });
-                                        if (confirmed) {
-                                            await saveProfileDetailsHandler();
-                                            await rebootSystem();
-                                            openRebootDialog({
-                                                title: t.DIALOG_REBOOT_SUCCESS_TITLE,
-                                                status: "success",
-                                                message: t.DIALOG_REBOOT_SUCCESS_MESSAGE,
-                                            });
-                                        }
-                                    }}
-                                >
-                                    {t.BUTTON_REBOOT_WITH_SAVING}
-                                </Button>
-                            </Stack>
+                            <ContentActionButtons
+                                resetLabel={t.BUTTON_RESET}
+                                saveLabel={t.BUTTON_SAVE}
+                                resetHandler={resetProfileDetails}
+                                saveHandler={saveProfileDetailsHandler}
+                            />
                         </Stack>
                     </Fieldset.Root>
                 </Center>
