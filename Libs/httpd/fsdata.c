@@ -55,7 +55,7 @@ __Text_Area__ static unsigned char data__globe_svg[650] FSDATA_ALIGN_PRE;
 #if FSDATA_FILE_ALIGNMENT==1
 static const unsigned int dummy_align__index_html = 4;
 #endif
-__Text_Area__ static unsigned char data__index_html[12894] FSDATA_ALIGN_PRE;
+__Text_Area__ static unsigned char data__index_html[12896] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
 static const unsigned int dummy_align__next_svg = 5;
@@ -78,49 +78,49 @@ static const unsigned int dummy_align___next_static_chunks_polyfills_42372ed1304
 __Text_Area__ static unsigned char data___next_static_chunks_polyfills_42372ed130431b0a_js[39521] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
-static const unsigned int dummy_align___next_static_js_app_layout_7babd7c48f95155c_js = 9;
+static const unsigned int dummy_align___next_static_DeTlJ5ndQ4mjoKUEj28VF__buildManifest_js = 9;
 #endif
-__Text_Area__ static unsigned char data___next_static_js_app_layout_7babd7c48f95155c_js[176927] FSDATA_ALIGN_PRE;
+__Text_Area__ static unsigned char data___next_static_DeTlJ5ndQ4mjoKUEj28VF__buildManifest_js[531] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
-static const unsigned int dummy_align___next_static_js_app_page_9240397c0eac09b8_js = 10;
+static const unsigned int dummy_align___next_static_DeTlJ5ndQ4mjoKUEj28VF__ssgManifest_js = 10;
 #endif
-__Text_Area__ static unsigned char data___next_static_js_app_page_9240397c0eac09b8_js[121760] FSDATA_ALIGN_PRE;
+__Text_Area__ static unsigned char data___next_static_DeTlJ5ndQ4mjoKUEj28VF__ssgManifest_js[227] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
-static const unsigned int dummy_align___next_static_js_app__not_found_page_a1b61b4cb5ca4872_js = 11;
+static const unsigned int dummy_align___next_static_js_app_layout_d412d84997a8fbc3_js = 11;
+#endif
+__Text_Area__ static unsigned char data___next_static_js_app_layout_d412d84997a8fbc3_js[177052] FSDATA_ALIGN_PRE;
+
+#if FSDATA_FILE_ALIGNMENT==1
+static const unsigned int dummy_align___next_static_js_app_page_50e39bdd8af0017a_js = 12;
+#endif
+__Text_Area__ static unsigned char data___next_static_js_app_page_50e39bdd8af0017a_js[121900] FSDATA_ALIGN_PRE;
+
+#if FSDATA_FILE_ALIGNMENT==1
+static const unsigned int dummy_align___next_static_js_app__not_found_page_a1b61b4cb5ca4872_js = 13;
 #endif
 __Text_Area__ static unsigned char data___next_static_js_app__not_found_page_a1b61b4cb5ca4872_js[1048] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
-static const unsigned int dummy_align___next_static_js_main_app_c36e96490a7903a1_js = 12;
+static const unsigned int dummy_align___next_static_js_main_app_c36e96490a7903a1_js = 14;
 #endif
 __Text_Area__ static unsigned char data___next_static_js_main_app_c36e96490a7903a1_js[99153] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
-static const unsigned int dummy_align___next_static_js_main_c71d0941f1d7360c_js = 13;
+static const unsigned int dummy_align___next_static_js_main_c71d0941f1d7360c_js = 15;
 #endif
 __Text_Area__ static unsigned char data___next_static_js_main_c71d0941f1d7360c_js[83044] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
-static const unsigned int dummy_align___next_static_js_pages__app_cf3ad177392cf414_js = 14;
+static const unsigned int dummy_align___next_static_js_pages__app_cf3ad177392cf414_js = 16;
 #endif
 __Text_Area__ static unsigned char data___next_static_js_pages__app_cf3ad177392cf414_js[338] FSDATA_ALIGN_PRE;
 
 #if FSDATA_FILE_ALIGNMENT==1
-static const unsigned int dummy_align___next_static_js_pages__error_a0996bbb06df5e95_js = 15;
+static const unsigned int dummy_align___next_static_js_pages__error_a0996bbb06df5e95_js = 17;
 #endif
 __Text_Area__ static unsigned char data___next_static_js_pages__error_a0996bbb06df5e95_js[354] FSDATA_ALIGN_PRE;
-
-#if FSDATA_FILE_ALIGNMENT==1
-static const unsigned int dummy_align___next_static_Z_a2f63Jjuyu3UeI0IAt9__buildManifest_js = 16;
-#endif
-__Text_Area__ static unsigned char data___next_static_Z_a2f63Jjuyu3UeI0IAt9__buildManifest_js[531] FSDATA_ALIGN_PRE;
-
-#if FSDATA_FILE_ALIGNMENT==1
-static const unsigned int dummy_align___next_static_Z_a2f63Jjuyu3UeI0IAt9__ssgManifest_js = 17;
-#endif
-__Text_Area__ static unsigned char data___next_static_Z_a2f63Jjuyu3UeI0IAt9__ssgManifest_js[227] FSDATA_ALIGN_PRE;
 
 const struct fsdata_file file__404_html[] = {{
 file_NULL,
@@ -194,24 +194,40 @@ sizeof(data___next_static_chunks_polyfills_42372ed130431b0a_js) - 52,
 FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
 }};
 
-const struct fsdata_file file___next_static_js_app_layout_7babd7c48f95155c_js[] = {{
+const struct fsdata_file file___next_static_DeTlJ5ndQ4mjoKUEj28VF__buildManifest_js[] = {{
 file___next_static_chunks_polyfills_42372ed130431b0a_js,
-data___next_static_js_app_layout_7babd7c48f95155c_js,
-data___next_static_js_app_layout_7babd7c48f95155c_js + 48,
-sizeof(data___next_static_js_app_layout_7babd7c48f95155c_js) - 48,
+data___next_static_DeTlJ5ndQ4mjoKUEj28VF__buildManifest_js,
+data___next_static_DeTlJ5ndQ4mjoKUEj28VF__buildManifest_js + 56,
+sizeof(data___next_static_DeTlJ5ndQ4mjoKUEj28VF__buildManifest_js) - 56,
 FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
 }};
 
-const struct fsdata_file file___next_static_js_app_page_9240397c0eac09b8_js[] = {{
-file___next_static_js_app_layout_7babd7c48f95155c_js,
-data___next_static_js_app_page_9240397c0eac09b8_js,
-data___next_static_js_app_page_9240397c0eac09b8_js + 48,
-sizeof(data___next_static_js_app_page_9240397c0eac09b8_js) - 48,
+const struct fsdata_file file___next_static_DeTlJ5ndQ4mjoKUEj28VF__ssgManifest_js[] = {{
+file___next_static_DeTlJ5ndQ4mjoKUEj28VF__buildManifest_js,
+data___next_static_DeTlJ5ndQ4mjoKUEj28VF__ssgManifest_js,
+data___next_static_DeTlJ5ndQ4mjoKUEj28VF__ssgManifest_js + 52,
+sizeof(data___next_static_DeTlJ5ndQ4mjoKUEj28VF__ssgManifest_js) - 52,
+FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
+}};
+
+const struct fsdata_file file___next_static_js_app_layout_d412d84997a8fbc3_js[] = {{
+file___next_static_DeTlJ5ndQ4mjoKUEj28VF__ssgManifest_js,
+data___next_static_js_app_layout_d412d84997a8fbc3_js,
+data___next_static_js_app_layout_d412d84997a8fbc3_js + 48,
+sizeof(data___next_static_js_app_layout_d412d84997a8fbc3_js) - 48,
+FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
+}};
+
+const struct fsdata_file file___next_static_js_app_page_50e39bdd8af0017a_js[] = {{
+file___next_static_js_app_layout_d412d84997a8fbc3_js,
+data___next_static_js_app_page_50e39bdd8af0017a_js,
+data___next_static_js_app_page_50e39bdd8af0017a_js + 48,
+sizeof(data___next_static_js_app_page_50e39bdd8af0017a_js) - 48,
 FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
 }};
 
 const struct fsdata_file file___next_static_js_app__not_found_page_a1b61b4cb5ca4872_js[] = {{
-file___next_static_js_app_page_9240397c0eac09b8_js,
+file___next_static_js_app_page_50e39bdd8af0017a_js,
 data___next_static_js_app__not_found_page_a1b61b4cb5ca4872_js,
 data___next_static_js_app__not_found_page_a1b61b4cb5ca4872_js + 60,
 sizeof(data___next_static_js_app__not_found_page_a1b61b4cb5ca4872_js) - 60,
@@ -247,22 +263,6 @@ file___next_static_js_pages__app_cf3ad177392cf414_js,
 data___next_static_js_pages__error_a0996bbb06df5e95_js,
 data___next_static_js_pages__error_a0996bbb06df5e95_js + 52,
 sizeof(data___next_static_js_pages__error_a0996bbb06df5e95_js) - 52,
-FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
-}};
-
-const struct fsdata_file file___next_static_Z_a2f63Jjuyu3UeI0IAt9__buildManifest_js[] = {{
-file___next_static_js_pages__error_a0996bbb06df5e95_js,
-data___next_static_Z_a2f63Jjuyu3UeI0IAt9__buildManifest_js,
-data___next_static_Z_a2f63Jjuyu3UeI0IAt9__buildManifest_js + 56,
-sizeof(data___next_static_Z_a2f63Jjuyu3UeI0IAt9__buildManifest_js) - 56,
-FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
-}};
-
-const struct fsdata_file file___next_static_Z_a2f63Jjuyu3UeI0IAt9__ssgManifest_js[] = {{
-file___next_static_Z_a2f63Jjuyu3UeI0IAt9__buildManifest_js,
-data___next_static_Z_a2f63Jjuyu3UeI0IAt9__ssgManifest_js,
-data___next_static_Z_a2f63Jjuyu3UeI0IAt9__ssgManifest_js + 52,
-sizeof(data___next_static_Z_a2f63Jjuyu3UeI0IAt9__ssgManifest_js) - 52,
 FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
 }};
 
@@ -317,44 +317,44 @@ const struct fsdata_file * getFSRoot(void)
 		addr += size;
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 9), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app_layout_7babd7c48f95155c_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_DeTlJ5ndQ4mjoKUEj28VF__buildManifest_js, addr, size);
 		addr += size;
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 10), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app_page_9240397c0eac09b8_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_DeTlJ5ndQ4mjoKUEj28VF__ssgManifest_js, addr, size);
 		addr += size;
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 11), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app__not_found_page_a1b61b4cb5ca4872_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app_layout_d412d84997a8fbc3_js, addr, size);
 		addr += size;
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 12), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_main_app_c36e96490a7903a1_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app_page_50e39bdd8af0017a_js, addr, size);
 		addr += size;
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 13), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_main_c71d0941f1d7360c_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app__not_found_page_a1b61b4cb5ca4872_js, addr, size);
 		addr += size;
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 14), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_pages__app_cf3ad177392cf414_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_main_app_c36e96490a7903a1_js, addr, size);
 		addr += size;
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 15), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_pages__error_a0996bbb06df5e95_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_main_c71d0941f1d7360c_js, addr, size);
 		addr += size;
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 16), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_Z_a2f63Jjuyu3UeI0IAt9__buildManifest_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_pages__app_cf3ad177392cf414_js, addr, size);
 		addr += size;
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 17), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_Z_a2f63Jjuyu3UeI0IAt9__ssgManifest_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_pages__error_a0996bbb06df5e95_js, addr, size);
 		
 		fsdata_inited = true;
 	}
 
-	return file___next_static_Z_a2f63Jjuyu3UeI0IAt9__ssgManifest_js;
+	return file___next_static_js_pages__error_a0996bbb06df5e95_js;
 }
 	
 const uint8_t numfiles = 18;
