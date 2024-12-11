@@ -1,4 +1,4 @@
-import path from 'node:path';
+import { join, dirname, normalize, relative } from 'node:path';
 import fs from 'node:fs';
 
 import { fileURLToPath } from 'node:url';
@@ -7,13 +7,14 @@ import pako from 'pako';
 const __makeExFile = true;	//是否将文件内容生成外部文件
 const __filename = fileURLToPath(import.meta.url);
 
-const root = path.dirname(__filename).replace(path.normalize('www'), '');
-const rootwww = path.dirname(__filename);
-const buildPath = path.join(rootwww, 'build');
+const root = dirname(__filename).replace(normalize('www'), '');
+const rootwww = dirname(__filename);
+const buildPath = join(rootwww, 'build');
 const ex_fsdata_addr = 0x00000000;			// 读取外部fsdata文件在qspiflash中的地址
 const memory_section = '._Text_Area';		// 运行时保存fsdata数据所用的 RAM section，需要在ld文件中定义
-const fsdataPath = path.normalize(path.join(root, 'Libs/httpd/fsdata.c'));
-const exfilePath = path.normalize(path.join(root, 'Libs/httpd/ex_fsdata.bin'));
+const fsdataPath = normalize(join(root, 'Libs/httpd/fsdata.c'));
+const exfilePath = normalize(join(root, 'Libs/httpd/ex_fsdata.bin'));
+const extnames = ['.html', '.htm', '.shtml', '.shtm', '.ssi', '.xml', '.json', '.js', '.css', '.svg', '.ico', '.png', '.jpg', '.jpeg', '.bmp', '.gif'];
 
 // These are the same content types that are used by the original makefsdata
 const contentTypes = new Map([
@@ -62,12 +63,18 @@ const hexBytesPerLine = 16;
 function getFiles(dir) {
 	let results = [];
 	const list = fs.readdirSync(dir, { withFileTypes: true });
+	// 遍历目录下的所有文件和子目录
 	for (const file of list) {
 		file.path = dir + '/' + file.name;
+		// 如果是目录，则递归遍历
 		if (file.isDirectory()) {
 			results = results.concat(getFiles(file.path));
 		} else if (file.isFile()) {
-			results.push(file.path);
+			// 如果是文件，则检查文件扩展名
+			const ext = '.' + getLowerCaseFileExtension(file.name);
+			if (extnames.includes(ext)) {
+				results.push(file.path);
+			}
 		}
 	}
 	return results;
@@ -254,7 +261,7 @@ function makefsdata() {
 	getFiles(buildPath).forEach((file) => {
 		const ext = getLowerCaseFileExtension(file);
 
-		const qualifiedName = '/' + path.relative(buildPath, file).replace(/\\/g, '/');
+		const qualifiedName = '/' + relative(buildPath, file).replace(/\\/g, '/');
 		const varName = fixFilenameForC(qualifiedName);
 
 		fsdata += '#if FSDATA_FILE_ALIGNMENT==1\n';
