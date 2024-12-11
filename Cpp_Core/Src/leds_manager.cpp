@@ -72,10 +72,10 @@ void LEDsManager::runAnimate()
         
         Mask_t virtualPinMask = ADCBtnsManager::getInstance().getButtonIsPressed();
 
-        struct RGBColor fontColor = hexToRGB(opts->ledColor1);
+        struct RGBColor frontColor = hexToRGB(opts->ledColor1);
         struct RGBColor currentColor = gtc.getCurrentRGB();
         uint8_t currentBrightness = gtc.getCurrentBrightness();
-        WS2812B_SetLEDColorByMask(fontColor, currentColor, (uint32_t) virtualPinMask);
+        WS2812B_SetLEDColorByMask(frontColor, currentColor, (uint32_t) virtualPinMask);
         WS2812B_SetLEDBrightnessByMask((uint8_t)round((double_t)opts->ledBrightness*LEDS_BRIGHTNESS_RADIO), 
             currentBrightness, (uint32_t) virtualPinMask);
 

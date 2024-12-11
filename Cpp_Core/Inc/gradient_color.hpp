@@ -27,7 +27,7 @@ class GradientColor {
         double_t b1;
         double_t b2;
         uint32_t t;
-        uint32_t animationCycle;
+        uint32_t animationCycle; // 动画周期
 };
 
 #endif // !_GRADIENT_COLOR_

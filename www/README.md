@@ -1,68 +1,48 @@
-# GP2040-CE Web Configurator
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Simple web application for gamepad configuration.
+## Getting Started
 
-## Requirements
+First, run the development server:
 
-* NodeJS and NPM to build the React app
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-## Development
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### Mocked board
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-Run `npm run dev`. This will start up the React app and an Express instance for mock data during development, allowing testing of the configurator without loading it onto the MCU, which is a SLOW process.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-The mock data Express server is running at http://localhost:8080.
+## Learn More
 
-### Connected board
+To learn more about Next.js, take a look at the following resources:
 
-Run `npm run dev-board`. This will start up the React app and try connect to the board running the
-[web-configurator](https://gp2040-ce.info/web-configurator).
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-### API Endpoints
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-When adding a new API endpoint to the GP2040-CE Configurator:
+## Deploy on Vercel
 
-> NOTE: All endpoints should be under the `/api` path
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-* Add the endpoint to `src/webserver.cpp`.
-  * Add a define at the top: `#define API_GET_NEW_ENDPOINT "/api/getNewEndpoint"`
-    * Use the naming convention `API_[GET/SET]_{ENDPOINT_PATH}` for the define
-    * Use the naming convention `/api/{[get/set]EndpointPath}` for the path
-  * Create the backing method with the same name as the API path: `string getNewEndpoint()`
-  * Add handling code in `fs_open_custom` for the API path
-* Add a mock data endpoint to `src/server/app.js`
-* Add the client-side API function to `www/src/Services/WebApi.js`.
-* Add the endpoint to the Postman collection at `www/server/docs/GP2040-CE.postman_collection.json`
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-### Files
+Deploy on SSH server 
 
-Use JPG and PNG files for images, SVG file support requires modification to the lwIP library that hasn't been completed.
+```bash
+ssh root@192.168.1.100
+cd /home/pi/gamepad-config
+git pull
 
-## Building
-
-If you just want to rebuild the React app in production mode for some reason, you can run `npm run build` from the `www` folder.
-
-The `makefsdata.js` script is used to build the React application and regenerate the embedded data in `lib/httpd/fsdata.c`. The `makefsdata` tool that performs the conversion doesn't set the correct `#include` lines for our use. This script will fix this issue.
-
-Precompiled binaries of `makefsdata` for Windows, Linux and macOS are included in the `tools` folder.
-
-## Bundle size
-
-After adding any type of dependency please check the production bundle size either by running `npm run build` or a more detailed breakdown `npm run analyze`
-
-## References
-
-Original example:
-
-* <https://forums.raspberrypi.com/viewtopic.php?t=306888>
-* <https://github.com/maxnet/pico-webserver>
-
-Convert text to bytes:
-
-* <https://onlineasciitools.com/convert-ascii-to-bytes>
-* <https://onlineasciitools.com/convert-bytes-to-ascii>
-
-Create image map:
-
-* <https://www.image-map.net/>
+docker-compose down --rmi all
+docker system prune -a
+docker-compose up --build
+```

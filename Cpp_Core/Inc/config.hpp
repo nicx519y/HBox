@@ -46,7 +46,7 @@ typedef struct
 
 typedef struct
 {
-    char name[16];
+    char name[24];
     bool enabled;
     InputMode inputMode {InputMode::INPUT_MODE_XINPUT}; 
     DpadMode dpadMode {DpadMode::DPAD_MODE_DIGITAL};
@@ -76,7 +76,7 @@ typedef struct
     uint32_t keyButtonFn;
 
     RipidTriggerProfile* RTProfiles[NUM_ADC_BUTTONS];
-
+    
     bool ledEnabled;
     LEDEffect ledEffect;
     bool isDoubleColor;
