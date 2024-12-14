@@ -76,9 +76,11 @@ bool ConfigUtils::load(Config& config)
 
             
 
-            // 设置triggerConfig
+            // 设置triggerConfigs 
+            config.profiles[k].triggerConfigs.isAllBtnsConfiguring = true;
+
             for(uint8_t l = 0; l < NUM_ADC_BUTTONS; l++) {
-                config.profiles[k].triggerConfig[l] = {
+                config.profiles[k].triggerConfigs.triggerConfigs[l] = {
                     .pressAccuracy = 0.1f,
                     .releaseAccuracy = 0.1f,
                     .topDeadzone = 0.2f,
@@ -87,12 +89,12 @@ bool ConfigUtils::load(Config& config)
             }
 
             // 设置ledProfile
-            config.profiles[k].ledProfile.ledEnabled = false;
-            config.profiles[k].ledProfile.ledEffect = LEDEffect::STATIC;
-            config.profiles[k].ledProfile.ledColor1 = 0x000000;
-            config.profiles[k].ledProfile.ledColor2 = 0x000000;
-            config.profiles[k].ledProfile.ledColor3 = 0x000000;
-            config.profiles[k].ledProfile.ledBrightness = 100;
+            config.profiles[k].ledsConfigs.ledEnabled = false;
+            config.profiles[k].ledsConfigs.ledEffect = LEDEffect::STATIC;
+            config.profiles[k].ledsConfigs.ledColor1 = 0x00ff00;
+            config.profiles[k].ledsConfigs.ledColor2 = 0x0000ff;
+            config.profiles[k].ledsConfigs.ledColor3 = 0x000000;
+            config.profiles[k].ledsConfigs.ledBrightness = 100;
         }
 
         // 设置hotkeys

@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #define FIRMWARE_VERSION                    (uint32_t)0x010000  //固件版本
-#define CONFIG_VERSION                      (uint32_t)0x01000c  //配置版本 三位版本号 0x aa bb cc
+#define CONFIG_VERSION                      (uint32_t)0x01000d  //配置版本 三位版本号 0x aa bb cc
 
 // #define EX_ADDR                             0x90000000
 #define FSDATA_ADDR                         0x0

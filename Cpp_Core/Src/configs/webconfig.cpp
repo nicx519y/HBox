@@ -368,8 +368,8 @@ cJSON* buildProfileJSON(GamepadProfile* profile) {
 
     // LED配置
     cJSON* ledsConfigJSON = cJSON_CreateObject();
-    cJSON_AddBoolToObject(ledsConfigJSON, "ledEnabled", profile->ledProfile.ledEnabled);
-    switch(profile->ledProfile.ledEffect) {
+    cJSON_AddBoolToObject(ledsConfigJSON, "ledEnabled", profile->ledsConfigs.ledEnabled);
+    switch(profile->ledsConfigs.ledEffect) {
         case LEDEffect::STATIC:
             cJSON_AddStringToObject(ledsConfigJSON, "ledsEffectStyle", "STATIC");
             break;
@@ -383,40 +383,45 @@ cJSON* buildProfileJSON(GamepadProfile* profile) {
     // LED颜色数组
     cJSON* ledColorsJSON = cJSON_CreateArray();
     char colorStr[8];
-    sprintf(colorStr, "#%06X", profile->ledProfile.ledColor1);
+    sprintf(colorStr, "#%06X", profile->ledsConfigs.ledColor1);
     cJSON_AddItemToArray(ledColorsJSON, cJSON_CreateString(colorStr));
-    sprintf(colorStr, "#%06X", profile->ledProfile.ledColor2);
+    sprintf(colorStr, "#%06X", profile->ledsConfigs.ledColor2);
     cJSON_AddItemToArray(ledColorsJSON, cJSON_CreateString(colorStr));
-    sprintf(colorStr, "#%06X", profile->ledProfile.ledColor3);
+    sprintf(colorStr, "#%06X", profile->ledsConfigs.ledColor3);
     cJSON_AddItemToArray(ledColorsJSON, cJSON_CreateString(colorStr));
     
     cJSON_AddItemToObject(ledsConfigJSON, "ledColors", ledColorsJSON);
-    cJSON_AddNumberToObject(ledsConfigJSON, "ledBrightness", profile->ledProfile.ledBrightness);
+    cJSON_AddNumberToObject(ledsConfigJSON, "ledBrightness", profile->ledsConfigs.ledBrightness);
 
 
     // 触发器配置
+    cJSON* triggerConfigsJSON = cJSON_CreateObject();   
     cJSON* triggerConfigsArrayJSON = cJSON_CreateArray();
     
     for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
         cJSON* triggerJSON = cJSON_CreateObject();
+        RapidTriggerProfile* trigger = &profile->triggerConfigs.triggerConfigs[i];
         char buffer[32];
         // 使用snprintf限制小数点后4位
-        snprintf(buffer, sizeof(buffer), "%.4f", profile->triggerConfig[i].topDeadzone);
+        snprintf(buffer, sizeof(buffer), "%.4f", trigger->topDeadzone);
         cJSON_AddRawToObject(triggerJSON, "topDeadzone", buffer);
-        snprintf(buffer, sizeof(buffer), "%.4f", profile->triggerConfig[i].bottomDeadzone);
+        snprintf(buffer, sizeof(buffer), "%.4f", trigger->bottomDeadzone);
         cJSON_AddRawToObject(triggerJSON, "bottomDeadzone", buffer);
-        snprintf(buffer, sizeof(buffer), "%.4f", profile->triggerConfig[i].pressAccuracy);
+        snprintf(buffer, sizeof(buffer), "%.4f", trigger->pressAccuracy);
         cJSON_AddRawToObject(triggerJSON, "pressAccuracy", buffer);
-        snprintf(buffer, sizeof(buffer), "%.4f", profile->triggerConfig[i].releaseAccuracy);
+        snprintf(buffer, sizeof(buffer), "%.4f", trigger->releaseAccuracy);
         cJSON_AddRawToObject(triggerJSON, "releaseAccuracy", buffer);
         cJSON_AddItemToArray(triggerConfigsArrayJSON, triggerJSON);
 
     }
 
+    cJSON_AddBoolToObject(triggerConfigsJSON, "isAllBtnsConfiguring", profile->triggerConfigs.isAllBtnsConfiguring);
+    cJSON_AddItemToObject(triggerConfigsJSON, "triggerConfigs", triggerConfigsArrayJSON);
+
     // // 组装最终结构
     cJSON_AddItemToObject(profileDetailsJSON, "keysConfig", keysConfigJSON);
-    cJSON_AddItemToObject(profileDetailsJSON, "ledsConfig", ledsConfigJSON);
-    cJSON_AddItemToObject(profileDetailsJSON, "triggerConfigs", triggerConfigsArrayJSON);
+    cJSON_AddItemToObject(profileDetailsJSON, "ledsConfigs", ledsConfigJSON);
+    cJSON_AddItemToObject(profileDetailsJSON, "triggerConfigs", triggerConfigsJSON);
 
     return profileDetailsJSON;
 }
@@ -861,33 +866,33 @@ std::string apiUpdateProfile() {
     }
 
     // 更新LED配置
-    cJSON* ledsConfig = cJSON_GetObjectItem(params, "ledsConfig");
+    cJSON* ledsConfig = cJSON_GetObjectItem(params, "ledsConfigs");
     if(ledsConfig) {
         cJSON* item;
         
         if((item = cJSON_GetObjectItem(ledsConfig, "ledEnabled"))) {
-            targetProfile->ledProfile.ledEnabled = item->type == cJSON_True;
+            targetProfile->ledsConfigs.ledEnabled = item->type == cJSON_True;
         }
         
         // 解析LED效
         if((item = cJSON_GetObjectItem(ledsConfig, "ledsEffectStyle"))) {
             if(strcmp(item->valuestring, "STATIC") == 0) {
-                targetProfile->ledProfile.ledEffect = LEDEffect::STATIC;
+                targetProfile->ledsConfigs.ledEffect = LEDEffect::STATIC;
             } else if(strcmp(item->valuestring, "BREATHING") == 0) {
-                targetProfile->ledProfile.ledEffect = LEDEffect::BREATHING;
+                targetProfile->ledsConfigs.ledEffect = LEDEffect::BREATHING;
             }
         }
 
         // 解析LED颜色
         cJSON* ledColors = cJSON_GetObjectItem(ledsConfig, "ledColors");
         if(ledColors && cJSON_GetArraySize(ledColors) >= 3) {
-            sscanf(cJSON_GetArrayItem(ledColors, 0)->valuestring, "#%x", &targetProfile->ledProfile.ledColor1);
-            sscanf(cJSON_GetArrayItem(ledColors, 1)->valuestring, "#%x", &targetProfile->ledProfile.ledColor2);
-            sscanf(cJSON_GetArrayItem(ledColors, 2)->valuestring, "#%x", &targetProfile->ledProfile.ledColor3);
+            sscanf(cJSON_GetArrayItem(ledColors, 0)->valuestring, "#%x", &targetProfile->ledsConfigs.ledColor1);
+            sscanf(cJSON_GetArrayItem(ledColors, 1)->valuestring, "#%x", &targetProfile->ledsConfigs.ledColor2);
+            sscanf(cJSON_GetArrayItem(ledColors, 2)->valuestring, "#%x", &targetProfile->ledsConfigs.ledColor3);
         }
         
         if((item = cJSON_GetObjectItem(ledsConfig, "ledBrightness"))) {
-            targetProfile->ledProfile.ledBrightness = item->valueint;
+            targetProfile->ledsConfigs.ledBrightness = item->valueint;
         }
     }
 
@@ -898,16 +903,17 @@ std::string apiUpdateProfile() {
         if(configs) {
             for(uint8_t i = 0; i < NUM_ADC_BUTTONS && i < cJSON_GetArraySize(configs); i++) {
                 cJSON* trigger = cJSON_GetArrayItem(configs, i);
+                RapidTriggerProfile* triggerProfile = &targetProfile->triggerConfigs.triggerConfigs[i];
                 if(trigger) {
                     cJSON* item;
                     if((item = cJSON_GetObjectItem(trigger, "topDeadzone")))
-                        targetProfile->triggerConfig[i].topDeadzone = item->valuedouble;
+                        triggerProfile->topDeadzone = item->valuedouble;
                     if((item = cJSON_GetObjectItem(trigger, "bottomDeadzone")))
-                        targetProfile->triggerConfig[i].bottomDeadzone = item->valuedouble;
+                        triggerProfile->bottomDeadzone = item->valuedouble;
                     if((item = cJSON_GetObjectItem(trigger, "pressAccuracy")))
-                        targetProfile->triggerConfig[i].pressAccuracy = item->valuedouble;
+                        triggerProfile->pressAccuracy = item->valuedouble;
                     if((item = cJSON_GetObjectItem(trigger, "releaseAccuracy")))
-                        targetProfile->triggerConfig[i].releaseAccuracy = item->valuedouble;
+                        triggerProfile->releaseAccuracy = item->valuedouble;
                 }
             }
         }

@@ -64,6 +64,12 @@ typedef struct __attribute__((packed))
 
 typedef struct
 {
+    bool isAllBtnsConfiguring;
+    RapidTriggerProfile triggerConfigs[NUM_ADC_BUTTONS];
+} TriggerConfigs;
+
+typedef struct
+{
     bool ledEnabled;
     LEDEffect ledEffect;
     uint32_t ledColor1;
@@ -84,8 +90,8 @@ typedef struct
     char name[24];
     bool enabled;
     KeysConfig keysConfig;
-    RapidTriggerProfile triggerConfig[NUM_ADC_BUTTONS];
-    LEDProfile ledProfile;
+    TriggerConfigs triggerConfigs;
+    LEDProfile ledsConfigs;
 } GamepadProfile;
 
 typedef struct

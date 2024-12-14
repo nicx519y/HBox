@@ -24,7 +24,7 @@ ADCBtnsManager::ADCBtnsManager() :
     // 初始化ADC按钮
     for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
         buttonPtrs[i] = &Storage::getInstance().config.ADCButtons[i];
-        profilePtrs[i] = &Storage::getInstance().getDefaultGamepadProfile()->triggerConfig[i];
+        profilePtrs[i] = &Storage::getInstance().getDefaultGamepadProfile()->triggerConfigs.triggerConfigs[i];
     }
 }
 

@@ -11,9 +11,9 @@ LEDsManager::LEDsManager():
 void LEDsManager::setup()
 {
     // opts = Storage::getInstance().getGamepadOptions();
-    if(opts->ledProfile.ledEnabled == false) return;
+    if(opts->ledsConfigs.ledEnabled == false) return;
 
-    LEDProfile * ledProfile = &opts->ledProfile;
+    LEDProfile * ledProfile = &opts->ledsConfigs;
 
     ADCButtonManagerState state = ADCBtnsManager::getInstance().getState();
 
@@ -59,9 +59,9 @@ void LEDsManager::deinit()
 
 void LEDsManager::runAnimate()
 {
-    if(opts->ledProfile.ledEnabled == false) return;    
+    if(opts->ledsConfigs.ledEnabled == false) return;    
 
-    LEDProfile * ledProfile = &opts->ledProfile;
+    LEDProfile * ledProfile = &opts->ledsConfigs;
 
     if(t == 0) t = HAL_GetTick();
 
