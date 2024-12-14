@@ -203,11 +203,14 @@ std::string get_response_temp(STORAGE_ERROR_NO errNo, cJSON* data, std::string e
     if (!errorMessage.empty()) {
         cJSON_AddStringToObject(json, "errorMessage", errorMessage.c_str());
     }
-    // cJSON_PrintPreallocated(json, http_response, sizeof(http_response), 0);
+
     char* temp = cJSON_PrintBuffered(json, LWIP_HTTPD_RESPONSE_MAX_PAYLOAD_LEN, 0);
     std::string response(temp);
     cJSON_Delete(json);
     free(temp);
+
+    // printf("get_response_temp: response: %s\n", response.c_str());
+
     return response;
 }
 
@@ -302,6 +305,7 @@ cJSON* buildProfileJSON(GamepadProfile* profile) {
     cJSON_AddBoolToObject(keysConfigJSON, "invertYAxis", profile->keysConfig.invertYAxis);
     cJSON_AddBoolToObject(keysConfigJSON, "fourWayMode", profile->keysConfig.fourWayMode);
 
+
     switch(profile->keysConfig.inputMode) {
         case InputMode::INPUT_MODE_XINPUT:
             cJSON_AddStringToObject(keysConfigJSON, "inputMode", "XINPUT");
@@ -376,7 +380,6 @@ cJSON* buildProfileJSON(GamepadProfile* profile) {
             cJSON_AddStringToObject(ledsConfigJSON, "ledsEffectStyle", "STATIC");
             break;
     }
-    
     // LED颜色数组
     cJSON* ledColorsJSON = cJSON_CreateArray();
     char colorStr[8];
@@ -390,8 +393,8 @@ cJSON* buildProfileJSON(GamepadProfile* profile) {
     cJSON_AddItemToObject(ledsConfigJSON, "ledColors", ledColorsJSON);
     cJSON_AddNumberToObject(ledsConfigJSON, "ledBrightness", profile->ledProfile.ledBrightness);
 
+
     // 触发器配置
-    cJSON* triggerConfigsJSON = cJSON_CreateObject();
     cJSON* triggerConfigsArrayJSON = cJSON_CreateArray();
     
     for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
@@ -408,15 +411,12 @@ cJSON* buildProfileJSON(GamepadProfile* profile) {
         cJSON_AddRawToObject(triggerJSON, "releaseAccuracy", buffer);
         cJSON_AddItemToArray(triggerConfigsArrayJSON, triggerJSON);
 
-        free(buffer);
     }
-    
-    cJSON_AddItemToObject(triggerConfigsJSON, "triggerConfigs", triggerConfigsArrayJSON);
-    
+
     // // 组装最终结构
     cJSON_AddItemToObject(profileDetailsJSON, "keysConfig", keysConfigJSON);
     cJSON_AddItemToObject(profileDetailsJSON, "ledsConfig", ledsConfigJSON);
-    cJSON_AddItemToObject(profileDetailsJSON, "triggerConfigs", triggerConfigsJSON);
+    cJSON_AddItemToObject(profileDetailsJSON, "triggerConfigs", triggerConfigsArrayJSON);
 
     return profileDetailsJSON;
 }
@@ -503,6 +503,7 @@ cJSON* buildHotkeysConfigJSON(Config& config) {
  * }
  */
 std::string apiGetProfileList() {
+    printf("apiGetProfileList start.\n");
     Config& config = Storage::getInstance().config;
     
     // 创建返回数据结构
@@ -521,8 +522,6 @@ std::string apiGetProfileList() {
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
 
     printf("apiGetProfileList response: %s\n", response.c_str());
-
-    cJSON_Delete(dataJSON);
     return response;
 }
 
@@ -584,30 +583,30 @@ std::string apiGetDefaultProfile() {
         }
     }
     
+    printf("apiGetDefaultProfile: defaultProfile: %s\n", defaultProfile->name);
+
     if(!defaultProfile) {
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Default profile not found");
     }
 
-    printf("apiGetDefaultProfile defaultProfile id: %s\n", defaultProfile->id);
     // 创建返回数据结构
     cJSON* dataJSON = cJSON_CreateObject();
     cJSON* profileDetailsJSON = buildProfileJSON(defaultProfile);
 
-    printf("profileDetailsJSON: %s\n", cJSON_Print(profileDetailsJSON));
+    printf("apiGetDefaultProfile: 1111\n");
+
     if (!profileDetailsJSON) {
         cJSON_Delete(dataJSON);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build profile JSON");
     }
     
     cJSON_AddItemToObject(dataJSON, "profileDetails", profileDetailsJSON);
-    
 
-    printf("dataJSON: %s\n", cJSON_Print(dataJSON));    
     // 生成返回字符串
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    printf("apiGetDefaultProfile result: %s\n", result);
-    cJSON_Delete(dataJSON);
-    return result;
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+
+    printf("apiGetDefaultProfile response: %s\n", response.c_str());
+    return response;
 }
 
 std::string apiGetProfile(const char* profileId) {
@@ -642,7 +641,6 @@ std::string apiGetProfile(const char* profileId) {
     
     // 生成返回字符串
     std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    cJSON_Delete(dataJSON);
     return result;
 }
 
@@ -665,6 +663,7 @@ std::string apiGetProfile(const char* profileId) {
  * }
  */
 std::string apiGetHotkeysConfig() {
+    printf("apiGetHotkeysConfig start.\n");
     Config& config = Storage::getInstance().config;
     
     // 创建返回数据结构
@@ -680,10 +679,7 @@ std::string apiGetHotkeysConfig() {
     cJSON_AddItemToObject(dataJSON, "hotkeysConfig", hotkeysConfigJSON);
     
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-
     printf("apiGetHotkeysConfig response: %s\n", response.c_str());
-
-    cJSON_Delete(dataJSON);
     return response;
 }
 
@@ -745,6 +741,7 @@ std::string apiGetHotkeysConfig() {
  * }
  */
 std::string apiUpdateProfile() {
+    printf("apiUpdateProfile start.\n");
     Config& config = Storage::getInstance().config;
     cJSON* params = get_post_data();
     
@@ -933,12 +930,12 @@ std::string apiUpdateProfile() {
     
     cJSON_AddItemToObject(dataJSON, "profileDetails", profileDetailsJSON);
     
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
     cJSON_Delete(params);
-    cJSON_Delete(dataJSON);
     
-    return result;
+    printf("apiUpdateProfile response: %s\n", response.c_str());
+    return response;
 }
 
 /**
@@ -965,6 +962,7 @@ std::string apiUpdateProfile() {
  * }
  */
 std::string apiCreateProfile() {
+    printf("apiCreateProfile start.\n");
     Config& config = Storage::getInstance().config;
     cJSON* params = get_post_data();
     
@@ -1031,12 +1029,13 @@ std::string apiCreateProfile() {
 
     cJSON_AddItemToObject(dataJSON, "profileList", profileListJSON);
     
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
     cJSON_Delete(params);
-    cJSON_Delete(dataJSON);
     
-    return result;
+    printf("apiCreateProfile response: %s\n", response.c_str());
+
+    return response;
 }
 
 /**
@@ -1063,6 +1062,7 @@ std::string apiCreateProfile() {
  * }
  */
 std::string apiDeleteProfile() {
+    printf("apiDeleteProfile start.\n");    
     Config& config = Storage::getInstance().config;
     cJSON* params = get_post_data();
     
@@ -1144,12 +1144,13 @@ std::string apiDeleteProfile() {
 
     cJSON_AddItemToObject(dataJSON, "profileList", profileListJSON);
     
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
     cJSON_Delete(params);
-    cJSON_Delete(dataJSON);
     
-    return result;
+    printf("apiDeleteProfile response: %s\n", response.c_str());
+
+    return response;
 }
 
 /**
@@ -1176,6 +1177,7 @@ std::string apiDeleteProfile() {
  * }
  */
 std::string apiSwitchDefaultProfile() {
+    printf("apiSwitchDefaultProfile start.\n");
     Config& config = Storage::getInstance().config;
     cJSON* params = get_post_data();
     
@@ -1230,12 +1232,13 @@ std::string apiSwitchDefaultProfile() {
 
     cJSON_AddItemToObject(dataJSON, "profileList", profileListJSON);
     
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
     cJSON_Delete(params);
-    cJSON_Delete(dataJSON);
     
-    return result;
+    printf("apiSwitchDefaultProfile response: %s\n", response.c_str());
+
+    return response;
 }
 
 /**
@@ -1267,6 +1270,7 @@ std::string apiSwitchDefaultProfile() {
  * }
  */
 std::string apiUpdateHotkeysConfig() {
+    printf("apiUpdateHotkeysConfig start.\n");
     Config& config = Storage::getInstance().config;
     cJSON* params = get_post_data();
     
@@ -1355,12 +1359,13 @@ std::string apiUpdateHotkeysConfig() {
 
     cJSON_AddItemToObject(dataJSON, "hotkeysConfig", hotkeysConfigJSON);
     
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
     cJSON_Delete(params);
-    cJSON_Delete(dataJSON);
     
-    return result;
+    printf("apiUpdateHotkeysConfig response: %s\n", response.c_str());
+
+    return response;
 }
 
 /**
@@ -1375,6 +1380,7 @@ std::string apiUpdateHotkeysConfig() {
  * }
  */
 std::string apiReboot() {
+    printf("apiReboot start.\n");
     // 创建响应数据
     cJSON* dataJSON = cJSON_CreateObject();
     cJSON_AddStringToObject(dataJSON, "message", "System is rebooting");
@@ -1385,7 +1391,7 @@ std::string apiReboot() {
     
     // 获取标准格式的响应
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    
+    printf("apiReboot response: %s\n", response.c_str());
     return response;
 }
 
