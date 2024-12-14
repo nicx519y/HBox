@@ -73,12 +73,12 @@ Libs/stm32_mw_lwip/src/apps \
 Libs/stm32_mw_lwip/src/core \
 Libs/stm32_mw_lwip/src/netif \
 Libs/stm32_mw_lwip/src/core/ipv4 \
-Libs/FatFS \
 Libs/cJSON \
 USB_DEVICE/App \
 USB_DEVICE/Target \
 Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src \
+# Libs/FatFS \
 
 # Cpp cource dir
 CPP_SOURCE_DIRS = \
@@ -172,7 +172,6 @@ C_INCLUDES =  \
 -ITinyusbUser \
 -ICpp_Core/Inc \
 -ILibs/stm32_mw_lwip/src/include \
--ILibs/FatFS \
 -ILibs/cJSON \
 -ILibs/CRC32/src \
 -IUSB_DEVICE/App \
@@ -180,6 +179,7 @@ C_INCLUDES =  \
 -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
 -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
 
+# -ILibs/FatFS \
 # -ITinyusbUser/net \
 # -ILibs/stm32_mw_lwip/src/include/lwip/apps \
 # compile gcc flags
@@ -207,7 +207,7 @@ LIBS = -lc -lm -lnosys -lstdc++
 LIBDIR = 
 # D:/VscodeTools/WpdPack/Lib \  #wincap
 # LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
-LDFLAGS = $(MCU) -specs=nano.specs -specs=nosys.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections -Wl,-V
+LDFLAGS = $(MCU) -specs=nano.specs -specs=nosys.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections -Wl,-V -u _printf_float
 
 #######################################
 # build the application

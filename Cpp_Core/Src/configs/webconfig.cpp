@@ -301,8 +301,42 @@ cJSON* buildProfileJSON(GamepadProfile* profile) {
     cJSON_AddBoolToObject(keysConfigJSON, "invertXAxis", profile->keysConfig.invertXAxis);
     cJSON_AddBoolToObject(keysConfigJSON, "invertYAxis", profile->keysConfig.invertYAxis);
     cJSON_AddBoolToObject(keysConfigJSON, "fourWayMode", profile->keysConfig.fourWayMode);
-    cJSON_AddNumberToObject(keysConfigJSON, "socdMode", profile->keysConfig.socdMode);
-    cJSON_AddNumberToObject(keysConfigJSON, "inputMode", profile->keysConfig.inputMode);
+
+    switch(profile->keysConfig.inputMode) {
+        case InputMode::INPUT_MODE_XINPUT:
+            cJSON_AddStringToObject(keysConfigJSON, "inputMode", "XINPUT");
+            break;
+        case InputMode::INPUT_MODE_PS4:
+            cJSON_AddStringToObject(keysConfigJSON, "inputMode", "PS4");
+            break;
+        case InputMode::INPUT_MODE_SWITCH:
+            cJSON_AddStringToObject(keysConfigJSON, "inputMode", "SWITCH");
+            break;
+        default:
+            cJSON_AddStringToObject(keysConfigJSON, "inputMode", "XINPUT");
+            break;
+    }
+
+    switch(profile->keysConfig.socdMode) {
+        case SOCDMode::SOCD_MODE_NEUTRAL:
+            cJSON_AddStringToObject(keysConfigJSON, "socdMode", "SOCD_MODE_NEUTRAL");
+            break;
+        case SOCDMode::SOCD_MODE_UP_PRIORITY:
+            cJSON_AddStringToObject(keysConfigJSON, "socdMode", "SOCD_MODE_UP_PRIORITY");
+            break;
+        case SOCDMode::SOCD_MODE_SECOND_INPUT_PRIORITY:
+            cJSON_AddStringToObject(keysConfigJSON, "socdMode", "SOCD_MODE_SECOND_INPUT_PRIORITY");
+            break;
+        case SOCDMode::SOCD_MODE_FIRST_INPUT_PRIORITY:
+            cJSON_AddStringToObject(keysConfigJSON, "socdMode", "SOCD_MODE_FIRST_INPUT_PRIORITY");
+            break;
+        case SOCDMode::SOCD_MODE_BYPASS:
+            cJSON_AddStringToObject(keysConfigJSON, "socdMode", "SOCD_MODE_BYPASS");
+            break;
+        default:
+            cJSON_AddStringToObject(keysConfigJSON, "socdMode", "SOCD_MODE_NEUTRAL");
+            break;
+    }   
 
     // 按键映射
     cJSON* keyMappingJSON = cJSON_CreateObject();
@@ -360,19 +394,21 @@ cJSON* buildProfileJSON(GamepadProfile* profile) {
     cJSON* triggerConfigsJSON = cJSON_CreateObject();
     cJSON* triggerConfigsArrayJSON = cJSON_CreateArray();
     
-
-    // printf("triggerConfig[0].topDeadzone: %f\n", profile->triggerConfig[0].topDeadzone);
-    // printf("triggerConfig[0].bottomDeadzone: %f\n", profile->triggerConfig[0].bottomDeadzone);
-    // printf("triggerConfig[0].pressAccuracy: %f\n", profile->triggerConfig[0].pressAccuracy);
-    // printf("triggerConfig[0].releaseAccuracy: %f\n", profile->triggerConfig[0].releaseAccuracy);
     for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
         cJSON* triggerJSON = cJSON_CreateObject();
-        // 使用 (double) 转换确保浮点数精度
-        cJSON_AddNumberToObject(triggerJSON, "topDeadzone", (double)profile->triggerConfig[i].topDeadzone);
-        cJSON_AddNumberToObject(triggerJSON, "bottomDeadzone", (double)profile->triggerConfig[i].bottomDeadzone);
-        cJSON_AddNumberToObject(triggerJSON, "pressAccuracy", (double)profile->triggerConfig[i].pressAccuracy);
-        cJSON_AddNumberToObject(triggerJSON, "releaseAccuracy", (double)profile->triggerConfig[i].releaseAccuracy);
+        char buffer[32];
+        // 使用snprintf限制小数点后4位
+        snprintf(buffer, sizeof(buffer), "%.4f", profile->triggerConfig[i].topDeadzone);
+        cJSON_AddRawToObject(triggerJSON, "topDeadzone", buffer);
+        snprintf(buffer, sizeof(buffer), "%.4f", profile->triggerConfig[i].bottomDeadzone);
+        cJSON_AddRawToObject(triggerJSON, "bottomDeadzone", buffer);
+        snprintf(buffer, sizeof(buffer), "%.4f", profile->triggerConfig[i].pressAccuracy);
+        cJSON_AddRawToObject(triggerJSON, "pressAccuracy", buffer);
+        snprintf(buffer, sizeof(buffer), "%.4f", profile->triggerConfig[i].releaseAccuracy);
+        cJSON_AddRawToObject(triggerJSON, "releaseAccuracy", buffer);
         cJSON_AddItemToArray(triggerConfigsArrayJSON, triggerJSON);
+
+        free(buffer);
     }
     
     cJSON_AddItemToObject(triggerConfigsJSON, "triggerConfigs", triggerConfigsArrayJSON);
@@ -385,7 +421,7 @@ cJSON* buildProfileJSON(GamepadProfile* profile) {
     return profileDetailsJSON;
 }
 
-// 辅���函数：构建快捷键配置的JSON结构
+// 辅助函数：构建快捷键配置的JSON结构
 cJSON* buildHotkeysConfigJSON(Config& config) {
     cJSON* hotkeysConfigJSON = cJSON_CreateArray();
 
@@ -757,10 +793,30 @@ std::string apiUpdateProfile() {
             targetProfile->keysConfig.fourWayMode = item->type == cJSON_True;
         }
         if((item = cJSON_GetObjectItem(keysConfig, "socdMode"))) {
-            targetProfile->keysConfig.socdMode = (SOCDMode)item->valueint;
+            if(strcmp(item->valuestring, "SOCD_MODE_NEUTRAL") == 0) {
+                targetProfile->keysConfig.socdMode = SOCDMode::SOCD_MODE_NEUTRAL;
+            } else if(strcmp(item->valuestring, "SOCD_MODE_UP_PRIORITY") == 0) {
+                targetProfile->keysConfig.socdMode = SOCDMode::SOCD_MODE_UP_PRIORITY;
+            } else if(strcmp(item->valuestring, "SOCD_MODE_SECOND_INPUT_PRIORITY") == 0) {
+                targetProfile->keysConfig.socdMode = SOCDMode::SOCD_MODE_SECOND_INPUT_PRIORITY;
+            } else if(strcmp(item->valuestring, "SOCD_MODE_FIRST_INPUT_PRIORITY") == 0) {
+                targetProfile->keysConfig.socdMode = SOCDMode::SOCD_MODE_FIRST_INPUT_PRIORITY;
+            } else if(strcmp(item->valuestring, "SOCD_MODE_BYPASS") == 0) {
+                targetProfile->keysConfig.socdMode = SOCDMode::SOCD_MODE_BYPASS;
+            } else {
+                targetProfile->keysConfig.socdMode = SOCDMode::SOCD_MODE_NEUTRAL;
+            }
         }
         if((item = cJSON_GetObjectItem(keysConfig, "inputMode"))) {
-            targetProfile->keysConfig.inputMode = (InputMode)item->valueint;
+            if(strcmp(item->valuestring, "XINPUT") == 0) {
+                targetProfile->keysConfig.inputMode = InputMode::INPUT_MODE_XINPUT;
+            } else if(strcmp(item->valuestring, "PS4") == 0) {
+                targetProfile->keysConfig.inputMode = InputMode::INPUT_MODE_PS4;
+            } else if(strcmp(item->valuestring, "SWITCH") == 0) {
+                targetProfile->keysConfig.inputMode = InputMode::INPUT_MODE_SWITCH;
+            } else {
+                targetProfile->keysConfig.inputMode = InputMode::INPUT_MODE_XINPUT;
+            }
         }
 
         // 更新按键映射
@@ -1225,7 +1281,7 @@ std::string apiUpdateHotkeysConfig() {
         return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Invalid hotkeys configuration");
     }
 
-    // 遍历并更新每个快捷键配置
+    // 遍历并更新每���快捷键配置
     int numHotkeys = cJSON_GetArraySize(hotkeysConfigArray);
     for(int i = 0; i < numHotkeys && i < NUM_GAMEPAD_HOTKEYS; i++) {
         cJSON* hotkeyItem = cJSON_GetArrayItem(hotkeysConfigArray, i);

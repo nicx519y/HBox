@@ -49,17 +49,17 @@ typedef struct
 typedef struct
 {
     uint32_t    virtualPin;             // 虚拟pin 实质上是在所有buttons之内的序号
-    float    magnettization;         // 磁化强度 单位特斯拉
-    float    topPosition;            // 顶部位置 单位毫米
-    float    bottomPosition;         // 底部位置 单位毫米
+    float_t    magnettization;         // 磁化强度 单位特斯拉
+    float_t    topPosition;            // 顶部位置 单位毫米
+    float_t    bottomPosition;         // 底部位置 单位毫米
 } ADCButton;
 
 typedef struct __attribute__((packed))
 {
-    float    pressAccuracy;          // 按下精度 单位毫米
-    float    releaseAccuracy;        // 回弹精度 单位毫米
-    float    topDeadzone;            // 顶部死区 单位毫米
-    float    bottomDeadzone;         // 底部死区 单位毫米
+    float_t    pressAccuracy;          // 按下精度 单位毫米
+    float_t    releaseAccuracy;        // 回弹精度 单位毫米
+    float_t    topDeadzone;            // 顶部死区 单位毫米
+    float_t    bottomDeadzone;         // 底部死区 单位毫米
 } RapidTriggerProfile;
 
 typedef struct
