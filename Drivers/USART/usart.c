@@ -33,30 +33,39 @@ UART_HandleTypeDef huart1;  // UART_HandleTypeDef 结构体变量
 *	入口参数:	huart - UART_HandleTypeDef定义的变量，即表示定义的串口
 *	返 回 值:	无
 *	函数功能:	初始化串口引脚
-*	说    明:	无		
+*	说    ���:	无		
 *************************************************************************************************/
 
 
 void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 	
 	if(huart->Instance==USART1)
 	{
-		__HAL_RCC_USART1_CLK_ENABLE();		// 开启 USART1 时钟
+		// Enable USART1 clock
+		__HAL_RCC_USART1_CLK_ENABLE();
 
-		GPIO_USART1_TX_CLK_ENABLE;				// 开启 USART1 TX 引脚的 GPIO 时钟
-		GPIO_USART1_RX_CLK_ENABLE;				// 开启 USART1 RX 引脚的 GPIO 时钟
+		// Enable GPIO clocks
+		GPIO_USART1_TX_CLK_ENABLE;
+		GPIO_USART1_RX_CLK_ENABLE;
 
-		GPIO_InitStruct.Pin 		= USART1_TX_PIN;					// TX引脚
-		GPIO_InitStruct.Mode 		= GPIO_MODE_AF_PP;				// 复用推挽输出
-		GPIO_InitStruct.Pull 		= GPIO_PULLUP;						// 上拉
-		GPIO_InitStruct.Speed 		= GPIO_SPEED_FREQ_VERY_HIGH;	// 速度等级 
-		GPIO_InitStruct.Alternate 	= GPIO_AF7_USART1;				// 复用为USART1
+		// Configure USART1 TX pin
+		GPIO_InitStruct.Pin = USART1_TX_PIN;
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+		GPIO_InitStruct.Pull = GPIO_PULLUP;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+		GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
 		HAL_GPIO_Init(USART1_TX_PORT, &GPIO_InitStruct);
 
-		GPIO_InitStruct.Pin 			= USART1_RX_PIN;					// RX引脚
-		HAL_GPIO_Init(USART1_RX_PORT, &GPIO_InitStruct);		
+		// Configure USART1 RX pin
+		GPIO_InitStruct.Pin = USART1_RX_PIN;
+		HAL_GPIO_Init(USART1_RX_PORT, &GPIO_InitStruct);
+
+		// Enable NVIC for USART1
+		HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+		HAL_NVIC_EnableIRQ(USART1_IRQn);
 	}
 
 }
@@ -71,32 +80,29 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 
 void USART1_Init(void)
 {
-	huart1.Instance 			= USART1;
-	huart1.Init.BaudRate 		= USART1_BaudRate;
-	huart1.Init.WordLength 		= UART_WORDLENGTH_8B;
-	huart1.Init.StopBits 		= UART_STOPBITS_1;
-	huart1.Init.Parity 			= UART_PARITY_NONE;
-	huart1.Init.Mode 			= UART_MODE_TX_RX;
-	huart1.Init.HwFlowCtl 		= UART_HWCONTROL_NONE;
-	huart1.Init.OverSampling 	= UART_OVERSAMPLING_16;
-	huart1.Init.OneBitSampling 	= UART_ONE_BIT_SAMPLE_DISABLE;
-	huart1.Init.ClockPrescaler 	= UART_PRESCALER_DIV1;
+	// Configure UART
+	huart1.Instance = USART1;
+	huart1.Init.BaudRate = USART1_BaudRate;
+	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.StopBits = UART_STOPBITS_1;
+	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Mode = UART_MODE_TX_RX;
+	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
 	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+
+	// Initialize UART
 	if (HAL_UART_Init(&huart1) != HAL_OK)
 	{
-
+		Error_Handler();
 	}
-	if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
-	{
 
-	}
-	if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
-	{
-
-	}
+	// Disable FIFO mode
 	if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
 	{
-
+		Error_Handler();
 	}
 }
 
@@ -167,10 +173,47 @@ void USART1_Init(void)
   */
 PUTCHAR_PROTOTYPE
 {
-  /* Place your implementation of fputc here */
-  /* e.g. write a character to the EVAL_COM1 and Loop until the end of transmission */
-  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
- 
-  return ch;
+	uint8_t temp[1] = {ch};
+	HAL_UART_Transmit(&huart1, temp, 1, 0xFFFF);
+	return ch;
+}
+
+// Add __io_getchar implementation
+int __io_getchar(void)
+{
+	uint8_t ch;
+	HAL_UART_Receive(&huart1, &ch, 1, 0xFFFF);
+	return ch;
+}
+
+// Add UART interrupt handler
+void USART1_IRQHandler(void)
+{
+	HAL_UART_IRQHandler(&huart1);
+}
+
+// Add UART callbacks
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart->Instance == USART1)
+	{
+		// Transmission complete
+	}
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart->Instance == USART1)
+	{
+		// Reception complete
+	}
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+	if(huart->Instance == USART1)
+	{
+		// Handle error
+	}
 }
 

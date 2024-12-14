@@ -51,6 +51,7 @@
 #include "lwip/icmp.h"
 #include "lwip/igmp.h"
 #include "lwip/priv/raw_priv.h"
+#include "lwip/prot/udp.h"
 #include "lwip/udp.h"
 #include "lwip/priv/tcp_priv.h"
 #include "lwip/autoip.h"
@@ -635,7 +636,7 @@ ip4_input(struct pbuf *p, struct netif *inp)
   }
   /* packet consists of multiple fragments? */
   if ((IPH_OFFSET(iphdr) & PP_HTONS(IP_OFFMASK | IP_MF)) != 0) {
-#if IP_REASSEMBLY /* packet fragment reassembly code present? */
+#if IP_REASSEMBRY /* packet fragment reassembly code present? */
     LWIP_DEBUGF(IP_DEBUG, ("IP packet is a fragment (id=0x%04"X16_F" tot_len=%"U16_F" len=%"U16_F" MF=%"U16_F" offset=%"U16_F"), calling ip4_reass()\n",
                            lwip_ntohs(IPH_ID(iphdr)), p->tot_len, lwip_ntohs(IPH_LEN(iphdr)), (u16_t)!!(IPH_OFFSET(iphdr) & PP_HTONS(IP_MF)), (u16_t)((lwip_ntohs(IPH_OFFSET(iphdr)) & IP_OFFMASK) * 8)));
     /* reassemble the packet*/
@@ -645,16 +646,16 @@ ip4_input(struct pbuf *p, struct netif *inp)
       return ERR_OK;
     }
     iphdr = (const struct ip_hdr *)p->payload;
-#else /* IP_REASSEMBLY == 0, no packet fragment reassembly code present */
+#else /* IP_REASSEMBRY == 0, no packet fragment reassembly code present */
     pbuf_free(p);
-    LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("IP packet dropped since it was fragmented (0x%"X16_F") (while IP_REASSEMBLY == 0).\n",
+    LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("IP packet dropped since it was fragmented (0x%"X16_F") (while IP_REASSEMBRY == 0).\n",
                 lwip_ntohs(IPH_OFFSET(iphdr))));
     IP_STATS_INC(ip.opterr);
     IP_STATS_INC(ip.drop);
     /* unsupported protocol feature */
     MIB2_STATS_INC(mib2.ipinunknownprotos);
     return ERR_OK;
-#endif /* IP_REASSEMBLY */
+#endif /* IP_REASSEMBRY */
   }
 
 #if IP_OPTIONS_ALLOWED == 0 /* no support for IP options in the IP header? */

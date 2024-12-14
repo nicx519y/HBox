@@ -64,13 +64,14 @@ err_t
 fs_open(struct fs_file *file, const char *name)
 {
   const struct fsdata_file *f;
-
+  printf("fs_open: name: %s\n", name);
   if ((file == NULL) || (name == NULL)) {
      return ERR_ARG;
   }
 
   for (f = FS_ROOT; f != NULL; f = f->next) {
     if (!strcmp(name, (char *)f->name)) {
+      
       file->data = (const char *)f->data;
       file->len = f->len;
       file->index = f->len;

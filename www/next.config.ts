@@ -10,9 +10,9 @@ const nextConfig: NextConfig = {
         ignoreBuildErrors: true,
     },
     // 禁用 telemetry   
-    telemetry: {
-        enabled: false,
-    },
+    // telemetry: {
+    //     enabled: false,
+    // },
     webpack: (config, { isServer }) => {
         if (!isServer) {
             // 禁用代码分割
@@ -23,7 +23,18 @@ const nextConfig: NextConfig = {
                         terserOptions: {
                             compress: {
                                 drop_console: true,
-                                drop_debugger: true
+                                drop_debugger: true,
+                                passes: 3, // 压缩次数 1-2 默认和中等，3 是最大 时间显著增加
+                                toplevel: true, // 压缩顶级函数
+                                dead_code: true, // 删除未使用的代码
+                                unsafe_arrows: true, // 压缩箭头函数
+                                unsafe_math: true, // 压缩数学运算
+                                unsafe_proto: true, // 压缩原型链
+                                unsafe_undefined: true, // 压缩 undefined
+                                inline: true, // 内联函数
+                                collapse_vars: true, // 压缩变量
+                                reduce_vars: true, // 压缩变量
+                                reduce_funcs: true, // 压缩函数
                             },
                             output: {
                                 comments: false,

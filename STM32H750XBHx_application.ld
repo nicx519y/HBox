@@ -67,12 +67,21 @@ RAM_D2 (xrw)        : ORIGIN = 0x30000000, LENGTH = 288K
 RAM_D3 (xrw)        : ORIGIN = 0x38000000, LENGTH = 64K
 ITCMRAM (xrw)       : ORIGIN = 0x00000000, LENGTH = 64K
 FLASH (rx)          : ORIGIN = 0x08000000, LENGTH = 128K
-EX_FLASH (rw)       : ORIGIN = 0x90000000, LENGTH = 8192K
+QSPI_FLASH (rx)     : ORIGIN = 0x90000000, LENGTH = 8192K
 }
 
 /* Define output sections */
 SECTIONS
 {
+  /* Web resources in QSPI Flash */
+  .web_resources :
+  {
+    . = ALIGN(4);
+    KEEP(*(.web_resources))
+    KEEP(*(.fsdata))
+    . = ALIGN(4);
+  } >QSPI_FLASH
+
   /* The startup code goes first into FLASH */
   .isr_vector :
   {
@@ -190,22 +199,33 @@ SECTIONS
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
+  /* RAM sections */
   ._Text_Area :
   {
-    . = ALIGN(4);
-    . = ALIGN(4);
+    . = ALIGN(32);
+    *(.text_ram)         /* Text RAM section */
+    *(.text_ram*)        /* Text RAM section */
+    . = ALIGN(32);
   } >RAM
 
   ._RAM_Area :
   {
-    . = ALIGN(4);
-    . = ALIGN(4);
+    . = ALIGN(32);
+    __ram_area_start = .;
+    *(.RAM_Area)         /* RAM area section */
+    *(.RAM_Area*)        /* RAM area section */
+    *(._RAM_Area)        /* RAM area section with dot prefix */
+    *(._RAM_Area*)       /* RAM area section with dot prefix */
+    . = ALIGN(32);
+    __ram_area_end = .;
   } >RAM
 
-    ._DTCMRAM_Area :
+  ._DTCMRAM_Area :
   {
-    . = ALIGN(4);
-    . = ALIGN(4);
+    . = ALIGN(32);
+    *(.DTCMRAM_Area)     /* DTCMRAM area section */
+    *(.DTCMRAM_Area*)    /* DTCMRAM area section */
+    . = ALIGN(32);
   } >DTCMRAM
 }
 

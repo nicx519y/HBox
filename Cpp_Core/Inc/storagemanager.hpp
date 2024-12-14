@@ -23,8 +23,11 @@ public:
 
 	void init();
 	bool save();
-
 	bool ResetSettings(); 				// EEPROM Reset Feature
+	GamepadProfile* getGamepadProfile(char* id);
+	GamepadProfile* getDefaultGamepadProfile() { 
+		return getGamepadProfile(config.defaultProfileId); 
+	}
 	
 	Config config;
 private:

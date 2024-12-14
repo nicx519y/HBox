@@ -10,12 +10,11 @@ enum STORAGE_ERROR_NO {
 };
 
 
-enum MainState
+enum BootMode
 {
-    MAIN_STATE_NONE                     = 0,
-    MAIN_STATE_WEB_CONFIG               = 1,
-    MAIN_STATE_ADC_BTNS_CALIBRATING     = 2,
-    MAIN_STATE_INPUT                    = 3
+    BOOT_MODE_WEB_CONFIG                = 1,
+    BOOT_MODE_ADC_BTNS_CALIBRATING      = 2,
+    BOOT_MODE_INPUT                     = 3,
 };
 
 enum ConfigType
@@ -23,40 +22,62 @@ enum ConfigType
     CONFIG_TYPE_WEB = 0,
 };
 
+// 输入模式
 enum InputMode
 {
-    INPUT_MODE_XINPUT,
-    INPUT_MODE_SWITCH,
-    INPUT_MODE_PS3,
-    INPUT_MODE_KEYBOARD,
+    INPUT_MODE_XINPUT = 0,
     INPUT_MODE_PS4,
+    INPUT_MODE_SWITCH,
     INPUT_MODE_CONFIG = 255,
 };
 
-enum DpadMode
+// 输入模式认证类型
+enum InputModeAuthType
 {
-    DPAD_MODE_DIGITAL,
-    DPAD_MODE_LEFT_ANALOG,
-    DPAD_MODE_RIGHT_ANALOG,
+    INPUT_MODE_AUTH_TYPE_NONE = 0,
+    INPUT_MODE_AUTH_TYPE_KEYS = 1,
+    INPUT_MODE_AUTH_TYPE_USB = 2,
+    INPUT_MODE_AUTH_TYPE_I2C = 3,
 };
+
+
+// enum DpadMode
+// {
+//     DPAD_MODE_DIGITAL,
+//     DPAD_MODE_LEFT_ANALOG,
+//     DPAD_MODE_RIGHT_ANALOG,
+// };
 
 enum SOCDMode
 {
-    SOCD_MODE_UP_PRIORITY,
     SOCD_MODE_NEUTRAL,
+    SOCD_MODE_UP_PRIORITY,
     SOCD_MODE_SECOND_INPUT_PRIORITY,
     SOCD_MODE_FIRST_INPUT_PRIORITY,
     SOCD_MODE_BYPASS,
 };
 
-// typedef enum DpadDirection
-// {
-//     DIRECTION_NONE,
-//     DIRECTION_UP,   
-//     DIRECTION_DOWN,
-//     DIRECTION_LEFT,
-//     DIRECTION_RIGHT,
-// } DpadDirection;  
+enum LEDEffect
+{
+    STATIC              = 0,        //静态 恒亮
+    BREATHING           = 1,        //呼吸
+};
+
+enum GamepadHotkey
+{
+    HOTKEY_NONE,                        // 无
+    HOTKEY_LEDS_EFFECTSTYLE_NEXT,       // 切换LED效果
+    HOTKEY_LEDS_EFFECTSTYLE_PREV,       // 切换LED效果
+    HOTKEY_LEDS_BRIGHTNESS_UP,          // 增加LED亮度
+    HOTKEY_LEDS_BRIGHTNESS_DOWN,        // 减少LED亮度
+    HOTKEY_LEDS_ENABLE_SWITCH,          // 切换LED 开关
+    HOTKEY_CALIBRATION_MODE,            // 切换到校准模式
+    HOTKEY_INPUT_MODE_WEBCONFIG,        // 切换到web配置模式
+    HOTKEY_INPUT_MODE_XINPUT,           // 切换到XInput模式
+    HOTKEY_INPUT_MODE_PS4,              // 切换到PS4模式
+    HOTKEY_INPUT_MODE_SWITCH,           // 切换到Switch模式
+    HOTKEY_SYSTEM_REBOOT,               // 重启系统
+};
 
 enum GpioAction
 {
@@ -121,43 +142,6 @@ enum GpioAction
     BUTTON_PRESS_E12             = 54
 };
 
-enum GpioDirection
-{
-    GPIO_DIRECTION_INPUT         = 0,
-    GPIO_DIRECTION_OUTPUT        = 1
-};
-
-enum GamepadHotkey
-{
-    HOTKEY_NONE,
-    HOTKEY_DPAD_DIGITAL,
-    HOTKEY_DPAD_LEFT_ANALOG,
-    HOTKEY_DPAD_RIGHT_ANALOG,
-    HOTKEY_HOME_BUTTON,
-    HOTKEY_CAPTURE_BUTTON,
-    HOTKEY_SOCD_UP_PRIORITY,
-    HOTKEY_SOCD_NEUTRAL,
-    HOTKEY_SOCD_LAST_INPUT,
-    HOTKEY_INVERT_X_AXIS,
-    HOTKEY_INVERT_Y_AXIS,
-    HOTKEY_SOCD_FIRST_INPUT,
-    HOTKEY_SOCD_BYPASS,
-};
-
-enum OnBoardLedMode
-{
-    BOARD_LED_OFF,
-    MODE_INDICATOR,
-    INPUT_TEST,
-};
-
-enum PLEDType
-{
-    PLED_TYPE_NONE = -1,
-    PLED_TYPE_PWM = 0,
-    PLED_TYPE_RGB = 1,
-};
-
 enum ADCButtonManagerState
 {
     WORKING     = 0,
@@ -170,20 +154,6 @@ enum ADCButtonState
     CALIBRATING_TOP     = 1,
     CALIBRATING_BOTTOM  = 2,
     READY               = 3,
-};
-
-enum LEDEffect
-{
-    STATIC              = 0,        //静态 恒亮
-    BREATHE             = 1,        //呼吸
-};
-
-enum InputModeAuthType
-{
-    INPUT_MODE_AUTH_TYPE_NONE = 0,
-    INPUT_MODE_AUTH_TYPE_KEYS = 1,
-    INPUT_MODE_AUTH_TYPE_USB = 2,
-    INPUT_MODE_AUTH_TYPE_I2C = 3,
 };
 
 #endif /* _NET_DRIVER_H_  */

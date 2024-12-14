@@ -24,6 +24,18 @@ DEBUG = 1
 # optimization
 OPT = -Os
 
+# Add more optimization flags
+CFLAGS += -flto -fno-exceptions -fno-rtti -fmerge-constants
+CFLAGS += -fno-unwind-tables -fno-asynchronous-unwind-tables
+LDFLAGS += -flto -Wl,--gc-sections -Wl,--print-gc-sections
+
+# Optimization flags
+CFLAGS += -Os                     # Size optimization
+CFLAGS += -flto                   # Link time optimization
+CFLAGS += -ffunction-sections     # Place each function in its own section
+CFLAGS += -fdata-sections         # Place each data item in its own section
+LDFLAGS += -Wl,--gc-sections     # Remove unused sections
+LDFLAGS += -Wl,--strip-debug     # Remove debugging symbols
 
 #######################################
 # paths
@@ -63,7 +75,6 @@ Libs/stm32_mw_lwip/src/netif \
 Libs/stm32_mw_lwip/src/core/ipv4 \
 Libs/FatFS \
 Libs/cJSON \
-Libs/httpd \
 USB_DEVICE/App \
 USB_DEVICE/Target \
 Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src \
@@ -77,6 +88,7 @@ Cpp_Core/Src/drivers/xinput \
 Cpp_Core/Src/configs \
 Cpp_Core/Src/gamepad \
 Libs/CRC32/src \
+Libs/httpd \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -207,8 +219,8 @@ CPP_SOURCES = $(foreach dir, $(CPP_SOURCE_DIRS), $(wildcard $(dir)/*.cpp))
 
 C_SOURCES += \
 Libs/stm32_mw_lwip/src/apps/http/httpd.c \
-# Libs/httpd/fs.c \
-# Libs/stm32_mw_lwip/src/apps/http/fs.c \
+Libs/httpd/fs.c \
+Libs/httpd/fsdata.c \
 
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin

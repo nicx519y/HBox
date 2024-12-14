@@ -50,6 +50,8 @@ try changing the first byte of tud_network_mac_address[] below from 0x02 to 0x00
 #include "lwip/init.h"
 #include "lwip/timeouts.h"
 #include "lwip/apps/httpd.h"
+#include "lwip/udp.h"
+#include "lwip/prot/udp.h"
 
 #define INIT_IP4(a,b,c,d) { PP_HTONL(LWIP_MAKEU32(a,b,c,d)) }
 
@@ -138,7 +140,7 @@ static void init_lwip(void)
   memcpy(netif->hwaddr, tud_network_mac_address, sizeof(tud_network_mac_address));
   netif->hwaddr[5] ^= 0x01;
 
-  netif = netif_add(netif, &ipaddr, &netmask, &gateway, NULL, netif_init_cb, ip_input);
+  netif = netif_add(netif, &ipaddr, &netmask, &gateway, NULL, netif_init_cb, ip4_input);
   netif_set_default(netif);
 }
 

@@ -13,10 +13,20 @@ __DTCMRAM_Area__ static double_t ADC_tmp[NUM_ADC_BUTTONS];
 __DTCMRAM_Area__ static double_t ADC_lastTriggerPositions[NUM_ADC_BUTTONS];
 __DTCMRAM_Area__ static bool ADC_lastActions[NUM_ADC_BUTTONS];
 
-ADCBtnsManager::ADCBtnsManager():
-    btns((&Storage::getInstance().config)->ADCButtons),
-    RTProfiles(Storage::getInstance().config.profiles[Storage::getInstance().config.profileIndex]->RTProfiles)
-{}
+// 定义静态成员
+ADCButton* ADCBtnsManager::buttonPtrs[NUM_ADC_BUTTONS];
+RapidTriggerProfile* ADCBtnsManager::profilePtrs[NUM_ADC_BUTTONS];
+
+ADCBtnsManager::ADCBtnsManager() : 
+    btns(buttonPtrs),
+    RTProfiles(profilePtrs)
+{
+    // 初始化ADC按钮
+    for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
+        buttonPtrs[i] = &Storage::getInstance().config.ADCButtons[i];
+        profilePtrs[i] = &Storage::getInstance().getDefaultGamepadProfile()->triggerConfig[i];
+    }
+}
 
 /**
  * @brief  通过配置 初始化计算所需要的模拟值
@@ -124,7 +134,7 @@ void ADCBtnsManager::read()
                     ADC_lastTriggerPositions[i] = pos;
                     ADC_lastActions[i] = true;
                     this->virtualPinMask |= btns[i]->virtualPin;
-                // 如果当前测试点位置和上次测试点位置的差值大于0，则更新测试点位置
+                // 如果当前测试点位置和上次���试点位置的差值大于0，则更新测试点位置
                 } else if(pos - ADC_lastTriggerPositions[i] > 0) {
                     ADC_lastTriggerPositions[i] = pos;
                 }

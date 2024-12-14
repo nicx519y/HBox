@@ -143,7 +143,17 @@
         "constant.hpp": "c",
         "math.h": "c",
         "utils.h": "c",
-        "stm32h7xx_it.h": "c"
+        "stm32h7xx_it.h": "c",
+        "condition_variable": "cpp",
+        "ctime": "cpp",
+        "map": "cpp",
+        "ratio": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
+        "mutex": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp"
     },
     "cmake.sourceDirectory": "E:/Works/STM32/HBox/tinyusb/examples/device/hid_generic_inout"
 }

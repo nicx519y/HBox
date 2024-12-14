@@ -51,7 +51,7 @@ struct fsdata_file {
 #endif /* HTTPD_PRECALCULATED_CHECKSUM */
 };
 
-extern const struct fsdata_file file__index_html[];
+extern struct fsdata_file file__index_html[];
 extern const struct fsdata_file * getFSRoot(void);
 extern const uint8_t numfiles;
 

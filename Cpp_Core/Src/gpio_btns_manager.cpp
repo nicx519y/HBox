@@ -1,14 +1,19 @@
+#include "constant.hpp"
 #include "gpio_btns_manager.hpp"
 #include "storagemanager.hpp"
-#include "constant.hpp"
 #include "gpio-btn.h"
 
 __attribute__((section("._DTCMRAM_Area"))) static uint8_t GPIO_lastActionValues[NUM_GPIO_BUTTONS];
 __attribute__((section("._DTCMRAM_Area"))) static uint32_t GPIO_debounce_t[NUM_GPIO_BUTTONS];
 
-GPIOBtnsManager::GPIOBtnsManager():
-    btns((&Storage::getInstance().config)->GPIOButtons)
-{}
+// 定义静态成员
+GPIOButton* GPIOBtnsManager::buttonPtrs[NUM_GPIO_BUTTONS];
+
+GPIOBtnsManager::GPIOBtnsManager() : btns(getButtonPtrs()) {
+    for(uint8_t i = 0; i < NUM_GPIO_BUTTONS; i++) {
+        buttonPtrs[i] = &Storage::getInstance().config.GPIOButtons[i];
+    }
+}
 
 void GPIOBtnsManager::setup()
 {
@@ -17,7 +22,7 @@ void GPIOBtnsManager::setup()
     this->virtualPinMask = 0x0;
 }
 
-Mask_t GPIOBtnsManager::read()
+void GPIOBtnsManager::read()
 {
     for(uint8_t i = 0; i < NUM_GPIO_BUTTONS; i ++) {
         uint8_t r = GPIO_Btn_IsPressed(i);
@@ -33,6 +38,5 @@ Mask_t GPIOBtnsManager::read()
         }
     }
 
-    return this->virtualPinMask;
 }
 

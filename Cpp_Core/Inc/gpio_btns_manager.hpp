@@ -1,8 +1,11 @@
-#ifndef _GPIO_BTNS_MANAGER_
-#define _GPIO_BTNS_MANAGER_
+#ifndef _GPIO_BTNS_MANAGER_H_
+#define _GPIO_BTNS_MANAGER_H_
 
+#include "stm32h7xx.h"
 #include "types.hpp"
 #include "config.hpp"
+#include "enums.hpp"
+#include "constant.hpp"
 
 class GPIOBtnsManager {
     public:
@@ -14,13 +17,15 @@ class GPIOBtnsManager {
         }
         
         void setup();
-        Mask_t read();
-    private:
+        void read();
+        inline Mask_t getButtonIsPressed() { return this->virtualPinMask; }
 
+    private:
+        GPIOBtnsManager();
         Mask_t virtualPinMask = 0x0;
         GPIOButton* (&btns)[NUM_GPIO_BUTTONS];
-        GPIOBtnsManager();
-
+        static inline GPIOButton* (&getButtonPtrs())[NUM_GPIO_BUTTONS] { return buttonPtrs; }
+        static GPIOButton* buttonPtrs[NUM_GPIO_BUTTONS];
 };
 
-#endif // _GPIO_BTNS_MANAGER_
+#endif // _GPIO_BTNS_MANAGER_H_

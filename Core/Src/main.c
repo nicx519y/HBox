@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,29 +68,43 @@
   */
 int main(void)
 {
-
-  /* USER CODE BEGIN 1 */
-  // for(uint8_t i = 0; i < 8; i++)
-	// {
-	// 	NVIC->ICER[i]=0xFFFFFFFF;
-	// 	NVIC->ICPR[i]=0xFFFFFFFF;
-	// }
-	// SCB->VTOR = QSPI_BASE;      // 重定位中断向量表 到QSPI_BASE
-	// __enable_irq();             // 重新使能中断
-	// __set_PRIMASK(0);
-  SCB_EnableICache();		// 打开ICache
-	SCB_EnableDCache();		// 打开Dcache
-  /* USER CODE END 1 */
-
-  /* MPU Configuration--------------------------------------------------------*/
-  // MPU_Config();
+  /* Enable FPU */
+  // Enable CP10 and CP11 Full Access
+  SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));
+  
+  // Enable FPU and configure it
+  FPU->FPCCR |= FPU_FPCCR_ASPEN_Msk | FPU_FPCCR_LSPEN_Msk;
+  FPU->FPCAR = 0;
+  FPU->FPDSCR = 0;
+  
+  // Clear floating-point status and control register
+  __set_FPSCR(0);
+  
+  // Ensure all FPU instructions complete and flush pipeline
+  __DSB();
+  __ISB();
+  __DMB();
 
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
+  SystemClock_Config();
+  
+  // Initialize UART first for debug output
+  USART1_Init();
+  
+  // Simple UART test
+  printf("\r\n\r\n=== UART Test Start ===\r\n");
+  printf("System Clock: %lu Hz\r\n", HAL_RCC_GetSysClockFreq());
+  printf("HCLK: %lu Hz\r\n", HAL_RCC_GetHCLKFreq());
+  printf("PCLK1: %lu Hz\r\n", HAL_RCC_GetPCLK1Freq());
+  printf("PCLK2: %lu Hz\r\n", HAL_RCC_GetPCLK2Freq());
+  printf("=== UART Test End ===\r\n\r\n");
+
   /* USER CODE BEGIN Init */
+
   cpp_main();
   /* USER CODE END Init */
 
@@ -100,6 +114,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */

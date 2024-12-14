@@ -5,13 +5,15 @@
 #include <stdio.h>
 
 LEDsManager::LEDsManager():
-    opts((&Storage::getInstance().config)->profiles[Storage::getInstance().config.profileIndex])
+    opts(Storage::getInstance().getDefaultGamepadProfile())
 {};
 
 void LEDsManager::setup()
 {
     // opts = Storage::getInstance().getGamepadOptions();
-    if(opts->ledEnabled == false) return;
+    if(opts->ledProfile.ledEnabled == false) return;
+
+    LEDProfile * ledProfile = &opts->ledProfile;
 
     ADCButtonManagerState state = ADCBtnsManager::getInstance().getState();
 
@@ -22,12 +24,12 @@ void LEDsManager::setup()
 
     } else if(state == ADCButtonManagerState::WORKING) {
         
-        struct RGBColor color2 = hexToRGB(opts->ledColor2);        //background color  1
-        struct RGBColor color3 = hexToRGB(opts->ledColor3);        //background color  2
-        uint8_t brightness = (uint8_t)round(opts->ledBrightness * LEDS_BRIGHTNESS_RADIO);
+        struct RGBColor color2 = hexToRGB(ledProfile->ledColor2);        //background color  1
+        struct RGBColor color3 = hexToRGB(ledProfile->ledColor3);        //background color  2
+        uint8_t brightness = (uint8_t)round(ledProfile->ledBrightness * LEDS_BRIGHTNESS_RADIO);
 
-        switch(opts->ledEffect) {
-            case LEDEffect::BREATHE:
+        switch(ledProfile->ledEffect) {
+            case LEDEffect::BREATHING:
                 WS2812B_SetAllLEDBrightness(brightness);
                 WS2812B_SetAllLEDColor(color2.r, color2.g, color2.b);
                 gtc.setup(color2, color3, brightness, 0, LEDS_ANIMATION_CYCLE);
@@ -41,8 +43,8 @@ void LEDsManager::setup()
 
     } else {    // ADCButtonManagerState::CALIBRATING
         
-        struct RGBColor color = hexToRGB(opts->ledColorCalibrateTop);
-        WS2812B_SetAllLEDBrightness(opts->ledBrightnesssCalibrate);
+        struct RGBColor color = hexToRGB(LED_CALIBRATE_COLOR_TOP);
+        WS2812B_SetAllLEDBrightness(LED_CALIBRATE_BRIGHTNESS);
         WS2812B_SetAllLEDColor(color.r, color.g, color.b);
 
     }
@@ -57,7 +59,9 @@ void LEDsManager::deinit()
 
 void LEDsManager::runAnimate()
 {
-    if(opts->ledEnabled == false) return;
+    if(opts->ledProfile.ledEnabled == false) return;    
+
+    LEDProfile * ledProfile = &opts->ledProfile;
 
     if(t == 0) t = HAL_GetTick();
 
@@ -72,20 +76,20 @@ void LEDsManager::runAnimate()
         
         Mask_t virtualPinMask = ADCBtnsManager::getInstance().getButtonIsPressed();
 
-        struct RGBColor frontColor = hexToRGB(opts->ledColor1);
+        struct RGBColor frontColor = hexToRGB(ledProfile->ledColor1);
         struct RGBColor currentColor = gtc.getCurrentRGB();
         uint8_t currentBrightness = gtc.getCurrentBrightness();
         WS2812B_SetLEDColorByMask(frontColor, currentColor, (uint32_t) virtualPinMask);
-        WS2812B_SetLEDBrightnessByMask((uint8_t)round((double_t)opts->ledBrightness*LEDS_BRIGHTNESS_RADIO), 
+        WS2812B_SetLEDBrightnessByMask((uint8_t)round((double_t)ledProfile->ledBrightness*LEDS_BRIGHTNESS_RADIO), 
             currentBrightness, (uint32_t) virtualPinMask);
 
     } else { // ADCButtonManagerState::CALIBRATING
 
         ADCButtonState* btnStates = ADCBtnsManager::getInstance().getButtonStates();
-        struct RGBColor topColor = hexToRGB(opts->ledColorCalibrateTop);
-        struct RGBColor bottomColor = hexToRGB(opts->ledColorCalibrateBottom);
-        struct RGBColor completeColor = hexToRGB(opts->ledColorCalibrateComplete);
-
+        struct RGBColor topColor = hexToRGB(LED_CALIBRATE_COLOR_TOP);
+        struct RGBColor bottomColor = hexToRGB(LED_CALIBRATE_COLOR_BOTTOM);
+        struct RGBColor completeColor = hexToRGB(LED_CALIBRATE_COLOR_COMPLETE);
+    
         for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
             switch(btnStates[i]) {
                 case ADCButtonState::NOT_READY:

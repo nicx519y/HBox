@@ -38,6 +38,8 @@ class ADCBtnsManager {
         
 
     private:
+        static ADCButton* buttonPtrs[NUM_ADC_BUTTONS];
+        static RapidTriggerProfile* profilePtrs[NUM_ADC_BUTTONS];
         
         Mask_t virtualPinMask = 0x0;
         uint32_t calibrate_t = 0;
@@ -46,7 +48,7 @@ class ADCBtnsManager {
         double_t getOriginValue(uint8_t idx);
         ADCButtonManagerState state = ADCButtonManagerState::WORKING;
         ADCButton* (&btns)[NUM_ADC_BUTTONS];
-        RipidTriggerProfile* (&RTProfiles)[NUM_ADC_BUTTONS];
+        RapidTriggerProfile* (&RTProfiles)[NUM_ADC_BUTTONS];
         
 };
 

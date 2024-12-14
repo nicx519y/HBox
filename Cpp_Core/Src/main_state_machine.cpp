@@ -18,16 +18,20 @@ void MainStateMachine::setup()
     Storage::getInstance().init();
     printf("Storage init success.\n");
 
-    MainState mainState = Storage::getInstance().config.mainState;
-    printf("MainState: %d\n", mainState);
+    BootMode bootMode = Storage::getInstance().config.bootMode;
+    printf("BootMode: %d\n", bootMode);
+
+    GamepadProfile* opts = Storage::getInstance().getDefaultGamepadProfile();
+    InputMode inputMode = opts->keysConfig.inputMode;
+    printf("InputMode: %d\n", inputMode);
     // mainState = MainState::MAIN_STATE_WEB_CONFIG;
 
     // printf("MainState: %d\n", (uint8_t) mainState);
 
     GPDriver* driver;
 
-    switch(mainState) {
-        case MainState::MAIN_STATE_WEB_CONFIG:
+    switch(bootMode) {
+        case BootMode::BOOT_MODE_WEB_CONFIG:
         
             driverManager.setup(InputMode::INPUT_MODE_CONFIG);      
             configManager.setup(ConfigType::CONFIG_TYPE_WEB);
@@ -41,7 +45,7 @@ void MainStateMachine::setup()
                 }
             }
             break;
-        case MainState::MAIN_STATE_ADC_BTNS_CALIBRATING:
+        case BootMode::BOOT_MODE_ADC_BTNS_CALIBRATING:
             
             gamepad.setup();
             gamepad.ADCBtnsCalibrateStart();
@@ -51,9 +55,9 @@ void MainStateMachine::setup()
             }
 
             break;
-        case MainState::MAIN_STATE_INPUT:
+        case BootMode::BOOT_MODE_INPUT:
             // driverManager.setup((InputMode)Storage::getInstance().getGamepadOptions().inputMode);
-            driverManager.setup(InputMode::INPUT_MODE_XINPUT);
+            driverManager.setup(inputMode);
             driver = driverManager.getDriver();
             gamepad.setup();
             tud_init(TUD_OPT_RHPORT);

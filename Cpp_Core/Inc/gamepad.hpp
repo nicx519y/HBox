@@ -88,11 +88,10 @@ class Gamepad {
         inline bool __attribute__((always_inline)) pressedA2()    { return pressedButton(GAMEPAD_MASK_A2); }
         
 
-        const GamepadOptions* getOptions() const { return options; }
+        const GamepadProfile* getOptions() const { return options; }
 
-        void setInputMode(InputMode inputMode) { options->inputMode = inputMode; }
-        void setSOCDMode(SOCDMode socdMode) { options->socdMode = socdMode; }
-        void setDpadMode(DpadMode dpadMode) { options->dpadMode = dpadMode; }
+        void setInputMode(InputMode inputMode) { options->keysConfig.inputMode = inputMode; }
+        void setSOCDMode(SOCDMode socdMode) { options->keysConfig.socdMode = socdMode; }
 
         GamepadState rawState;
         GamepadState state;
@@ -117,18 +116,17 @@ class Gamepad {
         GamepadButtonMapping *mapButtonFn;
 
         // These are special to SOCD
-        inline static const SOCDMode resolveSOCDMode(const GamepadOptions& options) {
-            return (options.socdMode == SOCD_MODE_BYPASS &&
-                    (options.inputMode == INPUT_MODE_PS3 ||
-                    options.inputMode == INPUT_MODE_SWITCH ||
-                    options.inputMode == INPUT_MODE_PS4)) ?
-                SOCD_MODE_NEUTRAL : options.socdMode;
+        inline static const SOCDMode resolveSOCDMode(const GamepadProfile& options) {
+            return (options.keysConfig.socdMode == SOCD_MODE_BYPASS &&
+                    (options.keysConfig.inputMode == INPUT_MODE_SWITCH ||
+                    options.keysConfig.inputMode == INPUT_MODE_PS4)) ?
+                SOCD_MODE_NEUTRAL : options.keysConfig.socdMode;
         };
     
     private:
         Gamepad();
 
-        GamepadOptions* options;
+        GamepadProfile* options;
 
         void process();
         void read();

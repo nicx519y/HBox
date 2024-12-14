@@ -1,15 +1,6 @@
 #include "configs/webconfig.hpp"
-// #include "config.pb.h"
-// #include "configs/base64.hpp"
 #include "configmanager.hpp"
-// #include <cstring>
 #include <string>
-// #include <vector>
-// #include <memory>
-// #include <set>
-#include "cJSON.h"
-
-// HTTPD Includes
 #include "rndis.h"
 #include "fs.h"
 #include "fscustom.h"
@@ -17,12 +8,14 @@
 #include "lwip/apps/httpd.h"
 #include "lwip/def.h"
 #include "lwip/mem.h"
-// #include "addons/input_macro.h"
-// #include "bitmaps.hpp"
 #include "constant.hpp"
 #include "config.hpp"
 #include "storagemanager.hpp"
+#include "cJSON.h"
+#include "cJSON_Utils.h"
+#include "main.h"  // 用于 HAL_GetTick
 
+extern "C" struct fsdata_file file__index_html[];
 
 #define PATH_CGI_ACTION "/cgi/action"
 
@@ -32,17 +25,23 @@
 
 using namespace std;
 
-// extern struct fsdata_file file__index_html[];
-
-const static char* spaPaths[] = { "/backup", "/display-config", "/led-config", "/pin-mapping", "/settings", "/reset-settings", "/add-ons", "/custom-theme", "/macro", "/peripheral-mapping" };
+// 处理SPA文件，这些url都指向index.html
+const static char* spaPaths[] = { 
+    "/keys",
+    "/leds",
+    "/rapid-trigger",
+    "/hotkeys",
+    "/firmware"
+};
 const static char* excludePaths[] = { "/css", "/images", "/js", "/static" };
-const static uint32_t rebootDelayMs = 500;
 static string http_post_uri;
-__RAM_Area__ static char http_post_payload[LWIP_HTTPD_POST_MAX_PAYLOAD_LEN];
+static char http_post_payload[LWIP_HTTPD_POST_MAX_PAYLOAD_LEN];
 static uint16_t http_post_payload_len = 0;
-__RAM_Area__ static char http_response[LWIP_HTTPD_RESPONSE_MAX_PAYLOAD_LEN];
-// static absolute_time_t rebootDelayTimeout = nil_time;
-// static System::BootMode rebootMode = System::BootMode::DEFAULT;
+// static char http_response[LWIP_HTTPD_RESPONSE_MAX_PAYLOAD_LEN];
+
+const static uint32_t rebootDelayMs = 1000;  // 1秒后重启
+static uint32_t rebootTick = 0;  // 用于存储重启时间点
+static bool needReboot = false;  // 是否需要重启的标志
 
 void WebConfig::setup() {
     rndis_init();
@@ -52,9 +51,10 @@ void WebConfig::loop() {
     // rndis http server requires inline functions (non-class)
     rndis_task();
 
-    // if (!is_nil_time(rebootDelayTimeout) && time_reached(rebootDelayTimeout)) {
-    //     System::reboot(rebootMode);
-    // }
+    // 检查是否需要重启
+    if (needReboot && (HAL_GetTick() >= rebootTick)) {
+        NVIC_SystemReset();
+    }
 }
 
 enum class HttpStatusCode
@@ -76,7 +76,7 @@ struct DataAndStatusCode
 };
 
 // **** WEB SERVER Overrides and Special Functionality ****
-int set_file_data(fs_file* file, const DataAndStatusCode& dataAndStatusCode)
+int set_file_data_with_status_code(fs_file* file, const DataAndStatusCode& dataAndStatusCode)
 {
     static string returnData;
 
@@ -93,7 +93,7 @@ int set_file_data(fs_file* file, const DataAndStatusCode& dataAndStatusCode)
     returnData.append(statusCodeStr);
     returnData.append("\r\n");
     returnData.append(
-        "Server: GP2040-CE \r\n"
+        "Server: Ionix-HitBox \r\n"
         "Content-Type: application/json\r\n"
         "Access-Control-Allow-Origin: *\r\n"
         "Content-Length: "
@@ -101,6 +101,8 @@ int set_file_data(fs_file* file, const DataAndStatusCode& dataAndStatusCode)
     returnData.append(std::to_string(dataAndStatusCode.data.length()));
     returnData.append("\r\n\r\n");
     returnData.append(dataAndStatusCode.data);
+
+    printf("returnData: %s\n", returnData.c_str()); 
 
     file->data = returnData.c_str();
     file->len = returnData.size();
@@ -113,9 +115,10 @@ int set_file_data(fs_file* file, const DataAndStatusCode& dataAndStatusCode)
 
 int set_file_data(fs_file *file, string&& data)
 {
+    printf("set_file_data %s\n", data.c_str());
     if (data.empty())
         return 0;
-    return set_file_data(file, DataAndStatusCode(std::move(data), HttpStatusCode::_200));
+    return set_file_data_with_status_code(file, DataAndStatusCode(std::move(data), HttpStatusCode::_200));
 }
 
 cJSON* get_post_data()
@@ -192,219 +195,1115 @@ void httpd_post_finished(void *connection, char *response_uri, uint16_t response
 
 /* ======================================= apis begin ==================================================== */
 
-std::string get_response_temp(STORAGE_ERROR_NO errNo, cJSON* data)
+std::string get_response_temp(STORAGE_ERROR_NO errNo, cJSON* data, std::string errorMessage = "")
 {
     cJSON* json = cJSON_CreateObject();
     cJSON_AddNumberToObject(json, "errNo", errNo);
     cJSON_AddItemToObject(json, "data", data!=NULL?data:cJSON_CreateObject());
-    memset(http_response, '\0', sizeof(http_response));
-    cJSON_PrintBuffered(json, *http_response, 0);
+    if (!errorMessage.empty()) {
+        cJSON_AddStringToObject(json, "errorMessage", errorMessage.c_str());
+    }
+    // cJSON_PrintPreallocated(json, http_response, sizeof(http_response), 0);
+    char* temp = cJSON_PrintBuffered(json, LWIP_HTTPD_RESPONSE_MAX_PAYLOAD_LEN, 0);
+    std::string response(temp);
     cJSON_Delete(json);
-    return http_response;
+    free(temp);
+    return response;
 }
 
 /**
- * @brief 获取固件版本号
+ * @brief 构建按键映射的JSON
  * 
- * @return std::string
- * {
- *      "errNo": 0,
- *      "data": { "firmwareVersion": 0x100000 }
- * }
+ * @param virtualMask 
+ * @return cJSON* 
  */
-std::string getFirmwareVersion()
-{
-    cJSON* dataJSON = cJSON_CreateObject();
-    cJSON_AddNumberToObject(dataJSON, "firmwareVersion", FIRMWARE_VERSION);
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    cJSON_Delete(dataJSON);
-    return result;
+cJSON* buildKeyMappingJSON(uint32_t virtualMask) {
+    cJSON* keyMappingJSON = cJSON_CreateArray();
+    
+    for(uint8_t i = 0; i < NUM_ADC_BUTTONS + NUM_GPIO_BUTTONS; i++) {
+        if(virtualMask & (1 << i)) {
+            cJSON_AddItemToArray(keyMappingJSON, cJSON_CreateNumber(i));
+        }
+    }
+
+    return keyMappingJSON;
 }
 
 /**
- * @brief 获取当前生效的profile索引
+ * @brief 获取按键映射的虚拟掩码
+ * 
+ * @param keyMappingJSON 
+ * @return uint32_t 
+ */
+uint32_t getKeyMappingVirtualMask(cJSON* keyMappingJSON) {
+    if(!keyMappingJSON || !cJSON_IsArray(keyMappingJSON)) {
+        return 0;
+    }
+
+    uint32_t virtualMask = 0;
+    cJSON* item = NULL;
+    cJSON_ArrayForEach(item, keyMappingJSON) {
+        virtualMask |= (1 << (int)cJSON_GetNumberValue(item));
+    }
+    return virtualMask;
+}
+
+/**
+ * @brief 构建profile列表的JSON
+ * 
+ * @param config 
+ * @return cJSON* 
+ */
+cJSON* buildProfileListJSON(Config& config) {
+    // 创建返回数据结构
+    cJSON* profileListJSON = cJSON_CreateObject();
+    cJSON* itemsJSON = cJSON_CreateArray();
+
+    // 添加默认配置ID和最大配置数
+    cJSON_AddStringToObject(profileListJSON, "defaultId", config.defaultProfileId);
+    cJSON_AddNumberToObject(profileListJSON, "maxNumProfiles", config.numProfilesMax);
+
+    // 添加所有配置文件信息
+    for(uint8_t i = 0; i < NUM_PROFILES; i++) {
+        if(config.profiles[i].enabled) {  // 只添加已启用的配置文件
+            cJSON* profileJSON = cJSON_CreateObject();
+            
+            // 基本信息
+            cJSON_AddStringToObject(profileJSON, "id", config.profiles[i].id);
+            cJSON_AddStringToObject(profileJSON, "name", config.profiles[i].name);
+            cJSON_AddBoolToObject(profileJSON, "enabled", config.profiles[i].enabled);
+
+            // 添加到数组
+            cJSON_AddItemToArray(itemsJSON, profileJSON);
+        }
+    }
+
+    // 构建返回结构
+    cJSON_AddItemToObject(profileListJSON, "items", itemsJSON);
+
+    return profileListJSON;
+}
+
+// 辅助函数：构建配置文件的JSON结构
+cJSON* buildProfileJSON(GamepadProfile* profile) {
+    if (!profile) {
+        return nullptr;
+    }
+
+    cJSON* profileDetailsJSON = cJSON_CreateObject();
+
+    // 基本信息
+    cJSON_AddStringToObject(profileDetailsJSON, "id", profile->id);
+    cJSON_AddStringToObject(profileDetailsJSON, "name", profile->name);
+
+    // 按键配置
+    cJSON* keysConfigJSON = cJSON_CreateObject();
+    cJSON_AddBoolToObject(keysConfigJSON, "invertXAxis", profile->keysConfig.invertXAxis);
+    cJSON_AddBoolToObject(keysConfigJSON, "invertYAxis", profile->keysConfig.invertYAxis);
+    cJSON_AddBoolToObject(keysConfigJSON, "fourWayMode", profile->keysConfig.fourWayMode);
+    cJSON_AddNumberToObject(keysConfigJSON, "socdMode", profile->keysConfig.socdMode);
+    cJSON_AddNumberToObject(keysConfigJSON, "inputMode", profile->keysConfig.inputMode);
+
+    // 按键映射
+    cJSON* keyMappingJSON = cJSON_CreateObject();
+
+    cJSON_AddItemToObject(keyMappingJSON, "DPAD_UP", buildKeyMappingJSON(profile->keysConfig.keyDpadUp));
+    cJSON_AddItemToObject(keyMappingJSON, "DPAD_DOWN", buildKeyMappingJSON(profile->keysConfig.keyDpadDown));
+    cJSON_AddItemToObject(keyMappingJSON, "DPAD_LEFT", buildKeyMappingJSON(profile->keysConfig.keyDpadLeft));
+    cJSON_AddItemToObject(keyMappingJSON, "DPAD_RIGHT", buildKeyMappingJSON(profile->keysConfig.keyDpadRight));
+    cJSON_AddItemToObject(keyMappingJSON, "B1", buildKeyMappingJSON(profile->keysConfig.keyButtonB1));
+    cJSON_AddItemToObject(keyMappingJSON, "B2", buildKeyMappingJSON(profile->keysConfig.keyButtonB2));
+    cJSON_AddItemToObject(keyMappingJSON, "B3", buildKeyMappingJSON(profile->keysConfig.keyButtonB3));
+    cJSON_AddItemToObject(keyMappingJSON, "B4", buildKeyMappingJSON(profile->keysConfig.keyButtonB4));
+    cJSON_AddItemToObject(keyMappingJSON, "L1", buildKeyMappingJSON(profile->keysConfig.keyButtonL1));
+    cJSON_AddItemToObject(keyMappingJSON, "L2", buildKeyMappingJSON(profile->keysConfig.keyButtonL2));
+    cJSON_AddItemToObject(keyMappingJSON, "R1", buildKeyMappingJSON(profile->keysConfig.keyButtonR1));
+    cJSON_AddItemToObject(keyMappingJSON, "R2", buildKeyMappingJSON(profile->keysConfig.keyButtonR2));
+    cJSON_AddItemToObject(keyMappingJSON, "S1", buildKeyMappingJSON(profile->keysConfig.keyButtonS1));
+    cJSON_AddItemToObject(keyMappingJSON, "S2", buildKeyMappingJSON(profile->keysConfig.keyButtonS2));
+    cJSON_AddItemToObject(keyMappingJSON, "L3", buildKeyMappingJSON(profile->keysConfig.keyButtonL3));
+    cJSON_AddItemToObject(keyMappingJSON, "R3", buildKeyMappingJSON(profile->keysConfig.keyButtonR3));
+    cJSON_AddItemToObject(keyMappingJSON, "A1", buildKeyMappingJSON(profile->keysConfig.keyButtonA1));
+    cJSON_AddItemToObject(keyMappingJSON, "A2", buildKeyMappingJSON(profile->keysConfig.keyButtonA2));
+    cJSON_AddItemToObject(keyMappingJSON, "Fn", buildKeyMappingJSON(profile->keysConfig.keyButtonFn));
+    cJSON_AddItemToObject(keysConfigJSON, "keyMapping", keyMappingJSON);
+
+    // LED配置
+    cJSON* ledsConfigJSON = cJSON_CreateObject();
+    cJSON_AddBoolToObject(ledsConfigJSON, "ledEnabled", profile->ledProfile.ledEnabled);
+    switch(profile->ledProfile.ledEffect) {
+        case LEDEffect::STATIC:
+            cJSON_AddStringToObject(ledsConfigJSON, "ledsEffectStyle", "STATIC");
+            break;
+        case LEDEffect::BREATHING:
+            cJSON_AddStringToObject(ledsConfigJSON, "ledsEffectStyle", "BREATHING");
+            break;
+        default:
+            cJSON_AddStringToObject(ledsConfigJSON, "ledsEffectStyle", "STATIC");
+            break;
+    }
+    
+    // LED颜色数组
+    cJSON* ledColorsJSON = cJSON_CreateArray();
+    char colorStr[8];
+    sprintf(colorStr, "#%06X", profile->ledProfile.ledColor1);
+    cJSON_AddItemToArray(ledColorsJSON, cJSON_CreateString(colorStr));
+    sprintf(colorStr, "#%06X", profile->ledProfile.ledColor2);
+    cJSON_AddItemToArray(ledColorsJSON, cJSON_CreateString(colorStr));
+    sprintf(colorStr, "#%06X", profile->ledProfile.ledColor3);
+    cJSON_AddItemToArray(ledColorsJSON, cJSON_CreateString(colorStr));
+    
+    cJSON_AddItemToObject(ledsConfigJSON, "ledColors", ledColorsJSON);
+    cJSON_AddNumberToObject(ledsConfigJSON, "ledBrightness", profile->ledProfile.ledBrightness);
+
+    // 触发器配置
+    cJSON* triggerConfigsJSON = cJSON_CreateObject();
+    cJSON* triggerConfigsArrayJSON = cJSON_CreateArray();
+    
+
+    // printf("triggerConfig[0].topDeadzone: %f\n", profile->triggerConfig[0].topDeadzone);
+    // printf("triggerConfig[0].bottomDeadzone: %f\n", profile->triggerConfig[0].bottomDeadzone);
+    // printf("triggerConfig[0].pressAccuracy: %f\n", profile->triggerConfig[0].pressAccuracy);
+    // printf("triggerConfig[0].releaseAccuracy: %f\n", profile->triggerConfig[0].releaseAccuracy);
+    for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
+        cJSON* triggerJSON = cJSON_CreateObject();
+        // 使用 (double) 转换确保浮点数精度
+        cJSON_AddNumberToObject(triggerJSON, "topDeadzone", (double)profile->triggerConfig[i].topDeadzone);
+        cJSON_AddNumberToObject(triggerJSON, "bottomDeadzone", (double)profile->triggerConfig[i].bottomDeadzone);
+        cJSON_AddNumberToObject(triggerJSON, "pressAccuracy", (double)profile->triggerConfig[i].pressAccuracy);
+        cJSON_AddNumberToObject(triggerJSON, "releaseAccuracy", (double)profile->triggerConfig[i].releaseAccuracy);
+        cJSON_AddItemToArray(triggerConfigsArrayJSON, triggerJSON);
+    }
+    
+    cJSON_AddItemToObject(triggerConfigsJSON, "triggerConfigs", triggerConfigsArrayJSON);
+    
+    // // 组装最终结构
+    cJSON_AddItemToObject(profileDetailsJSON, "keysConfig", keysConfigJSON);
+    cJSON_AddItemToObject(profileDetailsJSON, "ledsConfig", ledsConfigJSON);
+    cJSON_AddItemToObject(profileDetailsJSON, "triggerConfigs", triggerConfigsJSON);
+
+    return profileDetailsJSON;
+}
+
+// 辅���函数：构建快捷键配置的JSON结构
+cJSON* buildHotkeysConfigJSON(Config& config) {
+    cJSON* hotkeysConfigJSON = cJSON_CreateArray();
+
+    // 添加所有快捷键配置
+    for(uint8_t i = 0; i < NUM_GAMEPAD_HOTKEYS; i++) {
+        cJSON* hotkeyJSON = cJSON_CreateObject();
+        
+        // 添加快捷键序号
+        cJSON_AddNumberToObject(hotkeyJSON, "key", i);
+        
+        // 添加快捷键动作(转换为字符串)
+        switch(config.hotkeys[i].action) {
+            case GamepadHotkey::HOTKEY_INPUT_MODE_WEBCONFIG:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "WebConfigMode");
+                break;
+            case GamepadHotkey::HOTKEY_INPUT_MODE_SWITCH:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "NSwitchMode");
+                break;
+            case GamepadHotkey::HOTKEY_INPUT_MODE_XINPUT:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "XInputMode");
+                break;
+            case GamepadHotkey::HOTKEY_INPUT_MODE_PS4:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "PS4Mode");
+                break;
+            case GamepadHotkey::HOTKEY_LEDS_EFFECTSTYLE_NEXT:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "LedsEffectStyleNext");
+                break;
+            case GamepadHotkey::HOTKEY_LEDS_EFFECTSTYLE_PREV:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "LedsEffectStylePrev");
+                break;
+            case GamepadHotkey::HOTKEY_LEDS_BRIGHTNESS_UP:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "LedsBrightnessUp");
+                break;
+            case GamepadHotkey::HOTKEY_LEDS_BRIGHTNESS_DOWN:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "LedsBrightnessDown");
+                break;
+            case GamepadHotkey::HOTKEY_LEDS_ENABLE_SWITCH:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "LedsEnableSwitch");
+                break;
+            case GamepadHotkey::HOTKEY_CALIBRATION_MODE:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "CalibrationMode");
+                break;
+            case GamepadHotkey::HOTKEY_SYSTEM_REBOOT:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "SystemReboot");
+                break;
+            default:
+                cJSON_AddStringToObject(hotkeyJSON, "action", "None");
+                break;
+        }
+        
+        // 添加锁定状态
+        cJSON_AddBoolToObject(hotkeyJSON, "isLocked", config.hotkeys[i].isLocked);
+        
+        // 添加到组
+        cJSON_AddItemToArray(hotkeysConfigJSON, hotkeyJSON);
+    }
+
+    return hotkeysConfigJSON;
+}
+
+/**
+ * @brief 获取profile列表
  * 
  * @return std::string 
  * {
  *      "errNo": 0,
- *      "data": { "profileIndex": 0 }
- * }
- */
-std::string getActiveProfileIndex()
-{
-    Config* config = &Storage::getInstance().config;
-    cJSON* dataJSON = cJSON_CreateObject();
-    cJSON_AddNumberToObject(dataJSON, "profileIndex", config->profileIndex);
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    cJSON_Delete(dataJSON);
-    return result;
-}
-
-/**
- * @brief 获取当前profile的KeyMapping
- * 
- * @return std::string 
- * {
- *      "errNo": 0,
- *      "data": {
- *          "profileIndex": 0,
- *          "inputMode": 0,
- *          "invertXAxis": false,
- *          "invertYAxis": false,
- *          "fourWayMode": false,
- *          "keyDpadUp": 0x0000000100000000,
- *          ...
- *      }
- * }
- */
-std::string getKeyMappings()
-{
-    Config* config = &Storage::getInstance().config;
-    GamepadOptions* profile = config->profiles[config->profileIndex];
-    cJSON* dataJSON = cJSON_CreateObject();
-
-    cJSON_AddNumberToObject(dataJSON, "profileIndex", config->profileIndex);
-
-    cJSON_AddNumberToObject(dataJSON, "inputMode", profile->inputMode);
-    cJSON_AddNumberToObject(dataJSON, "socdMode", profile->socdMode);
-    cJSON_AddBoolToObject(dataJSON, "invertXAxis", profile->invertXAxis?1:0);
-    cJSON_AddBoolToObject(dataJSON, "invertYAxis", profile->invertYAxis?1:0);
-    cJSON_AddBoolToObject(dataJSON, "fourWayMode", profile->fourWayMode?1:0);
-
-    cJSON_AddNumberToObject(dataJSON, "keyDpadUp", profile->keyDpadUp);
-    cJSON_AddNumberToObject(dataJSON, "keyDpadDown", profile->keyDpadDown);
-    cJSON_AddNumberToObject(dataJSON, "keyDpadLeft", profile->keyDpadLeft);
-    cJSON_AddNumberToObject(dataJSON, "keyDpadRight", profile->keyDpadRight);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonB1", profile->keyButtonB1);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonB2", profile->keyButtonB2);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonB3", profile->keyButtonB3);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonB4", profile->keyButtonB4);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonL1", profile->keyButtonL1);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonR1", profile->keyButtonR1);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonL2", profile->keyButtonL2);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonR2", profile->keyButtonR2);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonS1", profile->keyButtonS1);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonS2", profile->keyButtonS2);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonL3", profile->keyButtonL3);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonR3", profile->keyButtonR3);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonA1", profile->keyButtonA1);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonA2", profile->keyButtonA2);
-    cJSON_AddNumberToObject(dataJSON, "keyButtonFn", profile->keyButtonFn);
-
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    cJSON_Delete(dataJSON);
-    return result;
-}
-
-/**
- * @brief 获取当前profile的LEDSOptions
- * 
- * @return std::string 
- * {
- *      "errNo": 0,
- *      "data": {
- *          "profileIndex": 0,
- *          "ledEnabled": true,
- *          "ledEffect": 0,
- *          "ledColor1": 0xff0000,
- *          ...
- *      }
- * }
- */
-std::string getLEDsOptions()
-{
-    Config* config = &Storage::getInstance().config;
-    GamepadOptions* profile = config->profiles[config->profileIndex];
-    cJSON* dataJSON = cJSON_CreateObject();
-
-    cJSON_AddNumberToObject(dataJSON, "profileIndex", config->profileIndex);
-
-    cJSON_AddBoolToObject(dataJSON, "ledEnabled", profile->ledEnabled?1:0);
-    cJSON_AddNumberToObject(dataJSON, "ledEffect", profile->ledEffect);
-    cJSON_AddBoolToObject(dataJSON, "isDoubleColor", profile->isDoubleColor?1:0);
-    cJSON_AddNumberToObject(dataJSON, "ledColor1", profile->ledColor1);
-    cJSON_AddNumberToObject(dataJSON, "ledColor2", profile->ledColor2);
-    cJSON_AddNumberToObject(dataJSON, "ledColor3", profile->ledColor3);
-    cJSON_AddNumberToObject(dataJSON, "ledBrightness", profile->ledBrightness);
-    cJSON_AddNumberToObject(dataJSON, "ledColorCalibrateTop", profile->ledColorCalibrateTop);
-    cJSON_AddNumberToObject(dataJSON, "ledColorCalibrateBottom", profile->ledColorCalibrateBottom);
-    cJSON_AddNumberToObject(dataJSON, "ledColorCalibrateComplete", profile->ledColorCalibrateComplete);
-    cJSON_AddNumberToObject(dataJSON, "ledBrightnesssCalibrate", profile->ledBrightnesssCalibrate);
-
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    cJSON_Delete(dataJSON);
-    return result;
-}
-
-/**
- * @brief 获取ADC按钮列表
- * 
- * @return std::string 
- * {
- *      "errNo": 0,
- *      "data": [
- *          {
- *              "virtualPin": 0,
- *              "pressAccuracy": 0,
+ *      "data": { "profileList": {
+ *          "defaultId": "profile-0",
+ *          "maxNumProfiles": 10,
+ *          "items": [
+ *              {
+ *                  "id": 0,
+ *                  "name": "Default",
+ *                  ...
+ *              },
  *              ...
- *          },
- *          ...
- *      ]
+ *          ]
+ *      } }
  * }
  */
-std::string getADCButtons()
-{
-    Config* config = &Storage::getInstance().config;
-    ADCButton** configBtns = config->ADCButtons;
-    cJSON* dataJSON = cJSON_CreateArray();
-
-    uint8_t len = sizeof(configBtns) / sizeof(configBtns[0]);
-
-    for(uint8_t i = 0; i < len; i ++) {
-        cJSON* btn = cJSON_CreateObject();
-        cJSON_AddItemToArray(dataJSON, btn);
-
-        cJSON_AddNumberToObject(btn, "virtualPin", configBtns[i]->virtualPin);
-        cJSON_AddNumberToObject(btn, "magnettization", configBtns[i]->magnettization);
-        cJSON_AddNumberToObject(btn, "topPosition", configBtns[i]->topPosition);
-        cJSON_AddNumberToObject(btn, "bottomPosition", configBtns[i]->bottomPosition);
+std::string apiGetProfileList() {
+    Config& config = Storage::getInstance().config;
+    
+    // 创建返回数据结构
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* profileListJSON = buildProfileListJSON(config);
+    
+    if (!profileListJSON) {
+        cJSON_Delete(dataJSON);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build profile list JSON");
     }
 
+    // 构建返回结构
+    cJSON_AddItemToObject(dataJSON, "profileList", profileListJSON);
+
+    // 生成返回字符串
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+
+    printf("apiGetProfileList response: %s\n", response.c_str());
+
+    cJSON_Delete(dataJSON);
+    return response;
+}
+
+
+
+/**
+ * @brief 获取默认profile
+ * 
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": { "profileDetails": {
+ *          "id": 0,
+ *          "name": "Default",
+ *          "keysConfig": {
+ *              "invertXAxis": false,
+ *              "invertYAxis": false,
+ *              "fourWayMode": false,
+ *              "socdMode": "SOCD_MODE_NEUTRAL",
+ *              "inputMode": "XINPUT",
+ *              "keyMapping": {}    
+ *          },
+ *          "ledsConfigs": {
+ *              "ledEnabled": true,
+ *              "ledsEffectStyle": "STATIC",
+ *              "ledColors": [
+ *                  "#000000",
+ *                  "#E67070",
+ *                  "#000000"
+ *              ],
+ *              "ledBrightness": 84
+ *          },
+ *          "triggerConfigs": {
+ *              "isAllBtnsConfiguring": false,
+ *              "triggerConfigs": [
+ *                  {
+ *                      "topDeadzone": 0.6,
+ *                      "bottomDeadzone": 0.3,
+ *                      "pressAccuracy": 0.3,
+ *                      "releaseAccuracy": 0
+ *                  },
+ *                  ...
+ *              ]
+ *          }
+ *      } }
+ * }
+ */
+std::string apiGetDefaultProfile() {
+    printf("apiGetDefaultProfile start.\n");
+
+    Config& config = Storage::getInstance().config;
+    
+    // 查找默认配置文件
+    GamepadProfile* defaultProfile = nullptr;
+    for(uint8_t i = 0; i < NUM_PROFILES; i++) {
+        if(strcmp(config.defaultProfileId, config.profiles[i].id) == 0) {
+            defaultProfile = &config.profiles[i];
+            break;
+        }
+    }
+    
+    if(!defaultProfile) {
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Default profile not found");
+    }
+
+    printf("apiGetDefaultProfile defaultProfile id: %s\n", defaultProfile->id);
+    // 创建返回数据结构
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* profileDetailsJSON = buildProfileJSON(defaultProfile);
+
+    printf("profileDetailsJSON: %s\n", cJSON_Print(profileDetailsJSON));
+    if (!profileDetailsJSON) {
+        cJSON_Delete(dataJSON);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build profile JSON");
+    }
+    
+    cJSON_AddItemToObject(dataJSON, "profileDetails", profileDetailsJSON);
+    
+
+    printf("dataJSON: %s\n", cJSON_Print(dataJSON));    
+    // 生成返回字符串
+    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    printf("apiGetDefaultProfile result: %s\n", result);
+    cJSON_Delete(dataJSON);
+    return result;
+}
+
+std::string apiGetProfile(const char* profileId) {
+    if(!profileId) {
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Profile ID not provided");
+    }
+
+    Config& config = Storage::getInstance().config;
+    GamepadProfile* targetProfile = nullptr;
+    
+    // 查找目标配置文件
+    for(uint8_t i = 0; i < NUM_PROFILES; i++) {
+        if(strcmp(profileId, config.profiles[i].id) == 0) {
+            targetProfile = &config.profiles[i];
+            break;
+        }
+    }
+    
+    if(!targetProfile) {
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Profile not found");
+    }
+
+    // 创建返回数据结构
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* profileDetailsJSON = buildProfileJSON(targetProfile);
+    if (!profileDetailsJSON) {
+        cJSON_Delete(dataJSON);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build profile JSON");
+    }
+    
+    cJSON_AddItemToObject(dataJSON, "profileDetails", profileDetailsJSON);
+    
+    // 生成返回字符串
     std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     cJSON_Delete(dataJSON);
     return result;
 }
 
 /**
- * @brief 获取GPIO按钮列表
+ * @brief 获取当前profile的hotkeys配置
  * 
  * @return std::string 
  * {
  *      "errNo": 0,
- *      "data": [
+ *      "data": {
+ *          "hotkeysConfig": [
+ *              {
+ *                  "key": 0,
+ *                  "action": "WebConfigMode",
+ *                  "isLocked": true
+ *              },
+ *              ...
+ *          ]
+ *      }
+ * }
+ */
+std::string apiGetHotkeysConfig() {
+    Config& config = Storage::getInstance().config;
+    
+    // 创建返回数据结构
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* hotkeysConfigJSON = buildHotkeysConfigJSON(config);
+    
+    if (!hotkeysConfigJSON) {
+        cJSON_Delete(dataJSON);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build hotkeys config JSON");
+    }
+
+    // 构建返回结构
+    cJSON_AddItemToObject(dataJSON, "hotkeysConfig", hotkeysConfigJSON);
+    
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+
+    printf("apiGetHotkeysConfig response: %s\n", response.c_str());
+
+    cJSON_Delete(dataJSON);
+    return response;
+}
+
+/**
+ * @brief 更新profile   
+ * @param std::string profileDetails
+ * {
+ *      "id": 0,
+ *      "name": "Default",
+ *      "keysConfig": {
+ *          ...   
+ *      },
+ *      "ledsConfigs": {
+ *          ...
+ *      },
+ *      "triggerConfigs": {
+ *          ...
+ *      }
+ * }
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "profileDetails": {
+ *              "id": 0,
+ *              "name": "Default",
+ *              "keysConfig": {
+ *                  "invertXAxis": false,
+ *                  "invertYAxis": false,
+ *                  "fourWayMode": false,
+ *                  "socdMode": "SOCD_MODE_NEUTRAL",
+ *                  "inputMode": "XINPUT",
+ *                  "keyMapping": {}    
+ *              },
+ *              "ledsConfigs": {
+ *                  "ledEnabled": true,
+ *                  "ledsEffectStyle": "STATIC",
+ *                  "ledColors": [
+ *                      "#000000",
+ *                      "#E67070",
+ *                      "#000000"
+ *                  ],
+ *                  "ledBrightness": 84
+ *              },
+ *              "triggerConfigs": {
+ *                  "isAllBtnsConfiguring": false,
+ *                  "triggerConfigs": [
+ *                      {
+ *                          "topDeadzone": 0.6,
+ *                          "bottomDeadzone": 0.3,
+ *                          "pressAccuracy": 0.3,
+ *                          "releaseAccuracy": 0
+ *                      },
+ *                      ...
+ *                  ]
+ *              }
+ *          }
+ *      }
+ * }
+ */
+std::string apiUpdateProfile() {
+    Config& config = Storage::getInstance().config;
+    cJSON* params = get_post_data();
+    
+    if(!params) {
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Invalid parameters");
+    }
+
+    // 获取profile ID并查找对应的配置文件
+    cJSON* idItem = cJSON_GetObjectItem(params, "id");
+    if(!idItem) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Profile ID not provided");
+    }
+
+    GamepadProfile* targetProfile = nullptr;
+    for(uint8_t i = 0; i < NUM_PROFILES; i++) {
+        if(strcmp(idItem->valuestring, config.profiles[i].id) == 0) {
+            targetProfile = &config.profiles[i];
+            break;
+        }
+    }
+
+    if(!targetProfile) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Profile not found");
+    }
+
+    // 更新基本信息
+    cJSON* nameItem = cJSON_GetObjectItem(params, "name");
+    if(nameItem) {
+        strcpy(targetProfile->name, nameItem->valuestring);
+    }
+
+    // 更新按键配置
+    cJSON* keysConfig = cJSON_GetObjectItem(params, "keysConfig");
+    if(keysConfig) {
+        cJSON* item;
+        
+        if((item = cJSON_GetObjectItem(keysConfig, "invertXAxis"))) {
+            targetProfile->keysConfig.invertXAxis = item->type == cJSON_True;
+        }
+        if((item = cJSON_GetObjectItem(keysConfig, "invertYAxis"))) {
+            targetProfile->keysConfig.invertYAxis = item->type == cJSON_True;
+        }
+        if((item = cJSON_GetObjectItem(keysConfig, "fourWayMode"))) {
+            targetProfile->keysConfig.fourWayMode = item->type == cJSON_True;
+        }
+        if((item = cJSON_GetObjectItem(keysConfig, "socdMode"))) {
+            targetProfile->keysConfig.socdMode = (SOCDMode)item->valueint;
+        }
+        if((item = cJSON_GetObjectItem(keysConfig, "inputMode"))) {
+            targetProfile->keysConfig.inputMode = (InputMode)item->valueint;
+        }
+
+        // 更新按键映射
+        cJSON* keyMapping = cJSON_GetObjectItem(keysConfig, "keyMapping");                                          
+        if(keyMapping) {
+            if((item = cJSON_GetObjectItem(keyMapping, "DPAD_UP"))) 
+                targetProfile->keysConfig.keyDpadUp = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "DPAD_DOWN"))) 
+                targetProfile->keysConfig.keyDpadDown = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "DPAD_LEFT"))) 
+                targetProfile->keysConfig.keyDpadLeft = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "DPAD_RIGHT"))) 
+                targetProfile->keysConfig.keyDpadRight = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "B1"))) 
+                targetProfile->keysConfig.keyButtonB1 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "B2"))) 
+                targetProfile->keysConfig.keyButtonB2 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "B3"))) 
+                targetProfile->keysConfig.keyButtonB3 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "B4"))) 
+                targetProfile->keysConfig.keyButtonB4 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "L1"))) 
+                targetProfile->keysConfig.keyButtonL1 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "L2"))) 
+                targetProfile->keysConfig.keyButtonL2 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "R1"))) 
+                targetProfile->keysConfig.keyButtonR1 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "R2"))) 
+                targetProfile->keysConfig.keyButtonR2 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "S1"))) 
+                targetProfile->keysConfig.keyButtonS1 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "S2"))) 
+                targetProfile->keysConfig.keyButtonS2 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "L3"))) 
+                targetProfile->keysConfig.keyButtonL3 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "R3"))) 
+                targetProfile->keysConfig.keyButtonR3 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "A1"))) 
+                targetProfile->keysConfig.keyButtonA1 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "A2"))) 
+                targetProfile->keysConfig.keyButtonA2 = getKeyMappingVirtualMask(item);
+            if((item = cJSON_GetObjectItem(keyMapping, "Fn"))) 
+                targetProfile->keysConfig.keyButtonFn = getKeyMappingVirtualMask(item);
+        }
+    }
+
+    // 更新LED配置
+    cJSON* ledsConfig = cJSON_GetObjectItem(params, "ledsConfig");
+    if(ledsConfig) {
+        cJSON* item;
+        
+        if((item = cJSON_GetObjectItem(ledsConfig, "ledEnabled"))) {
+            targetProfile->ledProfile.ledEnabled = item->type == cJSON_True;
+        }
+        
+        // 解析LED效
+        if((item = cJSON_GetObjectItem(ledsConfig, "ledsEffectStyle"))) {
+            if(strcmp(item->valuestring, "STATIC") == 0) {
+                targetProfile->ledProfile.ledEffect = LEDEffect::STATIC;
+            } else if(strcmp(item->valuestring, "BREATHING") == 0) {
+                targetProfile->ledProfile.ledEffect = LEDEffect::BREATHING;
+            }
+        }
+
+        // 解析LED颜色
+        cJSON* ledColors = cJSON_GetObjectItem(ledsConfig, "ledColors");
+        if(ledColors && cJSON_GetArraySize(ledColors) >= 3) {
+            sscanf(cJSON_GetArrayItem(ledColors, 0)->valuestring, "#%x", &targetProfile->ledProfile.ledColor1);
+            sscanf(cJSON_GetArrayItem(ledColors, 1)->valuestring, "#%x", &targetProfile->ledProfile.ledColor2);
+            sscanf(cJSON_GetArrayItem(ledColors, 2)->valuestring, "#%x", &targetProfile->ledProfile.ledColor3);
+        }
+        
+        if((item = cJSON_GetObjectItem(ledsConfig, "ledBrightness"))) {
+            targetProfile->ledProfile.ledBrightness = item->valueint;
+        }
+    }
+
+    // 更新触发器配置
+    cJSON* triggerConfigs = cJSON_GetObjectItem(params, "triggerConfigs");
+    if(triggerConfigs) {
+        cJSON* configs = cJSON_GetObjectItem(triggerConfigs, "triggerConfigs");
+        if(configs) {
+            for(uint8_t i = 0; i < NUM_ADC_BUTTONS && i < cJSON_GetArraySize(configs); i++) {
+                cJSON* trigger = cJSON_GetArrayItem(configs, i);
+                if(trigger) {
+                    cJSON* item;
+                    if((item = cJSON_GetObjectItem(trigger, "topDeadzone")))
+                        targetProfile->triggerConfig[i].topDeadzone = item->valuedouble;
+                    if((item = cJSON_GetObjectItem(trigger, "bottomDeadzone")))
+                        targetProfile->triggerConfig[i].bottomDeadzone = item->valuedouble;
+                    if((item = cJSON_GetObjectItem(trigger, "pressAccuracy")))
+                        targetProfile->triggerConfig[i].pressAccuracy = item->valuedouble;
+                    if((item = cJSON_GetObjectItem(trigger, "releaseAccuracy")))
+                        targetProfile->triggerConfig[i].releaseAccuracy = item->valuedouble;
+                }
+            }
+        }
+    }
+
+    // 保存配置
+    if(!Storage::getInstance().save()) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to save configuration");
+    }
+
+    // 构建返回数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* profileDetailsJSON = buildProfileJSON(targetProfile);
+    if (!profileDetailsJSON) {
+        cJSON_Delete(dataJSON);
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build profile JSON");
+    }
+    
+    cJSON_AddItemToObject(dataJSON, "profileDetails", profileDetailsJSON);
+    
+    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(params);
+    cJSON_Delete(dataJSON);
+    
+    return result;
+}
+
+/**
+ * @brief 创建profile
+ * @param std::string
+ * {
+ *      "profileName": "Default",
+ * }
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "profileList": {
+ *              "items": [
+ *                  {
+ *                      "id": 0,
+ *                      "name": "Default",
+ *                      ...
+ *                  },
+ *                  ...
+ *              ]
+ *          }
+ *      }
+ * }
+ */
+std::string apiCreateProfile() {
+    Config& config = Storage::getInstance().config;
+    cJSON* params = get_post_data();
+    
+    if(!params) {
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Invalid parameters");
+    }
+
+    // 检查是否达到最大配置文件数
+    uint8_t enabledCount = 0;
+    for(uint8_t i = 0; i < NUM_PROFILES; i++) {
+        if(config.profiles[i].enabled) {
+            enabledCount++;
+        }
+    }
+
+    if(enabledCount >= config.numProfilesMax) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Maximum number of profiles reached");
+    }
+
+    // 查找第一个未启用的配置文件
+    GamepadProfile* targetProfile = nullptr;
+    for(uint8_t i = 0; i < NUM_PROFILES; i++) {
+        if(!config.profiles[i].enabled) {
+            targetProfile = &config.profiles[i];
+            break;
+        }
+    }
+
+    if(!targetProfile) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "No available profile slot");
+    }
+
+    // 获取新配置文件名称
+    cJSON* nameItem = cJSON_GetObjectItem(params, "profileName");
+    if(nameItem && nameItem->valuestring) {
+        strncpy(targetProfile->name, nameItem->valuestring, sizeof(targetProfile->name) - 1);
+        targetProfile->name[sizeof(targetProfile->name) - 1] = '\0';  // 确保字符串结束
+    } else {
+        // 如果没有提供名称，使用默认名称
+        snprintf(targetProfile->name, sizeof(targetProfile->name), "Profile %d", enabledCount + 1);
+    }
+
+    // 启用配置文件
+    targetProfile->enabled = true;
+    strcpy(config.defaultProfileId, targetProfile->id); // 设置默认配置文件ID 为新创建的配置文件ID
+
+    // 保存配置
+    if(!Storage::getInstance().save()) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to save configuration");
+    }
+
+    // 构建返回数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* profileListJSON = buildProfileListJSON(config);
+    
+    if (!profileListJSON) {
+        cJSON_Delete(dataJSON);
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build profile list JSON");
+    }
+
+    cJSON_AddItemToObject(dataJSON, "profileList", profileListJSON);
+    
+    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(params);
+    cJSON_Delete(dataJSON);
+    
+    return result;
+}
+
+/**
+ * @brief 删除profile
+ * @param std::string
+ * {
+ *      "profileId": "id",
+ * }
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "profileList": {
+ *              "items": [
+ *                  {
+ *                      "id": 0,
+ *                      "name": "Default",
+ *                      ...
+ *                  },
+ *                  ...
+ *              ]
+ *          }
+ *      }
+ * }
+ */
+std::string apiDeleteProfile() {
+    Config& config = Storage::getInstance().config;
+    cJSON* params = get_post_data();
+    
+    if(!params) {
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Invalid parameters");
+    }
+
+    // 获取要删除的配置文件ID
+    cJSON* profileIdItem = cJSON_GetObjectItem(params, "profileId");
+    if(!profileIdItem || !profileIdItem->valuestring) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Profile ID not provided");
+    }
+
+    // 查找目标配置文件
+    GamepadProfile* targetProfile = nullptr;
+    uint8_t targetIndex = 0;
+    for(uint8_t i = 0; i < NUM_PROFILES; i++) {
+        if(strcmp(profileIdItem->valuestring, config.profiles[i].id) == 0) {
+            targetProfile = &config.profiles[i];
+            targetIndex = i;
+            break;
+        }
+    }
+
+    if(!targetProfile) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Profile not found");
+    }
+
+    // 不允许删除默认配置文件 0号位是默认配置文件
+    if(targetIndex == 0) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Cannot delete default profile");
+    }
+
+    // 禁用配置文件（相当于删除）
+    targetProfile->enabled = false;
+
+    // 将禁用的配置文件移动到数组末尾
+    // 首先找到最后一个启用的配置文件的位置
+    int lastEnabledIndex = -1;
+    for(int i = NUM_PROFILES - 1; i >= 0; i--) {
+        if(config.profiles[i].enabled) {
+            lastEnabledIndex = i;
+            break;
+        }
+    }
+
+    // 如果目标配置文件在最后一个启用的配置文件之前，则需要移动
+    if(targetIndex < lastEnabledIndex) {
+        // 保存目标配置文件的副本
+        GamepadProfile tempProfile = *targetProfile;
+        
+        // 将目标位置之后的所有配置文件向前移动一位
+        for(uint8_t i = targetIndex; i < lastEnabledIndex; i++) {
+            config.profiles[i] = config.profiles[i + 1];
+        }
+        
+        // 将目标配置文件放到最后一个启用的配置文件的后面
+        config.profiles[lastEnabledIndex] = tempProfile;
+    }
+
+    // 保存配置
+    if(!Storage::getInstance().save()) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to save configuration");
+    }
+
+    // 构建返回数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* profileListJSON = buildProfileListJSON(config);
+    
+    if (!profileListJSON) {
+        cJSON_Delete(dataJSON);
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build profile list JSON");
+    }
+
+    cJSON_AddItemToObject(dataJSON, "profileList", profileListJSON);
+    
+    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(params);
+    cJSON_Delete(dataJSON);
+    
+    return result;
+}
+
+/**
+ * @brief 切换默认profile
+ * @param std::string
+ * {
+ *      "profileId": "id",
+ * }
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "profileList": {
+ *              "items": [
+ *                  {
+ *                      "id": 0,
+ *                      "name": "Default",
+ *                      ...
+ *                  },
+ *                  ...
+ *              ]
+ *          }
+ *      }
+ * }
+ */
+std::string apiSwitchDefaultProfile() {
+    Config& config = Storage::getInstance().config;
+    cJSON* params = get_post_data();
+    
+    if(!params) {
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Invalid parameters");
+    }
+
+    // 获取要设置为默认的配置文件ID
+    cJSON* profileIdItem = cJSON_GetObjectItem(params, "profileId");
+    if(!profileIdItem || !profileIdItem->valuestring) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Profile ID not provided");
+    }
+
+    // 查找目标配置文件
+    GamepadProfile* targetProfile = nullptr;
+    for(uint8_t i = 0; i < NUM_PROFILES; i++) {
+        if(strcmp(profileIdItem->valuestring, config.profiles[i].id) == 0) {
+            targetProfile = &config.profiles[i];
+            break;
+        }
+    }
+
+    if(!targetProfile) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Profile not found");
+    }
+
+    // 检查目标配置文件是否已启用
+    if(!targetProfile->enabled) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Cannot set disabled profile as default");
+    }
+
+    strcpy(config.defaultProfileId, targetProfile->id);
+
+    // 保存配置
+    if(!Storage::getInstance().save()) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to save configuration");
+    }
+
+    // 构建返回数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* profileListJSON = buildProfileListJSON(config);
+    
+    if (!profileListJSON) {
+        cJSON_Delete(dataJSON);
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build profile list JSON");
+    }
+
+    cJSON_AddItemToObject(dataJSON, "profileList", profileListJSON);
+    
+    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(params);
+    cJSON_Delete(dataJSON);
+    
+    return result;
+}
+
+/**
+ * @brief 更新hotkeys配置
+ * @param std::string
+ * {
+ *      "hotkeysConfig": [
  *          {
- *              "virtualPin": 0,
+ *              "key": 0,
+ *              "action": "WebConfigMode",
+ *              "isLocked": true
  *          },
  *          ...
  *      ]
  * }
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "hotkeysConfig": [
+ *              {
+ *                  "key": 0,
+ *                  "action": "WebConfigMode",
+ *                  "isLocked": true
+ *              },
+ *              ...
+ *          ]
+ *      }
+ * }
  */
-std::string getGPIOButtons()
-{
-    Config* config = &Storage::getInstance().config;
-    GPIOButton** configBtns = config->GPIOButtons;
-    cJSON* dataJSON = cJSON_CreateArray();
-
-    uint8_t len = sizeof(configBtns) / sizeof(configBtns[0]);
-
-    for(uint8_t i = 0; i < len; i ++) {
-        cJSON* btn = cJSON_CreateObject();
-        cJSON_AddItemToArray(dataJSON, btn);
-        cJSON_AddNumberToObject(btn, "virtualPin", configBtns[i]->virtualPin);
+std::string apiUpdateHotkeysConfig() {
+    Config& config = Storage::getInstance().config;
+    cJSON* params = get_post_data();
+    
+    if(!params) {
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Invalid parameters");
+    }
+    
+    // 获取快捷键配置组
+    cJSON* hotkeysConfigArray = cJSON_GetObjectItem(params, "hotkeysConfig");
+    if(!hotkeysConfigArray || !cJSON_IsArray(hotkeysConfigArray)) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Invalid hotkeys configuration");
     }
 
+    // 遍历并更新每个快捷键配置
+    int numHotkeys = cJSON_GetArraySize(hotkeysConfigArray);
+    for(int i = 0; i < numHotkeys && i < NUM_GAMEPAD_HOTKEYS; i++) {
+        cJSON* hotkeyItem = cJSON_GetArrayItem(hotkeysConfigArray, i);
+        if(!hotkeyItem) continue;
+
+        // 获取快捷键序号
+        cJSON* keyItem = cJSON_GetObjectItem(hotkeyItem, "key");
+        if(!keyItem || !cJSON_IsNumber(keyItem)) continue;
+        int keyIndex = keyItem->valueint;
+        if(keyIndex < 0 || keyIndex >= (NUM_ADC_BUTTONS + NUM_GPIO_BUTTONS)) continue;
+
+        // 获取动作
+        cJSON* actionItem = cJSON_GetObjectItem(hotkeyItem, "action");
+        if(!actionItem || !cJSON_IsString(actionItem)) continue;
+
+        // 获取锁定状态
+        cJSON* isLockedItem = cJSON_GetObjectItem(hotkeyItem, "isLocked");
+        if(isLockedItem) {
+            config.hotkeys[keyIndex].isLocked = cJSON_IsTrue(isLockedItem);
+        }
+
+        // 如果快捷键被锁定，则不允许修改
+        if(config.hotkeys[keyIndex].isLocked) {
+            continue;
+        }
+
+        // 根据字符串设置动作
+        const char* actionStr = actionItem->valuestring;
+        if(strcmp(actionStr, "WebConfigMode") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_INPUT_MODE_WEBCONFIG;
+        } else if(strcmp(actionStr, "NSwitchMode") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_INPUT_MODE_SWITCH;
+        } else if(strcmp(actionStr, "XInputMode") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_INPUT_MODE_XINPUT;
+        } else if(strcmp(actionStr, "PS4Mode") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_INPUT_MODE_PS4;
+        } else if(strcmp(actionStr, "LedsEffectStyleNext") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_LEDS_EFFECTSTYLE_NEXT;
+        } else if(strcmp(actionStr, "LedsEffectStylePrev") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_LEDS_EFFECTSTYLE_PREV;
+        } else if(strcmp(actionStr, "LedsBrightnessUp") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_LEDS_BRIGHTNESS_UP;
+        } else if(strcmp(actionStr, "LedsBrightnessDown") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_LEDS_BRIGHTNESS_DOWN;
+        } else if(strcmp(actionStr, "LedsEnableSwitch") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_LEDS_ENABLE_SWITCH;
+        } else if(strcmp(actionStr, "CalibrationMode") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_CALIBRATION_MODE;
+        } else if(strcmp(actionStr, "SystemReboot") == 0) {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_SYSTEM_REBOOT;
+        } else {
+            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_NONE;
+        }
+    }
+
+    // 保存配置
+    if(!Storage::getInstance().save()) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to save configuration");
+    }
+
+    // 构建返回数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* hotkeysConfigJSON = buildHotkeysConfigJSON(config);
+    
+    if (!hotkeysConfigJSON) {
+        cJSON_Delete(dataJSON);
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build hotkeys config JSON");
+    }
+
+    cJSON_AddItemToObject(dataJSON, "hotkeysConfig", hotkeysConfigJSON);
+    
     std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(params);
     cJSON_Delete(dataJSON);
+    
     return result;
 }
 
@@ -414,195 +1313,24 @@ std::string getGPIOButtons()
  * @return std::string 
  * {
  *      "errNo": 0,
- *      "data": {}
+ *      "data": {
+ *          "message": "System is rebooting"
+ *      }
  * }
  */
-std::string systemReboot()
-{
-    NVIC_SystemReset();
-    return get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, NULL);
-}
-
-/**
- * @brief 重置设置
- * 
- * @return std::string 
- * {
- *      "errNo": 0,
- *      "data": {}
- * }
- */
-std::string resetSetting()
-{
-    if(Storage::getInstance().ResetSettings()) {
-        return get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, NULL);
-    } else {
-        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL);
-    }
-}
-
-/**
- * @brief 设置当前生效的profile index
- * 
- * @return std::string 
- * {
- *      "errNo": 0,
- *      "data": {}
- * }
- */
-std::string setActiveProfileIndex()
-{
-    cJSON* response = get_post_data();
-
-    if(response == NULL) {
-        cJSON_Delete(response);
-        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL);
-    }
-
-    uint8_t profileIndex = cJSON_GetObjectItem(response, "profileIndex")->valueint & 0xff;
-
-    if(profileIndex == NULL || profileIndex < 0 || profileIndex > NUM_PROFILES) {
-        cJSON_Delete(response);
-        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL);
-    }
-
-    cJSON_Delete(response);
-    Config* config = &Storage::getInstance().config;
-    config->profileIndex = profileIndex;
-
-    if(Storage::getInstance().save()) {
-        return get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, NULL);
-    } else {
-        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL);
-    }
-}
-
-/**
- * @brief 设置当前profile的keymapping
- * 
- * @return std::string 
- */
-std::string setKeyMappings()
-{
-    cJSON* response = get_post_data();
+std::string apiReboot() {
+    // 创建响应数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON_AddStringToObject(dataJSON, "message", "System is rebooting");
     
-    if(response == NULL) {
-        cJSON_Delete(response);
-        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL);
-    }
-
-    uint8_t profileIndex = cJSON_GetObjectItem(response, "profileIndex")->valueint & 0xff;
-
-    if(profileIndex == NULL || profileIndex < 0 || profileIndex > NUM_PROFILES) {
-        cJSON_Delete(response);
-        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL);
-    }
-
-    char* intKeys[] = {
-        "inputMode", "socdMode", "keyDpadUp", "keyDpadDown", "keyDpadLeft", "keyDpadRight", "keyButtonB1",
-        "keyButtonB2", "keyButtonB3", "keyButtonB4", "keyButtonL1", "keyButtonR1", "keyButtonL2", "keyButtonR2",
-        "keyButtonS1", "keyButtonS2", "keyButtonL3", "keyButtonR3", "keyButtonA1", "keyButtonA2", "keyButtonFn"
-    };
-
-    uint8_t lenIntKey = sizeof(intKeys) / sizeof(intKeys[0]);
-    for(uint8_t i = 0; i < lenIntKey; i ++) {
-        if(cJSON_GetObjectItem(response, intKeys[i])->type != cJSON_Number) {
-            cJSON_Delete(response);
-            return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL);
-        }
-    }
-
-    GamepadOptions* profile = Storage::getInstance().config.profiles[profileIndex];
-    profile->inputMode = (InputMode) cJSON_GetObjectItem(response, "inputMode")->valueint;
-    profile->socdMode = (SOCDMode) cJSON_GetObjectItem(response, "socdMode")->valueint;
-    profile->invertXAxis = cJSON_GetObjectItem(response, "invertXAxis")->type == cJSON_True? true: false;
-    profile->invertYAxis = cJSON_GetObjectItem(response, "invertYAxis")->type == cJSON_True? true: false;
-    profile->fourWayMode = cJSON_GetObjectItem(response, "fourWayMode")->type == cJSON_True? true: false;
-
-    profile->keyDpadUp = (uint32_t) cJSON_GetObjectItem(response, "keyDpadUp")->valueint;
-    profile->keyDpadDown = (uint32_t) cJSON_GetObjectItem(response, "keyDpadDown")->valueint;
-    profile->keyDpadLeft = (uint32_t) cJSON_GetObjectItem(response, "keyDpadLeft")->valueint;
-    profile->keyDpadRight = (uint32_t) cJSON_GetObjectItem(response, "keyDpadRight")->valueint;
-    profile->keyButtonB1 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonB1")->valueint;
-    profile->keyButtonB2 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonB2")->valueint;
-    profile->keyButtonB3 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonB3")->valueint;
-    profile->keyButtonB4 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonB4")->valueint;
-    profile->keyButtonL1 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonL1")->valueint;
-    profile->keyButtonR1 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonR1")->valueint;
-    profile->keyButtonL2 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonL2")->valueint;
-    profile->keyButtonR2 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonR2")->valueint;
-    profile->keyButtonS1 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonS1")->valueint;
-    profile->keyButtonS2 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonS2")->valueint;
-    profile->keyButtonL3 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonL3")->valueint;
-    profile->keyButtonR3 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonR3")->valueint;
-    profile->keyButtonA1 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonA1")->valueint;
-    profile->keyButtonA2 = (uint32_t) cJSON_GetObjectItem(response, "keyButtonA2")->valueint;
-    profile->keyButtonFn = (uint32_t) cJSON_GetObjectItem(response, "keyButtonFn")->valueint;
-
-    cJSON_Delete(response);
-
-    if(Storage::getInstance().save()) {
-        return get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, NULL);
-    } else {
-        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL);
-    }
-}
-
-/**
- * @brief 设置当前profile的LED options
- * 
- * @return std::string 
- */
-std::string setLEDsOptions()
-{
-    cJSON* response = get_post_data();
+    // 设置延迟重启时间
+    rebootTick = HAL_GetTick() + rebootDelayMs;
+    needReboot = true;
     
-    if(response == NULL) {
-        cJSON_Delete(response);
-        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL);
-    }
-
-    uint8_t profileIndex = cJSON_GetObjectItem(response, "profileIndex")->valueint & 0xff;
-
-    if(profileIndex == NULL || profileIndex < 0 || profileIndex > NUM_PROFILES) {
-        cJSON_Delete(response);
-        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL);
-    }
-
-    char* intKeys[] = {
-        "ledEffect", "ledColor1", "ledColor2", "ledColor3", "ledBrightness", 
-        "ledColorCalibrateTop", "ledColorCalibrateBottom",
-        "ledColorCalibrateComplete", "ledBrightnesssCalibrate"
-    };
-
-    uint8_t lenIntKey = sizeof(intKeys) / sizeof(intKeys[0]);
-    for(uint8_t i = 0; i < lenIntKey; i ++) {
-        if(cJSON_GetObjectItem(response, intKeys[i])->type != cJSON_Number) {
-            cJSON_Delete(response);
-            return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL);
-        }
-    }
-
-    GamepadOptions* profile = Storage::getInstance().config.profiles[profileIndex];
-    profile->ledEnabled = cJSON_GetObjectItem(response, "keyDpadUp")->type == cJSON_True? true: false;
-    profile->isDoubleColor = cJSON_GetObjectItem(response, "isDoubleColor")->type == cJSON_True? true: false;
-    profile->ledEffect = (LEDEffect) cJSON_GetObjectItem(response, "ledEffect")->valueint;
-    profile->ledColor1 = (uint32_t) cJSON_GetObjectItem(response, "ledColor1")->valueint;
-    profile->ledColor2 = (uint32_t) cJSON_GetObjectItem(response, "ledColor2")->valueint;
-    profile->ledColor3 = (uint32_t) cJSON_GetObjectItem(response, "ledColor3")->valueint;
-    profile->ledBrightness = (uint8_t) cJSON_GetObjectItem(response, "ledBrightness")->valueint;
-    profile->ledColorCalibrateTop = (uint32_t) cJSON_GetObjectItem(response, "ledColorCalibrateTop")->valueint;
-    profile->ledColorCalibrateBottom = (uint32_t) cJSON_GetObjectItem(response, "ledColorCalibrateBottom")->valueint;
-    profile->ledColorCalibrateComplete = (uint32_t) cJSON_GetObjectItem(response, "ledColorCalibrateComplete")->valueint;
-    profile->ledBrightnesssCalibrate = (uint32_t) cJSON_GetObjectItem(response, "ledBrightnesssCalibrate")->valueint;
-
-    cJSON_Delete(response);
-
-    if(Storage::getInstance().save()) {
-        return get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, NULL);
-    } else {
-        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL);
-    }
+    // 获取标准格式的响应
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    return response;
 }
 
 /**
@@ -610,7 +1338,7 @@ std::string setLEDsOptions()
  * 
  * @return std::string 
  */
-std::string echo()
+std::string apiEcho()
 {
     cJSON* response = get_post_data();
     std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, response);
@@ -624,17 +1352,16 @@ std::string echo()
 typedef std::string (*HandlerFuncPtr)();
 static const std::pair<const char*, HandlerFuncPtr> handlerFuncs[] =
 {
-    { "/api/getFirmwareVersion",  getFirmwareVersion },
-    { "/api/getActiveProfileIndex",  getActiveProfileIndex },
-    { "/api/getPinMappings", getKeyMappings },
-    { "/api/getLEDsOptions", getLEDsOptions },
-    { "/api/getADCButtons", getADCButtons },
-    { "/api/getGPIOButtons", getGPIOButtons },
-    { "/api/systemReboot", systemReboot },
-    { "/api/resetSetting", resetSetting },
-    { "/api/setActiveProfileIndex", setActiveProfileIndex },
-    { "/api/setPinMappings", setKeyMappings },
-    { "/api/setLEDsOptions", setLEDsOptions },
+    { "/api/profile-list",  apiGetProfileList },
+    { "/api/default-profile",  apiGetDefaultProfile },
+    { "/api/hotkeys-config", apiGetHotkeysConfig },    
+    { "/api/update-profile", apiUpdateProfile },
+    { "/api/create-profile", apiCreateProfile },
+    { "/api/delete-profile", apiDeleteProfile },
+    { "/api/switch-default-profile", apiSwitchDefaultProfile },
+    { "/api/update-hotkeys-config", apiUpdateHotkeysConfig },
+    { "/api/reboot", apiReboot },
+    { "/api/echo", apiEcho },
 #if !defined(NDEBUG)
     // { "/api/echo", echo },
 #endif
@@ -649,37 +1376,52 @@ static const std::pair<const char*, HandlerFuncStatusCodePtr> handlerFuncsWithSt
 
 int fs_open_custom(struct fs_file *file, const char *name)
 {
+    printf("fs_open_custom: %s\n", name);
+
+    // 处理API请求
     for (const auto& handlerFunc : handlerFuncs)
     {
         if (strcmp(handlerFunc.first, name) == 0)
         {
+            printf("handlerFunc.first: %s  name: %s result: %d\n", handlerFunc.first, name, strcmp(handlerFunc.first, name));
             return set_file_data(file, handlerFunc.second());
         }
     }
 
-    for (const auto& handlerFunc : handlerFuncsWithStatusCode)
-    {
-        if (strcmp(handlerFunc.first, name) == 0)
-        {
-            return set_file_data(file, handlerFunc.second());
-        }
-    }
+    // 处理API请求
+    // for (const auto& handlerFunc : handlerFuncsWithStatusCode)
+    // {
+    //     if (strcmp(handlerFunc.first, name) == 0)
+    //     {
+    //         return set_file_data(file, handlerFunc.second());
+    //     }
+    // }
 
+    // 处理静态文件
     for (const char* excludePath : excludePaths)
         if (strcmp(excludePath, name) == 0)
             return 0;
 
+    // 处理SPA文件
     for (const char* spaPath : spaPaths)
     {
         if (strcmp(spaPath, name) == 0)
         {
-            file->data = (const char *)file__index_html[0].data;
-            file->len = file__index_html[0].len;
-            file->index = file__index_html[0].len;
-            file->http_header_included = file__index_html[0].http_header_included;
-            file->pextension = NULL;
-            file->is_custom_file = 0;
-            return 1;
+            // 查找 index.html 文件
+            const struct fsdata_file* f = getFSRoot();
+            while (f != NULL) {
+                if (!strcmp("/index.html", (char *)f->name)) {
+                    file->data = (const char *)f->data;
+                    file->len = f->len;
+                    file->index = f->len;
+                    file->http_header_included = f->http_header_included;
+                    file->pextension = NULL;
+                    file->is_custom_file = 0;
+                    return 1;
+                }
+                f = f->next;
+            }
+            return 0;
         }
     }
 

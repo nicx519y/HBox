@@ -15,6 +15,13 @@ const memory_section = '._Text_Area';		// 运行时保存fsdata数据所用的 R
 const fsdataPath = normalize(join(root, 'Libs/httpd/fsdata.c'));
 const exfilePath = normalize(join(root, 'Libs/httpd/ex_fsdata.bin'));
 const extnames = ['.html', '.htm', '.shtml', '.shtm', '.ssi', '.xml', '.json', '.js', '.css', '.svg', '.ico', '.png', '.jpg', '.jpeg', '.bmp', '.gif'];
+const includes_files = [ // 需要包含的文件
+	/index(\.[a-z|A-Z|0-9|]*)?\.html/, 
+	/favicon(\.[a-z|A-Z|0-9|]*)?\.ico/, 
+	/main\-app(\.[a-z|A-Z|0-9|]*)?\.js/, 
+	/layout(\.[a-z|A-Z|0-9|]*)?\.js/, 
+	/page(\.[a-z|A-Z|0-9|]*)?\.js/
+];
 
 // These are the same content types that are used by the original makefsdata
 const contentTypes = new Map([
@@ -72,7 +79,7 @@ function getFiles(dir) {
 		} else if (file.isFile()) {
 			// 如果是文件，则检查文件扩展名
 			const ext = '.' + getLowerCaseFileExtension(file.name);
-			if (extnames.includes(ext)) {
+			if (extnames.includes(ext) && includes_files.some(pattern => pattern.test(file.name))) {
 				results.push(file.path);
 			}
 		}
