@@ -42,7 +42,7 @@ typedef struct
 typedef struct
 {
     int32_t         virtualPin;         // 虚拟pin 实质上是在所有buttons之内的序号
-    GamepadHotkey   action;             // 快���键功能
+    GamepadHotkey   action;             // 快键功能
     bool            isLocked;           // 是否锁定
 } GamepadHotkeyEntry;
 
@@ -112,6 +112,7 @@ namespace ConfigUtils {
     bool save(Config& config);
     bool reset(Config& config);
     bool fromStorage(Config& config);
+    void makeDefaultProfile(GamepadProfile& profile, const char* id, bool isEnabled);
 };
 
 #ifdef __cplusplus

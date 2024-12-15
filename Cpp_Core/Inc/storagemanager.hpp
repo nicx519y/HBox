@@ -28,6 +28,10 @@ public:
 	GamepadProfile* getDefaultGamepadProfile() { 
 		return getGamepadProfile(config.defaultProfileId); 
 	}
+
+	void makeDefaultProfile(GamepadProfile& profile, char* id, bool isEnabled) {
+		ConfigUtils::makeDefaultProfile(profile, id, isEnabled);
+	}
 	
 	Config config;
 private:

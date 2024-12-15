@@ -7,7 +7,61 @@
 #include <string.h>
 #include <stdio.h>
 
-static char ConfigJSONBuffer[20*1024];
+void ConfigUtils::makeDefaultProfile(GamepadProfile& profile, const char* id, bool isEnabled)
+{
+    // 设置profile id, name, enabled
+    sprintf(profile.id, id);
+    sprintf(profile.name, "Profile XInput");
+    profile.enabled = isEnabled;
+
+    // 设置keysConfig
+    profile.keysConfig.inputMode = InputMode::INPUT_MODE_XINPUT;
+    profile.keysConfig.socdMode = SOCDMode::SOCD_MODE_NEUTRAL;
+    profile.keysConfig.fourWayMode = false;
+    profile.keysConfig.invertXAxis = false;
+    profile.keysConfig.invertYAxis = false;
+    profile.keysConfig.keyDpadUp = 1 << 0;
+    profile.keysConfig.keyDpadDown = 1 << 1;
+    profile.keysConfig.keyDpadLeft = 1 << 2;
+    profile.keysConfig.keyDpadRight = 1 << 3;
+    profile.keysConfig.keyButtonB1 = 1 << 4;
+    profile.keysConfig.keyButtonB2 = 1 << 5;
+    profile.keysConfig.keyButtonB3 = 1 << 6;
+    profile.keysConfig.keyButtonB4 = 1 << 7;
+    profile.keysConfig.keyButtonL1 = 1 << 8;
+    profile.keysConfig.keyButtonL2 = 1 << 9;
+    profile.keysConfig.keyButtonR1 = 1 << 10;
+    profile.keysConfig.keyButtonR2 = 1 << 11;
+    profile.keysConfig.keyButtonL3 = 1 << 12;
+    profile.keysConfig.keyButtonR3 = 1 << 13;
+    profile.keysConfig.keyButtonA1 = 1 << 14;
+    profile.keysConfig.keyButtonA2 = 1 << 15;
+    profile.keysConfig.keyButtonS1 = 1 << 17;
+    profile.keysConfig.keyButtonS2 = 1 << 18;
+    profile.keysConfig.keyButtonFn = 1 << 19;
+
+    
+
+    // 设置triggerConfigs 
+    profile.triggerConfigs.isAllBtnsConfiguring = true;
+
+    for(uint8_t l = 0; l < NUM_ADC_BUTTONS; l++) {
+        profile.triggerConfigs.triggerConfigs[l] = {
+            .pressAccuracy = 0.1f,
+            .releaseAccuracy = 0.1f,
+            .topDeadzone = 0.2f,
+            .bottomDeadzone = 0.2f
+        };
+    }
+
+    // 设置ledProfile
+    profile.ledsConfigs.ledEnabled = false;
+    profile.ledsConfigs.ledEffect = LEDEffect::STATIC;
+    profile.ledsConfigs.ledColor1 = 0x00ff00;
+    profile.ledsConfigs.ledColor2 = 0x0000ff;
+    profile.ledsConfigs.ledColor3 = 0x000000;
+    profile.ledsConfigs.ledBrightness = 100;
+}
 
 bool ConfigUtils::load(Config& config)
 {
@@ -44,57 +98,9 @@ bool ConfigUtils::load(Config& config)
         // 设置profiles
         for(uint8_t k = 0; k < NUM_PROFILES; k++) {
             // 设置profile id, name, enabled
-            sprintf(config.profiles[k].id, "profile-%d", k);
-            sprintf(config.profiles[k].name, "Profile %d", k);
-            config.profiles[k].enabled = (k == 0);  // 默认第一个profile为启用
-
-            // 设置keysConfig
-            config.profiles[k].keysConfig.inputMode = InputMode::INPUT_MODE_XINPUT;
-            config.profiles[k].keysConfig.socdMode = SOCDMode::SOCD_MODE_NEUTRAL;
-            config.profiles[k].keysConfig.fourWayMode = false;
-            config.profiles[k].keysConfig.invertXAxis = false;
-            config.profiles[k].keysConfig.invertYAxis = false;
-            config.profiles[k].keysConfig.keyDpadUp = 1 << 0;
-            config.profiles[k].keysConfig.keyDpadDown = 1 << 1;
-            config.profiles[k].keysConfig.keyDpadLeft = 1 << 2;
-            config.profiles[k].keysConfig.keyDpadRight = 1 << 3;
-            config.profiles[k].keysConfig.keyButtonB1 = 1 << 4;
-            config.profiles[k].keysConfig.keyButtonB2 = 1 << 5;
-            config.profiles[k].keysConfig.keyButtonB3 = 1 << 6;
-            config.profiles[k].keysConfig.keyButtonB4 = 1 << 7;
-            config.profiles[k].keysConfig.keyButtonL1 = 1 << 8;
-            config.profiles[k].keysConfig.keyButtonL2 = 1 << 9;
-            config.profiles[k].keysConfig.keyButtonR1 = 1 << 10;
-            config.profiles[k].keysConfig.keyButtonR2 = 1 << 11;
-            config.profiles[k].keysConfig.keyButtonL3 = 1 << 12;
-            config.profiles[k].keysConfig.keyButtonR3 = 1 << 13;
-            config.profiles[k].keysConfig.keyButtonA1 = 1 << 14;
-            config.profiles[k].keysConfig.keyButtonA2 = 1 << 15;
-            config.profiles[k].keysConfig.keyButtonS1 = 1 << 17;
-            config.profiles[k].keysConfig.keyButtonS2 = 1 << 18;
-            config.profiles[k].keysConfig.keyButtonFn = 1 << 19;
-
-            
-
-            // 设置triggerConfigs 
-            config.profiles[k].triggerConfigs.isAllBtnsConfiguring = true;
-
-            for(uint8_t l = 0; l < NUM_ADC_BUTTONS; l++) {
-                config.profiles[k].triggerConfigs.triggerConfigs[l] = {
-                    .pressAccuracy = 0.1f,
-                    .releaseAccuracy = 0.1f,
-                    .topDeadzone = 0.2f,
-                    .bottomDeadzone = 0.2f
-                };
-            }
-
-            // 设置ledProfile
-            config.profiles[k].ledsConfigs.ledEnabled = false;
-            config.profiles[k].ledsConfigs.ledEffect = LEDEffect::STATIC;
-            config.profiles[k].ledsConfigs.ledColor1 = 0x00ff00;
-            config.profiles[k].ledsConfigs.ledColor2 = 0x0000ff;
-            config.profiles[k].ledsConfigs.ledColor3 = 0x000000;
-            config.profiles[k].ledsConfigs.ledBrightness = 100;
+            char profileId[16];
+            sprintf(profileId, "profile-%d", k);
+            ConfigUtils::makeDefaultProfile(config.profiles[k], profileId, k == 0);
         }
 
         // 设置hotkeys

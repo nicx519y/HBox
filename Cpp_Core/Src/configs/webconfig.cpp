@@ -123,7 +123,13 @@ int set_file_data(fs_file *file, string&& data)
 
 cJSON* get_post_data()
 {
-    return cJSON_Parse(http_post_payload);                                                                            
+    cJSON* postParams = cJSON_Parse(http_post_payload);   
+    char* print_post_params = cJSON_PrintUnformatted(postParams);
+    if(print_post_params) {
+        printf("postParams: %s\n", print_post_params);
+        free(print_post_params);
+    }
+    return postParams;                                                                        
 }
 
 // LWIP callback on HTTP POST to validate the URI
@@ -598,8 +604,6 @@ std::string apiGetDefaultProfile() {
     cJSON* dataJSON = cJSON_CreateObject();
     cJSON* profileDetailsJSON = buildProfileJSON(defaultProfile);
 
-    printf("apiGetDefaultProfile: 1111\n");
-
     if (!profileDetailsJSON) {
         cJSON_Delete(dataJSON);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to build profile JSON");
@@ -754,8 +758,15 @@ std::string apiUpdateProfile() {
         return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Invalid parameters");
     }
 
+    cJSON* details = cJSON_GetObjectItem(params, "profileDetails");
+    
+    if(!details) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Invalid parameters");
+    }
+
     // 获取profile ID并查找对应的配置文件
-    cJSON* idItem = cJSON_GetObjectItem(params, "id");
+    cJSON* idItem = cJSON_GetObjectItem(details, "id");
     if(!idItem) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Profile ID not provided");
@@ -775,13 +786,13 @@ std::string apiUpdateProfile() {
     }
 
     // 更新基本信息
-    cJSON* nameItem = cJSON_GetObjectItem(params, "name");
+    cJSON* nameItem = cJSON_GetObjectItem(details, "name");
     if(nameItem) {
         strcpy(targetProfile->name, nameItem->valuestring);
     }
 
     // 更新按键配置
-    cJSON* keysConfig = cJSON_GetObjectItem(params, "keysConfig");
+    cJSON* keysConfig = cJSON_GetObjectItem(details, "keysConfig");
     if(keysConfig) {
         cJSON* item;
         
@@ -866,7 +877,7 @@ std::string apiUpdateProfile() {
     }
 
     // 更新LED配置
-    cJSON* ledsConfig = cJSON_GetObjectItem(params, "ledsConfigs");
+    cJSON* ledsConfig = cJSON_GetObjectItem(details, "ledsConfigs");
     if(ledsConfig) {
         cJSON* item;
         
@@ -897,7 +908,7 @@ std::string apiUpdateProfile() {
     }
 
     // 更新触发器配置
-    cJSON* triggerConfigs = cJSON_GetObjectItem(params, "triggerConfigs");
+    cJSON* triggerConfigs = cJSON_GetObjectItem(details, "triggerConfigs");
     if(triggerConfigs) {
         cJSON* configs = cJSON_GetObjectItem(triggerConfigs, "triggerConfigs");
         if(configs) {
@@ -1006,16 +1017,14 @@ std::string apiCreateProfile() {
     // 获取新配置文件名称
     cJSON* nameItem = cJSON_GetObjectItem(params, "profileName");
     if(nameItem && nameItem->valuestring) {
-        strncpy(targetProfile->name, nameItem->valuestring, sizeof(targetProfile->name) - 1);
+        ConfigUtils::makeDefaultProfile(*targetProfile, targetProfile->id, true); // 启用配置文件 并且 初始化配置文件
+        strncpy(targetProfile->name, nameItem->valuestring, sizeof(targetProfile->name) - 1); // 设置配置文件名称
         targetProfile->name[sizeof(targetProfile->name) - 1] = '\0';  // 确保字符串结束
+        strcpy(config.defaultProfileId, targetProfile->id); // 设置默认配置文件ID 为新创建的配置文件ID
     } else {
-        // 如果没有提供名称，使用默认名称
-        snprintf(targetProfile->name, sizeof(targetProfile->name), "Profile %d", enabledCount + 1);
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Profile name not provided");
     }
-
-    // 启用配置文件
-    targetProfile->enabled = true;
-    strcpy(config.defaultProfileId, targetProfile->id); // 设置默认配置文件ID 为新创建的配置文件ID
 
     // 保存配置
     if(!Storage::getInstance().save()) {
@@ -1085,51 +1094,58 @@ std::string apiDeleteProfile() {
 
     // 查找目标配置文件
     GamepadProfile* targetProfile = nullptr;
+    uint8_t numEnabledProfiles = 0;
     uint8_t targetIndex = 0;
+    uint8_t nextTargetIndex = 0;
+
     for(uint8_t i = 0; i < NUM_PROFILES; i++) {
-        if(strcmp(profileIdItem->valuestring, config.profiles[i].id) == 0) {
-            targetProfile = &config.profiles[i];
-            targetIndex = i;
-            break;
+        if(config.profiles[i].enabled) {
+            numEnabledProfiles++;
+            if(strcmp(profileIdItem->valuestring, config.profiles[i].id) == 0) {
+                targetProfile = &config.profiles[i];
+                targetIndex = i;
+            }
         }
     }
 
+    // 如果目标配置文件不存在，则返回错误
     if(!targetProfile) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Profile not found");
     }
 
-    // 不允许删除默认配置文件 0号位是默认配置文件
-    if(targetIndex == 0) {
+    // 不允许关闭最后一个启用的配置文件
+    if(numEnabledProfiles <= 1) {
         cJSON_Delete(params);
-        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Cannot delete default profile");
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Cannot delete the last active profile");
     }
 
     // 禁用配置文件（相当于删除）
-    targetProfile->enabled = false;
+    config.profiles[targetIndex].enabled = false;
 
-    // 将禁用的配置文件移动到数组末尾
-    // 首先找到最后一个启用的配置文件的位置
-    int lastEnabledIndex = -1;
-    for(int i = NUM_PROFILES - 1; i >= 0; i--) {
+    // 为了保持内存连续性，将目标配置文件之后的配置文件向前移动一位
+    // 保存目标配置文件的副本
+    GamepadProfile* tempProfile = (GamepadProfile*)malloc(sizeof(GamepadProfile));
+    if(!tempProfile) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to allocate memory");
+    }
+    // 保存目标配置文件
+    memcpy(tempProfile, &config.profiles[targetIndex], sizeof(GamepadProfile));
+    // 将目标配置文件之后的配置文件向前移动一位
+    memmove(&config.profiles[targetIndex], 
+            &config.profiles[targetIndex + 1], 
+            (NUM_PROFILES - targetIndex - 1) * sizeof(GamepadProfile));
+    // 将目标配置文件放到最后一个
+    memcpy(&config.profiles[NUM_PROFILES - 1], tempProfile, sizeof(GamepadProfile));
+    free(tempProfile);
+
+    // 设置下一个启用的配置文件为默认配置文件
+    for(uint8_t i = targetIndex; i >= 0; i --) {
         if(config.profiles[i].enabled) {
-            lastEnabledIndex = i;
+            strcpy(config.defaultProfileId, config.profiles[i].id);
             break;
         }
-    }
-
-    // 如果目标配置文件在最后一个启用的配置文件之前，则需要移动
-    if(targetIndex < lastEnabledIndex) {
-        // 保存目标配置文件的副本
-        GamepadProfile tempProfile = *targetProfile;
-        
-        // 将目标位置之后的所有配置文件向前移动一位
-        for(uint8_t i = targetIndex; i < lastEnabledIndex; i++) {
-            config.profiles[i] = config.profiles[i + 1];
-        }
-        
-        // 将目标配置文件放到最后一个启用的配置文件的后面
-        config.profiles[lastEnabledIndex] = tempProfile;
     }
 
     // 保存配置
@@ -1291,7 +1307,7 @@ std::string apiUpdateHotkeysConfig() {
         return get_response_temp(STORAGE_ERROR_NO::PARAMETERS_ERROR, NULL, "Invalid hotkeys configuration");
     }
 
-    // 遍历并更新每���快捷键配置
+    // 遍历并更新每个快捷键配置
     int numHotkeys = cJSON_GetArraySize(hotkeysConfigArray);
     for(int i = 0; i < numHotkeys && i < NUM_GAMEPAD_HOTKEYS; i++) {
         cJSON* hotkeyItem = cJSON_GetArrayItem(hotkeysConfigArray, i);
