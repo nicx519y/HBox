@@ -440,9 +440,6 @@ cJSON* buildHotkeysConfigJSON(Config& config) {
     for(uint8_t i = 0; i < NUM_GAMEPAD_HOTKEYS; i++) {
         cJSON* hotkeyJSON = cJSON_CreateObject();
         
-        // 添加快捷键序号
-        cJSON_AddNumberToObject(hotkeyJSON, "key", i);
-        
         // 添加快捷键动作(转换为字符串)
         switch(config.hotkeys[i].action) {
             case GamepadHotkey::HOTKEY_INPUT_MODE_WEBCONFIG:
@@ -482,7 +479,10 @@ cJSON* buildHotkeysConfigJSON(Config& config) {
                 cJSON_AddStringToObject(hotkeyJSON, "action", "None");
                 break;
         }
-        
+
+        // 添加快捷键序号
+        cJSON_AddNumberToObject(hotkeyJSON, "key", config.hotkeys[i].virtualPin);
+
         // 添加锁定状态
         cJSON_AddBoolToObject(hotkeyJSON, "isLocked", config.hotkeys[i].isLocked);
         
@@ -910,6 +910,11 @@ std::string apiUpdateProfile() {
     // 更新触发器配置
     cJSON* triggerConfigs = cJSON_GetObjectItem(details, "triggerConfigs");
     if(triggerConfigs) {
+        cJSON* isAllBtnsConfiguring = cJSON_GetObjectItem(triggerConfigs, "isAllBtnsConfiguring");
+        if(isAllBtnsConfiguring) {
+            targetProfile->triggerConfigs.isAllBtnsConfiguring = isAllBtnsConfiguring->type == cJSON_True;
+        }
+
         cJSON* configs = cJSON_GetObjectItem(triggerConfigs, "triggerConfigs");
         if(configs) {
             for(uint8_t i = 0; i < NUM_ADC_BUTTONS && i < cJSON_GetArraySize(configs); i++) {
@@ -1317,7 +1322,8 @@ std::string apiUpdateHotkeysConfig() {
         cJSON* keyItem = cJSON_GetObjectItem(hotkeyItem, "key");
         if(!keyItem || !cJSON_IsNumber(keyItem)) continue;
         int keyIndex = keyItem->valueint;
-        if(keyIndex < 0 || keyIndex >= (NUM_ADC_BUTTONS + NUM_GPIO_BUTTONS)) continue;
+        if(keyIndex < -1 || keyIndex >= (NUM_ADC_BUTTONS + NUM_GPIO_BUTTONS)) continue;
+        config.hotkeys[i].virtualPin = keyIndex;
 
         // 获取动作
         cJSON* actionItem = cJSON_GetObjectItem(hotkeyItem, "action");
@@ -1326,40 +1332,40 @@ std::string apiUpdateHotkeysConfig() {
         // 获取锁定状态
         cJSON* isLockedItem = cJSON_GetObjectItem(hotkeyItem, "isLocked");
         if(isLockedItem) {
-            config.hotkeys[keyIndex].isLocked = cJSON_IsTrue(isLockedItem);
+            config.hotkeys[i].isLocked = cJSON_IsTrue(isLockedItem);
         }
 
         // 如果快捷键被锁定，则不允许修改
-        if(config.hotkeys[keyIndex].isLocked) {
+        if(config.hotkeys[i].isLocked) {
             continue;
         }
 
         // 根据字符串设置动作
         const char* actionStr = actionItem->valuestring;
         if(strcmp(actionStr, "WebConfigMode") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_INPUT_MODE_WEBCONFIG;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_INPUT_MODE_WEBCONFIG;
         } else if(strcmp(actionStr, "NSwitchMode") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_INPUT_MODE_SWITCH;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_INPUT_MODE_SWITCH;
         } else if(strcmp(actionStr, "XInputMode") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_INPUT_MODE_XINPUT;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_INPUT_MODE_XINPUT;
         } else if(strcmp(actionStr, "PS4Mode") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_INPUT_MODE_PS4;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_INPUT_MODE_PS4;
         } else if(strcmp(actionStr, "LedsEffectStyleNext") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_LEDS_EFFECTSTYLE_NEXT;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_LEDS_EFFECTSTYLE_NEXT;
         } else if(strcmp(actionStr, "LedsEffectStylePrev") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_LEDS_EFFECTSTYLE_PREV;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_LEDS_EFFECTSTYLE_PREV;
         } else if(strcmp(actionStr, "LedsBrightnessUp") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_LEDS_BRIGHTNESS_UP;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_LEDS_BRIGHTNESS_UP;
         } else if(strcmp(actionStr, "LedsBrightnessDown") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_LEDS_BRIGHTNESS_DOWN;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_LEDS_BRIGHTNESS_DOWN;
         } else if(strcmp(actionStr, "LedsEnableSwitch") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_LEDS_ENABLE_SWITCH;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_LEDS_ENABLE_SWITCH;
         } else if(strcmp(actionStr, "CalibrationMode") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_CALIBRATION_MODE;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_CALIBRATION_MODE;
         } else if(strcmp(actionStr, "SystemReboot") == 0) {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_SYSTEM_REBOOT;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_SYSTEM_REBOOT;
         } else {
-            config.hotkeys[keyIndex].action = GamepadHotkey::HOTKEY_NONE;
+            config.hotkeys[i].action = GamepadHotkey::HOTKEY_NONE;
         }
     }
 
