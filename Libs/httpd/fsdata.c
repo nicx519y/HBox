@@ -36,15 +36,15 @@ static uint32_t current_ram_addr = RAM_START_ADDR;
 // 文件数据指针
 static uint8_t* data__favicon_ico = NULL;
 static uint8_t* data__index_html = NULL;
-static uint8_t* data___next_static_js_app_layout_a3d9918cadef8bf7_js = NULL;
+static uint8_t* data___next_static_js_app_layout_98d8f05da040c46e_js = NULL;
 static uint8_t* data___next_static_js_app_page_6c355a02f395b974_js = NULL;
 static uint8_t* data___next_static_js_app__not_found_page_74cc9060c45c4b1e_js = NULL;
 static uint8_t* data___next_static_js_main_app_027e88ef81fce2e2_js = NULL;
 
 // 文件大小常量
 #define SIZE__FAVICON_ICO 9294
-#define SIZE__INDEX_HTML 12897
-#define SIZE___NEXT_STATIC_JS_APP_LAYOUT_A3D9918CADEF8BF7_JS 175920
+#define SIZE__INDEX_HTML 24206
+#define SIZE___NEXT_STATIC_JS_APP_LAYOUT_98D8F05DA040C46E_JS 188157
 #define SIZE___NEXT_STATIC_JS_APP_PAGE_6C355A02F395B974_JS 121306
 #define SIZE___NEXT_STATIC_JS_APP__NOT_FOUND_PAGE_74CC9060C45C4B1E_JS 1041
 #define SIZE___NEXT_STATIC_JS_MAIN_APP_027E88EF81FCE2E2_JS 98670
@@ -86,16 +86,16 @@ struct fsdata_file file__index_html[] = {{
     FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
 }};
 
-struct fsdata_file file___next_static_js_app_layout_a3d9918cadef8bf7_js[] = {{
+struct fsdata_file file___next_static_js_app_layout_98d8f05da040c46e_js[] = {{
     file__index_html,
     NULL,  // 将在运行时设置
     NULL,  // 将在运行时设置
-    SIZE___NEXT_STATIC_JS_APP_LAYOUT_A3D9918CADEF8BF7_JS - 48,
+    SIZE___NEXT_STATIC_JS_APP_LAYOUT_98D8F05DA040C46E_JS - 48,
     FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
 }};
 
 struct fsdata_file file___next_static_js_app_page_6c355a02f395b974_js[] = {{
-    file___next_static_js_app_layout_a3d9918cadef8bf7_js,
+    file___next_static_js_app_layout_98d8f05da040c46e_js,
     NULL,  // 将在运行时设置
     NULL,  // 将在运行时设置
     SIZE___NEXT_STATIC_JS_APP_PAGE_6C355A02F395B974_JS - 48,
@@ -128,8 +128,8 @@ static void update_file_pointers(void) {
     ((struct fsdata_file *)file__index_html)->data = data__index_html + 12;
 
     // 更新undefined的指针
-    ((struct fsdata_file *)file___next_static_js_app_layout_a3d9918cadef8bf7_js)->name = data___next_static_js_app_layout_a3d9918cadef8bf7_js;
-    ((struct fsdata_file *)file___next_static_js_app_layout_a3d9918cadef8bf7_js)->data = data___next_static_js_app_layout_a3d9918cadef8bf7_js + 48;
+    ((struct fsdata_file *)file___next_static_js_app_layout_98d8f05da040c46e_js)->name = data___next_static_js_app_layout_98d8f05da040c46e_js;
+    ((struct fsdata_file *)file___next_static_js_app_layout_98d8f05da040c46e_js)->data = data___next_static_js_app_layout_98d8f05da040c46e_js + 48;
 
     // 更新undefined的指针
     ((struct fsdata_file *)file___next_static_js_app_page_6c355a02f395b974_js)->name = data___next_static_js_app_page_6c355a02f395b974_js;
@@ -151,13 +151,13 @@ static bool allocate_memory(void) {
 
     data__favicon_ico = (uint8_t *)ram_alloc(SIZE__FAVICON_ICO);
     data__index_html = (uint8_t *)ram_alloc(SIZE__INDEX_HTML);
-    data___next_static_js_app_layout_a3d9918cadef8bf7_js = (uint8_t *)ram_alloc(SIZE___NEXT_STATIC_JS_APP_LAYOUT_A3D9918CADEF8BF7_JS);
+    data___next_static_js_app_layout_98d8f05da040c46e_js = (uint8_t *)ram_alloc(SIZE___NEXT_STATIC_JS_APP_LAYOUT_98D8F05DA040C46E_JS);
     data___next_static_js_app_page_6c355a02f395b974_js = (uint8_t *)ram_alloc(SIZE___NEXT_STATIC_JS_APP_PAGE_6C355A02F395B974_JS);
     data___next_static_js_app__not_found_page_74cc9060c45c4b1e_js = (uint8_t *)ram_alloc(SIZE___NEXT_STATIC_JS_APP__NOT_FOUND_PAGE_74CC9060C45C4B1E_JS);
     data___next_static_js_main_app_027e88ef81fce2e2_js = (uint8_t *)ram_alloc(SIZE___NEXT_STATIC_JS_MAIN_APP_027E88EF81FCE2E2_JS);
 
     // 检查内存分配是否成功
-    if (data__favicon_ico == NULL || data__index_html == NULL || data___next_static_js_app_layout_a3d9918cadef8bf7_js == NULL || data___next_static_js_app_page_6c355a02f395b974_js == NULL || data___next_static_js_app__not_found_page_74cc9060c45c4b1e_js == NULL || data___next_static_js_main_app_027e88ef81fce2e2_js == NULL) {
+    if (data__favicon_ico == NULL || data__index_html == NULL || data___next_static_js_app_layout_98d8f05da040c46e_js == NULL || data___next_static_js_app_page_6c355a02f395b974_js == NULL || data___next_static_js_app__not_found_page_74cc9060c45c4b1e_js == NULL || data___next_static_js_main_app_027e88ef81fce2e2_js == NULL) {
         return false;
     }
     return true;
@@ -197,7 +197,7 @@ const struct fsdata_file * getFSRoot(void)
 
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 2), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app_layout_a3d9918cadef8bf7_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app_layout_98d8f05da040c46e_js, addr, size);
         addr += size;
 
 
@@ -232,7 +232,7 @@ void fsdata_cleanup(void)
         // 释放所有动态分配的内存
         free(data__favicon_ico);
         free(data__index_html);
-        free(data___next_static_js_app_layout_a3d9918cadef8bf7_js);
+        free(data___next_static_js_app_layout_98d8f05da040c46e_js);
         free(data___next_static_js_app_page_6c355a02f395b974_js);
         free(data___next_static_js_app__not_found_page_74cc9060c45c4b1e_js);
         free(data___next_static_js_main_app_027e88ef81fce2e2_js);
@@ -240,7 +240,7 @@ void fsdata_cleanup(void)
         // 重置指针为 NULL
         data__favicon_ico = NULL;
         data__index_html = NULL;
-        data___next_static_js_app_layout_a3d9918cadef8bf7_js = NULL;
+        data___next_static_js_app_layout_98d8f05da040c46e_js = NULL;
         data___next_static_js_app_page_6c355a02f395b974_js = NULL;
         data___next_static_js_app__not_found_page_74cc9060c45c4b1e_js = NULL;
         data___next_static_js_main_app_027e88ef81fce2e2_js = NULL;

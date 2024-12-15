@@ -46,6 +46,7 @@ export function DialogForm() {
     const { t } = useLanguage();
 
     const handleClose = () => {
+        setErrors({});
         useFormStore.setState({ isOpen: false });
         resolve?.(null);
     };
@@ -73,6 +74,7 @@ export function DialogForm() {
             return;
         }
 
+        setErrors({});
         useFormStore.setState({ isOpen: false });
         resolve?.(values);
     };
@@ -89,7 +91,7 @@ export function DialogForm() {
                             <Field 
                                 key={index}
                                 // label={field.label}
-                                errorText={errors[field.name]}
+                                errorText={errors[field.name] ?? ""}
                                 invalid={!!errors[field.name]}
                             >
                                 <Input
