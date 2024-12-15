@@ -60,16 +60,29 @@ void board_init(void) {
   LED_Init();
 
   QSPI_W25Qxx_Init();
-  // int8_t mmmResult = QSPI_W25Qxx_MemoryMappedMode(); 	// 配置QSPI为内存映射模
-  // printf("QSPI MemoryMappedMode result: %d\r\n", mmmResult);
+  
+  printf("================== QSPI_W25Qxx_Init success. =======================\n");
   
   USB_init();
+
+  printf("================== USB_init success. =======================\n");
+
   MX_DMA_Init();
+
+  printf("================== MX_DMA_Init success. =======================\n");
+
   MX_ADC1_Init();
+
+
+  printf("================== MX_ADC1_Init success. =======================\n");
+
   MX_ADC2_Init();
+
+  printf("================== MX_ADC2_Init success. =======================\n");
 
   #ifdef HAS_LED
   WS2812B_Init();
+  printf("================== WS2812B_Init success. =======================\n");
   #endif // HAS_LED
   
 }

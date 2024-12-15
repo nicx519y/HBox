@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import pako from 'pako';
 const __makeExFile = true;	//是否将文件内容生成外部文件
+const __useCompression = true; // 是否使用压缩功能
 const __filename = fileURLToPath(import.meta.url);
 
 const root = dirname(__filename).replace(normalize('www'), '');
@@ -62,7 +63,7 @@ const shtmlExtensions = new Set(['shtml', 'shtm', 'ssi', 'xml', 'json']);
 
 const skipCompressionExtensions = new Set(['png', 'json']);
 
-const serverHeader = 'GP2040-CE';
+const serverHeader = 'IONIX-Hitbox';
 
 const payloadAlignment = 4;
 const hexBytesPerLine = 16;
@@ -195,6 +196,27 @@ function concatenateArrayBuffers(buffers) {
 }
 
 function makeFileBuffer(paddedQualifiedName, ext, isCompressed, fileContent, compressed = null) {
+	// Check if we should compress this file
+	if (__useCompression && !skipCompressionExtensions.has(ext)) {
+		try {
+			// Compress the content using pako
+			const compressedContent = pako.deflate(fileContent, {
+				level: 9,
+				windowBits: 15,
+				memLevel: 9,
+			});
+			isCompressed = true;
+			compressed = compressedContent;
+		} catch (error) {
+			console.warn(`Warning: Compression failed for ${paddedQualifiedName}, using uncompressed version`);
+			isCompressed = false;
+			compressed = null;
+		}
+	} else {
+		isCompressed = false;
+		compressed = null;
+	}
+
 	let buffer = concatenateArrayBuffers([
 		createFileData(paddedQualifiedName),
 		createFileData('HTTP/1.0 200 OK\r\n'),
@@ -209,7 +231,6 @@ function makeFileBuffer(paddedQualifiedName, ext, isCompressed, fileContent, com
 }
 
 function makeAllFileData(buffers) {
-
 	/**
 	 * first: [ length, size0, size1, size2, ... ]
 	 */
@@ -230,16 +251,14 @@ function makefsdata() {
 	fsdata += '#include "qspi-w25q64.h"\n';
 	fsdata += '#include <stdbool.h>\n';
 	fsdata += '#include <string.h>\n';
-	fsdata += '\n';
-	fsdata += '#define file_NULL (struct fsdata_file *) NULL\n';
-	fsdata += '\n';
+	fsdata += '#include <stdlib.h>\n\n';
+	fsdata += '#define file_NULL (struct fsdata_file *) NULL\n\n';
 	fsdata += '#ifndef FS_FILE_FLAGS_HEADER_INCLUDED\n';
 	fsdata += '#define FS_FILE_FLAGS_HEADER_INCLUDED 1\n';
 	fsdata += '#endif\n';
 	fsdata += '#ifndef FS_FILE_FLAGS_HEADER_PERSISTENT\n';
 	fsdata += '#define FS_FILE_FLAGS_HEADER_PERSISTENT 0\n';
 	fsdata += '#endif\n';
-	fsdata += '/* FSDATA_FILE_ALIGNMENT: 0=off, 1=by variable, 2=by include */\n';
 	fsdata += '#ifndef FSDATA_FILE_ALIGNMENT\n';
 	fsdata += '#define FSDATA_FILE_ALIGNMENT 0\n';
 	fsdata += '#endif\n';
@@ -248,60 +267,27 @@ function makefsdata() {
 	fsdata += '#endif\n';
 	fsdata += '#ifndef FSDATA_ALIGN_POST\n';
 	fsdata += '#define FSDATA_ALIGN_POST\n';
-	fsdata += '#endif\n';
-	fsdata += '#if FSDATA_FILE_ALIGNMENT==2\n';
-	fsdata += '#include "fsdata_alignment.h"\n';
-	fsdata += '#endif\n';
-	fsdata += '\n';
-	fsdata += '#define ex_fsdata_addr FSDATA_ADDR\n';
-	fsdata += '\n';
-	fsdata += `#define __Text_Area__ __attribute__((section("${memory_section}")))\n`;
-	fsdata += '\n';
-	fsdata += 'static bool fsdata_inited = false;\n';
-	fsdata += '\n';
-
-	let payloadAlignmentDummyCounter = 0;
-
+	fsdata += '#endif\n\n';
+	fsdata += '#define ex_fsdata_addr FSDATA_ADDR\n\n';
+	
+	// 添加RAM区域定义
+	fsdata += '// 定义RAM区域的起始地址和大小（根据链接器脚本中的定义）\n';
+	fsdata += '#define RAM_START_ADDR      0x24000000\n';
+	fsdata += '#define RAM_SIZE           (512 * 1024)  // 512KB\n';
+	fsdata += '#define RAM_ALIGNMENT      32\n\n';
+	
+	// 添加RAM分配器
+	fsdata += '// 用于跟踪RAM分配的简单分配器\n';
+	fsdata += 'static uint32_t current_ram_addr = RAM_START_ADDR;\n\n';
+	
+	// 添加文件数据指针声明
+	fsdata += '// 文件数据指针\n';
 	const fileInfos = [];
 	const fileDataBuffers = [];
-
+	
 	getFiles(buildPath).forEach((file) => {
-		const ext = getLowerCaseFileExtension(file);
-
 		const qualifiedName = '/' + relative(buildPath, file).replace(/\\/g, '/');
 		const varName = fixFilenameForC(qualifiedName);
-
-		fsdata += '#if FSDATA_FILE_ALIGNMENT==1\n';
-		fsdata += `static const unsigned int dummy_align_${varName} = ${payloadAlignmentDummyCounter++};\n`;
-		fsdata += '#endif\n';
-
-		const fileContent = fs.readFileSync(file);
-		let compressed = fileContent.buffer;
-		let isCompressed = false;
-		if (!skipCompressionExtensions.has(ext)) {
-			compressed = pako.deflate(fileContent, {
-				level: 9,
-				windowBits: 15,
-				memLevel: 9,
-			});
-			console.log(
-				`Compressed ${qualifiedName} from ${fileContent.byteLength} to ${
-					compressed.byteLength
-				} bytes (${Math.round(
-					(compressed.byteLength / fileContent.byteLength) * 100,
-				)}%)`,
-			);
-			if (compressed.byteLength >= fileContent.byteLength) {
-				console.log(
-					`Skipping compression of ${qualifiedName}, compressed size is larger than original`,
-				);
-			} else {
-				isCompressed = true;
-			}
-		} else {
-			console.log(`Skipping compression of ${qualifiedName} by file extension`);
-		}
-
 		const qualifiedNameLength = CStringLength(qualifiedName) + 1;
 		const paddedQualifiedNameLength =
 			Math.ceil(qualifiedNameLength / payloadAlignment) * payloadAlignment;
@@ -309,113 +295,154 @@ function makefsdata() {
 		const paddedQualifiedName =
 			qualifiedName +
 			'\0'.repeat(1 + paddedQualifiedNameLength - qualifiedNameLength);
-
-		const fileBuffer = makeFileBuffer(paddedQualifiedName, ext, isCompressed, fileContent, compressed);
-
-		// 是否生成外部文件
-		if(__makeExFile === true) {
-			// 生成二进制文件数据
-			fileDataBuffers.push(fileBuffer);
-			fsdata += `__Text_Area__ static unsigned char data_${varName}[${fileBuffer.byteLength}] FSDATA_ALIGN_PRE;\n\n`;
-		} else {
-			fsdata += `static unsigned char data_${varName}[] FSDATA_ALIGN_PRE = {\n`;
-			fsdata += `/* ${qualifiedName} (${qualifiedNameLength} chars) */\n`;
-			fsdata += createHexString(paddedQualifiedName, false);
-			fsdata += '\n';
-			fsdata += '/* HTTP header */\n';
-			fsdata += createHexString('HTTP/1.0 200 OK\r\n', true);
-			fsdata += createHexString(`Server: ${serverHeader}\r\n`, true);
-			fsdata += createHexString(
-				`Content-Length: ${
-					isCompressed ? compressed.byteLength : fileContent.byteLength
-				}\r\n`,
-				true,
-			);
-			if (isCompressed) {
-				fsdata += createHexString('Content-Encoding: deflate\r\n', true);
-			}
-			fsdata += createHexString(
-				`Content-Type: ${contentTypes.get(ext) ?? defaultContentType}\r\n\r\n`,
-				true,
-			);
-			fsdata += `/* raw file data (${
-				isCompressed ? compressed.byteLength : fileContent.byteLength
-			} bytes) */\n`;
-			fsdata += createHexString(isCompressed ? compressed : fileContent);
-			fsdata += `};\n\n`;
-		}
+		fsdata += `static uint8_t* data_${varName} = NULL;\n`;
 		
-
+		// Read file content and create buffer
+		const fileContent = fs.readFileSync(file);
+		const ext = getLowerCaseFileExtension(file);
+		
+		// Create file buffer with compression if enabled
+		const fileBuffer = makeFileBuffer(
+			paddedQualifiedName,
+			ext,
+			false,  // This will be updated inside makeFileBuffer if compression is used
+			fileContent
+		);
+		
+		fileDataBuffers.push(fileBuffer);
+		
 		fileInfos.push({
 			varName,
 			paddedQualifiedNameLength,
 			isSsiFile: shtmlExtensions.has(ext),
+			size: fileBuffer.byteLength,
 		});
-
+	});
+	fsdata += '\n';
+	
+	// 添加文件大小常量
+	fsdata += '// 文件大小常量\n';
+	fileInfos.forEach(info => {
+		fsdata += `#define SIZE_${info.varName.toUpperCase()} ${info.size}\n`;
+	});
+	fsdata += '\n';
+	
+	fsdata += 'static bool fsdata_inited = false;\n\n';
+	
+	// 添加RAM分配函数
+	fsdata += `// 简单的内存分配函数，返回对齐的地址
+static void* ram_alloc(size_t size) {
+	// 确保大小是32字节对齐的
+	size = (size + RAM_ALIGNMENT - 1) & ~(RAM_ALIGNMENT - 1);
+	
+	// 检查是否有足够的空间
+	if (current_ram_addr + size > RAM_START_ADDR + RAM_SIZE) {
+		return NULL;
+	}
+	
+	// 保存当前地址
+	void* allocated_addr = (void*)current_ram_addr;
+	
+	// 更新下一个可用地址
+	current_ram_addr += size;
+	
+	return allocated_addr;
+}\n\n`;
+	
+	// 添加文件结构体定义
+	let prevFile = 'NULL';
+	fileInfos.forEach((info) => {
+		fsdata += `struct fsdata_file file_${info.varName}[] = {{\n`;
+		fsdata += `    file_${prevFile},\n`;
+		fsdata += `    NULL,  // 将在运行时设置\n`;
+		fsdata += `    NULL,  // 将在运行时设置\n`;
+		fsdata += `    SIZE_${info.varName.toUpperCase()} - ${info.paddedQualifiedNameLength},\n`;
+		fsdata += `    FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT\n`;
+		fsdata += `}};\n\n`;
+		prevFile = info.varName;
 	});
 	
-	let prevFile = 'NULL';
-	fileInfos.forEach((fileInfo) => {
-		fsdata += `const struct fsdata_file file_${fileInfo.varName}[] = {{\n`;
-		fsdata += `file_${prevFile},\n`;
-		fsdata += `data_${fileInfo.varName},\n`;
-		fsdata += `data_${fileInfo.varName} + ${fileInfo.paddedQualifiedNameLength},\n`;
-		fsdata += `sizeof(data_${fileInfo.varName}) - ${fileInfo.paddedQualifiedNameLength},\n`;
-		fsdata += `FS_FILE_FLAGS_HEADER_INCLUDED | ${
-			fileInfo.isSsiFile
-				? 'FS_FILE_FLAGS_SSI'
-				: 'FS_FILE_FLAGS_HEADER_PERSISTENT'
-		}\n`;
-		fsdata += '}};\n\n';
-
-		prevFile = fileInfo.varName;
+	// 添加指针更新函数
+	fsdata += `static void update_file_pointers(void) {\n`;
+	fileInfos.forEach(info => {
+		fsdata += `    // 更新${info.qualifiedName}的指针\n`;
+		fsdata += `    ((struct fsdata_file *)file_${info.varName})->name = data_${info.varName};\n`;
+		fsdata += `    ((struct fsdata_file *)file_${info.varName})->data = data_${info.varName} + ${info.paddedQualifiedNameLength};\n\n`;
 	});
+	fsdata += `}\n\n`;
+	
+	// 添加内存分配函数
+	fsdata += `static bool allocate_memory(void) {\n`;
+	fsdata += `    // 重置内存分配器\n`;
+	fsdata += `    current_ram_addr = RAM_START_ADDR;\n\n`;
+	
+	fileInfos.forEach(info => {
+		fsdata += `    data_${info.varName} = (uint8_t *)ram_alloc(SIZE_${info.varName.toUpperCase()});\n`;
+	});
+	
+	fsdata += `\n    // 检查内存分配是否成功\n`;
+	fsdata += `    if (`;
+	fsdata += fileInfos.map(info => `data_${info.varName} == NULL`).join(' || ');
+	fsdata += `) {\n        return false;\n    }\n    return true;\n}\n\n`;
+	
+	// 添加getFSRoot函数
+	fsdata += `const struct fsdata_file * getFSRoot(void)\n{\n`;
+	fsdata += `    if(fsdata_inited == false) {\n`;
+	fsdata += `        int8_t result;\n`;
+	fsdata += `        uint8_t d[4];\n`;
+	fsdata += `        uint32_t len;\n`;
+	fsdata += `        uint32_t addr;\n`;
+	fsdata += `        uint32_t size;\n\n`;
+	fsdata += `        // 分配内存\n`;
+	fsdata += `        if (!allocate_memory()) {\n`;
+	fsdata += `            return NULL;\n`;
+	fsdata += `        }\n\n`;
+	fsdata += `        printf("getFSRoot: allocate_memory success.\\n");\n\n`;
+	
+	fsdata += `        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr, 4);\n`;
+	fsdata += `        len = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]); // 文件数量\n`;
+	fsdata += `        addr = ex_fsdata_addr + 4 * (len + 1);\n\n`;
+	
+	fileInfos.forEach((info, index) => {
+		fsdata += `        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + ${index}), sizeof(uint32_t));\n`;
+		fsdata += `        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);\n`;
+		fsdata += `        result = QSPI_W25Qxx_ReadBuffer(data_${info.varName}, addr, size);\n`;
+		if (index < fileInfos.length - 1) {
+			fsdata += `        addr += size;\n\n\n`;
+		}
+	});
+	
+	fsdata += `\n        // 更新文件结构体中的指针\n`;
+	fsdata += `        update_file_pointers();\n\n`;
+	fsdata += `        fsdata_inited = true;\n`;
+	fsdata += `    }\n\n`;
+	fsdata += `    return file_${fileInfos[fileInfos.length - 1].varName};\n`;
+	fsdata += `}\n\n`;
+	
+	// 添加清理函数
+	fsdata += `void fsdata_cleanup(void)\n{\n`;
+	fsdata += `    if (fsdata_inited) {\n`;
+	fsdata += `        // 释放所有动态分配的内存\n`;
+	fileInfos.forEach(info => {
+		fsdata += `        free(data_${info.varName});\n`;
+	});
+	fsdata += `\n        // 重置指针为 NULL\n`;
+	fileInfos.forEach(info => {
+		fsdata += `        data_${info.varName} = NULL;\n`;
+	});
+	fsdata += `\n        fsdata_inited = false;\n`;
+	fsdata += `    }\n`;
+	fsdata += `}\n
 
-	fsdata += `
-const struct fsdata_file * getFSRoot(void)
-{
-	if(fsdata_inited == false) {
-		int8_t result;
-        uint8_t d[4];
-        uint32_t len;
-        uint32_t addr;
-        uint32_t size;
-
-		result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr, 4);
-        len = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]); // 文件数量
+	const uint8_t numfiles = ${fileInfos.length};
 	`;
 	
-	fileInfos.forEach((fileInfo, index) => {
-		if(index == 0) {
-			fsdata += `addr = ex_fsdata_addr + 4 * (len + 1);`;
-		} else {
-			fsdata += `addr += size;`;
-		}
-		fsdata += `
-        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + ${index}), sizeof(uint32_t));
-        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data_${fileInfo.varName}, addr, size);
-		`;
-	});
-
-	fsdata += `
-		fsdata_inited = true;
-	}
-
-	return file_${fileInfos[fileInfos.length - 1].varName};
-}
-	\n`;
-
-	fsdata += `const uint8_t numfiles = ${fileInfos.length};\n`;
-
 	fs.writeFileSync(fsdataPath, fsdata, 'utf8');
-
+	
 	if(__makeExFile === true) {
 		// 生成外部文件
 		const allFileData = makeAllFileData(fileDataBuffers);
-
 		fs.writeFileSync(exfilePath, allFileData.buffer, 'utf8');
-
 		console.log('make bin file success.');
 	}
 }

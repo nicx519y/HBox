@@ -36,16 +36,16 @@ void ADCBtnsManager::setup()
 {
     HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
     if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Values[0], NUM_ADC1_BUTTONS) != HAL_OK) {
-        printf("ADCBtnsManager: DMA1 start fail. \n");
+        printf("================== ADCBtnsManager: DMA1 start fail. =======================\n");
     } else {
-        printf("ADCBtnsManager: DMA1 start success.\n");
+        printf("================== ADCBtnsManager: DMA1 start success. =======================\n");
     }
 
     HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
     if(HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&ADC_Values[NUM_ADC1_BUTTONS], NUM_ADC2_BUTTONS) != HAL_OK) {
-        printf("ADCBtnsManager: DMA2 start fail. \n");
+        printf("================== ADCBtnsManager: DMA2 start fail. =======================\n");
     } else {
-        printf("ADCBtnsManager: DMA2 start success.\n");
+        printf("================== ADCBtnsManager: DMA2 start success. =======================\n");
     }
 
     HAL_Delay(50);

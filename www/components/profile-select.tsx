@@ -190,8 +190,8 @@ export function ProfileSelect() {
 
     return (
         <>
-            { // 如果 profileList 存在且 profileList.items 的长度大于 1，则显示选择器
-                profileList && profileList.items.length > 1 && (
+            { // 如果 profileList 存在且 profileList.items 的长度大于 0，则显示选择器
+                profileList && profileList.items.length > 0 && (
                     <Stack direction="row" gap={2} alignItems="center">
                         <SelectRoot
                             size="sm"

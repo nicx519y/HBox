@@ -3,6 +3,7 @@
 #include "bsp/board_api.h"
 #include "main_state_machine.hpp"
 #include "fsdata.h"
+#include "led.h"
 
 
 int cpp_main(void) 
@@ -40,9 +41,9 @@ int cpp_main(void)
     uint32_t t = HAL_GetTick();
 
     while(1) {
-        if(HAL_GetTick() - t >= 1)
+        if(HAL_GetTick() - t >= 1000)
         {
-            // LED1_Toggle;
+            LED1_Toggle;
             // gamepad.loop();
             t = HAL_GetTick();
         }
