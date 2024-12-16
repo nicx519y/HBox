@@ -311,7 +311,8 @@ export const UI_TEXT = {
     BUTTON_CANCEL: "Cancel",
     BUTTON_SUBMIT: "Submit",
     BUTTON_CONFIRM: "Confirm",
-    
+    BUTTON_PREVIEW_IN_TABLE_VIEW: "Preview In Table View",
+
     // Dialog Titles
     DIALOG_REBOOT_CONFIRM_TITLE: "Are you sure?",
     DIALOG_REBOOT_SUCCESS_TITLE: "Reboot successful",
@@ -478,7 +479,7 @@ export const UI_TEXT_ZH = {
     BUTTON_CANCEL: "取消",
     BUTTON_SUBMIT: "确定",
     BUTTON_CONFIRM: "确认",
-    
+    BUTTON_PREVIEW_IN_TABLE_VIEW: "在表格视图中预览",
     // 对话框标题
     DIALOG_REBOOT_CONFIRM_TITLE: "确认重启?",
     DIALOG_REBOOT_SUCCESS_TITLE: "重启成功",

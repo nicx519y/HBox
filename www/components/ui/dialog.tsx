@@ -6,6 +6,7 @@ interface DialogContentProps extends ChakraDialog.ContentProps {
   portalled?: boolean
   portalRef?: React.RefObject<HTMLElement>
   backdrop?: boolean
+  maxWidth?: string
 }
 
 export const DialogContent = React.forwardRef<
@@ -23,8 +24,8 @@ export const DialogContent = React.forwardRef<
   return (
     <Portal disabled={!portalled} container={portalRef}>
       {backdrop && <ChakraDialog.Backdrop />}
-      <ChakraDialog.Positioner>
-        <ChakraDialog.Content ref={ref} {...rest} asChild={false}>
+      <ChakraDialog.Positioner  >
+        <ChakraDialog.Content ref={ref} {...rest} asChild={false} maxWidth={props.maxWidth} >
           {children}
         </ChakraDialog.Content>
       </ChakraDialog.Positioner>
