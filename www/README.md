@@ -1,48 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HBox Web Config
 
-## Getting Started
+Web configuration interface for HBox gamepad.
 
-First, run the development server:
+## Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Build & Flash
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Generate web files:
+```bash
+# Build web interface
+npm run build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Generate firmware files
+node makefsdata.js
+```
 
-## Learn More
+2. Flash firmware:
+- Build firmware: `make`
+- Using STM32CubeProgrammer:
+  - Flash `build/HBox.bin` to 0x08000000
+  - Flash `Libs/httpd/ex_fsdata.bin` to 0x90000000
 
-To learn more about Next.js, take a look at the following resources:
+## Usage
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Connect HBox via USB
+2. Open http://192.168.7.1
+3. Configure your device
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-Deploy on SSH server 
+## Deploy
 
 ```bash
-ssh root@192.168.1.100
-cd /home/pi/gamepad-config
-git pull
-
-docker-compose down --rmi all
-docker system prune -a
-docker-compose up --build
+# Deploy to server
+cd www
+./deploy.sh
 ```

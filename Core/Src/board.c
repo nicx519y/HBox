@@ -9,6 +9,7 @@
 #include "dma.h"
 #include "pwm-ws2812b.h"
 #include "constant.hpp"
+#include "utils.h"
 
 UART_HandleTypeDef UartHandle;
 

@@ -26,48 +26,48 @@ struct RGBColor hexToRGB(uint32_t color)
 #define MU_0 (4 * M_PI * 1e-7) // 真空磁导率
 
 // 定义方程组
-void equations(double vars[], double B1, double B2, double L, double R, double d, double eqs[]) {
-    double M = vars[0];
-    double z1 = vars[1];
+void equations(float_t vars[], float_t B1, float_t B2, float_t L, float_t R, float_t d, float_t eqs[]) {
+    float_t M = vars[0];
+    float_t z1 = vars[1];
 
-    double term1_1 = (L / 2 + z1) / sqrt(R * R + (L / 2 + z1) * (L / 2 + z1));
-    double term1_2 = (L / 2 - z1) / sqrt(R * R + (L / 2 - z1) * (L / 2 - z1));
-    double term2_1 = (L / 2 + (z1 + d)) / sqrt(R * R + (L / 2 + (z1 + d)) * (L / 2 + (z1 + d)));
-    double term2_2 = (L / 2 - (z1 + d)) / sqrt(R * R + (L / 2 - (z1 + d)) * (L / 2 - (z1 + d)));
+    float_t term1_1 = (L / 2 + z1) / sqrt(R * R + (L / 2 + z1) * (L / 2 + z1));
+    float_t term1_2 = (L / 2 - z1) / sqrt(R * R + (L / 2 - z1) * (L / 2 - z1));
+    float_t term2_1 = (L / 2 + (z1 + d)) / sqrt(R * R + (L / 2 + (z1 + d)) * (L / 2 + (z1 + d)));
+    float_t term2_2 = (L / 2 - (z1 + d)) / sqrt(R * R + (L / 2 - (z1 + d)) * (L / 2 - (z1 + d)));
 
     eqs[0] = B1 - (MU_0 / 2) * M * (term1_1 - term1_2);
     eqs[1] = B2 - (MU_0 / 2) * M * (term2_1 - term2_2);
 }
 
 // 牛顿-拉夫森法求解方程组
-void newton_raphson(double vars[], double B1, double B2, double L, double R, double d) {
-    double tol = 1e-6; // 误差容限
+void newton_raphson(float_t vars[], float_t B1, float_t B2, float_t L, float_t R, float_t d) {
+    float_t tol = 1e-6; // 误差容限
     int max_iter = 100; // 最大迭代次数
-    double eqs[2];
-    double J[2][2]; // 雅可比矩阵
-    double delta[2];
+    float_t eqs[2];
+    float_t J[2][2]; // 雅可比矩阵
+    float_t delta[2];
     int iter;
 
     for (iter = 0; iter < max_iter; iter++) {
         equations(vars, B1, B2, L, R, d, eqs);
 
         // 计算雅可比矩阵
-        double h = 1e-6; // 微小增量
-        double vars_temp[2];
+        float_t h = 1e-6; // 微小增量
+        float_t vars_temp[2];
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
                 vars_temp[j] = vars[j];
             }
             vars_temp[i] += h;
-            double eqs_temp[2];
+            float_t eqs_temp[2];
             equations(vars_temp, B1, B2, L, R, d, eqs_temp);
             J[0][i] = (eqs_temp[0] - eqs[0]) / h;
             J[1][i] = (eqs_temp[1] - eqs[1]) / h;
         }
 
         // 计算 delta = J^(-1) * eqs
-        double det = J[0][0] * J[1][1] - J[0][1] * J[1][0];
+        float_t det = J[0][0] * J[1][1] - J[0][1] * J[1][0];
         delta[0] = (J[1][1] * eqs[0] - J[0][1] * eqs[1]) / det;
         delta[1] = (-J[1][0] * eqs[0] + J[0][0] * eqs[1]) / det;
 
@@ -83,24 +83,24 @@ void newton_raphson(double vars[], double B1, double B2, double L, double R, dou
 }
 
 // 计算轴线上磁场强度的函数
-double calculate_axial_magnetic_field(double L, double R, double M, double z) {
-    double term1 = (L / 2 + z) / sqrt(R * R + (L / 2 + z) * (L / 2 + z));
-    double term2 = (L / 2 - z) / sqrt(R * R + (L / 2 - z) * (L / 2 - z));
-    double B_z = (MU_0 / 2) * M * (term1 - term2);
+float_t calculate_axial_magnetic_field(float_t L, float_t R, float_t M, float_t z) {
+    float_t term1 = (L / 2 + z) / sqrt(R * R + (L / 2 + z) * (L / 2 + z));
+    float_t term2 = (L / 2 - z) / sqrt(R * R + (L / 2 - z) * (L / 2 - z));
+    float_t B_z = (MU_0 / 2) * M * (term1 - term2);
     return B_z;
 }
 
 #define TOLERANCE 10 // 误差容忍度
 
 // 使用二分法反向求解轴线上距离
-double find_distance_for_axial_field(double L, double R, double M, double B_target) {
-    double low = 0.0;
-    double high = 10.0; // 假设一个较大的初始上限
-    double mid;
+float_t find_distance_for_axial_field(float_t L, float_t R, float_t M, float_t B_target) {
+    float_t low = 0.0;
+    float_t high = 10.0; // 假设一个较大的初始上限
+    float_t mid;
 
     while (high - low > TOLERANCE) {
         mid = (low + high) / 2.0;
-        double B_mid = calculate_axial_magnetic_field(L, R, M, mid);
+        float_t B_mid = calculate_axial_magnetic_field(L, R, M, mid);
 
         if (B_mid > B_target) {
             low = mid;
@@ -145,3 +145,32 @@ void abort(void)
         ;
 }
 /******************************** hack 解决 未定义的符号__aeabi_assert 报错 end ********************************************/
+
+/******************************** RAM内存动态分配 begin ******************************************/
+// 定义RAM区域的起始地址和大小（根据链接器脚本中的定义）
+#define RAM_START_ADDR      0x24000000
+#define RAM_SIZE           (512 * 1024)  // 512KB
+#define RAM_ALIGNMENT      32
+
+// 用于跟踪RAM分配的简单分配器
+static uint32_t current_ram_addr = RAM_START_ADDR;
+
+// 简单的内存分配函数，返回对齐的地址
+void* ram_alloc(size_t size) {
+	// 确保大小是32字节对齐的
+	size = (size + RAM_ALIGNMENT - 1) & ~(RAM_ALIGNMENT - 1);
+	
+	// 检查是否有足够的空间
+	if (current_ram_addr + size > RAM_START_ADDR + RAM_SIZE) {
+		return NULL;
+	}
+	
+	// 保存当前地址
+	void* allocated_addr = (void*)current_ram_addr;
+	
+	// 更新下一个可用地址
+	current_ram_addr += size;
+	
+	return allocated_addr;
+}
+/******************************** RAM内存动态分配 end ******************************************/

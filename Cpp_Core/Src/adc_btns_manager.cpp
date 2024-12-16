@@ -5,13 +5,15 @@
 #include "constant.hpp"
 
 // 声明ADC DMA的内存地址，为了避免自动分配到DTCMRAM(DTCMRAM直连CPU，DMA不能访问)，所以为变量指定了内存区域为指向AXISRAM的地址
-__RAM_Area__ static uint32_t ADC_Values[NUM_ADC_BUTTONS];
+// __RAM_Area__ static uint32_t ADC_Values[NUM_ADC_BUTTONS];
 
 __DTCMRAM_Area__ static ADCButtonState ADC_btnStates[NUM_ADC_BUTTONS];
 __DTCMRAM_Area__ static uint8_t ADC_timesOfCalibrate[NUM_ADC_BUTTONS];
-__DTCMRAM_Area__ static double_t ADC_tmp[NUM_ADC_BUTTONS];
-__DTCMRAM_Area__ static double_t ADC_lastTriggerPositions[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static float_t ADC_tmp[NUM_ADC_BUTTONS];
+__DTCMRAM_Area__ static float_t ADC_lastTriggerPositions[NUM_ADC_BUTTONS];
 __DTCMRAM_Area__ static bool ADC_lastActions[NUM_ADC_BUTTONS];
+
+__RAMD2_Area__ static uint32_t ADC_Values[NUM_ADC_BUTTONS];
 
 // 定义静态成员
 ADCButton* ADCBtnsManager::buttonPtrs[NUM_ADC_BUTTONS];
@@ -62,9 +64,9 @@ void ADCBtnsManager::setup()
                 ADCButton* btn = btns[i];
                 if(btn->magnettization <= 0) continue;
                 // 获取当前磁场强度
-                double_t value = (double_t) abs((int32_t)ADC_Values[i] - (int32_t)MAGNETIC_BASE_VALUE);
+                float_t value = (float_t) abs((int32_t)ADC_Values[i] - (int32_t)MAGNETIC_BASE_VALUE);
                 // 获取当前测试点位置
-                double_t pos = find_distance_for_axial_field(
+                float_t pos = find_distance_for_axial_field(
                     MAGNETIC_TICKNESS,
                     MAGNETIC_RADIUS,
                     btns[i]->magnettization, 
@@ -118,9 +120,9 @@ void ADCBtnsManager::read()
             if(btns[i]->magnettization <= 0) continue;
 
             // 获取当前磁场强度
-            double_t value = (double_t) abs((int32_t)ADC_Values[i] - (int32_t)MAGNETIC_BASE_VALUE);
+            float_t value = (float_t) abs((int32_t)ADC_Values[i] - (int32_t)MAGNETIC_BASE_VALUE);
             // 获取当前测试点位置
-            double_t pos = find_distance_for_axial_field(
+            float_t pos = find_distance_for_axial_field(
                 MAGNETIC_TICKNESS,
                 MAGNETIC_RADIUS,
                 btns[i]->magnettization, 
@@ -171,7 +173,7 @@ void ADCBtnsManager::calibrate()
         #endif //DELAY_ADC_CALIBRATION
 
         int32_t value = 0;
-        double_t vars[2];
+        float_t vars[2];
 
         // 刷新ADC值
         SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
@@ -188,18 +190,18 @@ void ADCBtnsManager::calibrate()
                     break;
                 case ADCButtonState::CALIBRATING_TOP:
                     // 如果当前读取的adc value跟之前比跳动过大，则校准失败。需要连续到相近的adc values才算标定成功
-                    if(ADC_timesOfCalibrate[i] > 0 && abs(value - (int32_t) round(ADC_tmp[i-1]/(double_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY) {
+                    if(ADC_timesOfCalibrate[i] > 0 && abs(value - (int32_t) round(ADC_tmp[i-1]/(float_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY) {
                         // 校准失败 这个按钮重新校准
                         ADC_tmp[i] = 0;
                         ADC_timesOfCalibrate[i] = 0;
                     } else {
-                        ADC_tmp[i] += (double_t) value;
+                        ADC_tmp[i] += (float_t) value;
                         ADC_timesOfCalibrate[i] ++;
                     }
                     
                     if(ADC_timesOfCalibrate[i] >= TIMES_ADC_CALIBRATION) {
                         // 校准成功 ADC_topPositions[i]
-                        btns[i]->topPosition = round(ADC_tmp[i] / (double_t)ADC_timesOfCalibrate[i]);
+                        btns[i]->topPosition = round(ADC_tmp[i] / (float_t)ADC_timesOfCalibrate[i]);
                         ADC_btnStates[i] = ADCButtonState::CALIBRATING_BOTTOM;
                         ADC_tmp[i] = 0;
                         ADC_timesOfCalibrate[i] = 0;
@@ -209,20 +211,21 @@ void ADCBtnsManager::calibrate()
                 case ADCButtonState::CALIBRATING_BOTTOM:
 
                     // 如果当前读取的adc value 和 topValue相差过小 并且跟之前的值比跳动过大，则校准失败。需要连续到相近的adc values才算标定成功
-                    if(abs((double_t)value - btns[i]->topPosition) < ADC_VOLATILITY
-                        || (ADC_timesOfCalibrate[i] > 0 && abs(value - (int32_t)round(ADC_tmp[i-1]/(double_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY)) {
+                    if(abs((float_t)value - btns[i]->topPosition) < ADC_VOLATILITY
+                        || (ADC_timesOfCalibrate[i] > 0 && abs(value - (int32_t)round(ADC_tmp[i-1]/(float_t)ADC_timesOfCalibrate[i])) > ADC_VOLATILITY)) {
                         // 校准失败 这个按钮重新校准
                         ADC_tmp[i] = 0;
                         ADC_timesOfCalibrate[i] = 0;
                     } else {
-                        ADC_tmp[i] += (double_t) value;
+                        ADC_tmp[i] += (float_t) value;
                         ADC_timesOfCalibrate[i] ++;
                     }
 
                     if(ADC_timesOfCalibrate[i] >= TIMES_ADC_CALIBRATION) {
                         // 校准成功
-                        btns[i]->bottomPosition = round(ADC_tmp[i] / (double_t)ADC_timesOfCalibrate[i]);
+                        btns[i]->bottomPosition = round(ADC_tmp[i] / (float_t)ADC_timesOfCalibrate[i]);
 
+                        // 牛顿-拉夫森法求解方程组
                         newton_raphson(vars, btns[i]->topPosition, btns[i]->bottomPosition, MAGNETIC_TICKNESS, MAGNETIC_RADIUS, MAGNETIC_DISTANCE);
                         btns[i]->magnettization = vars[0];
 

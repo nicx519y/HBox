@@ -200,13 +200,13 @@ SECTIONS
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
   /* RAM sections */
-  ._Text_Area :
+  ._RAMD2_Area :
   {
     . = ALIGN(32);
-    *(.text_ram)         /* Text RAM section */
-    *(.text_ram*)        /* Text RAM section */
+    *(.RAMD2_Area)         /* RAM_D2 area section */
+    *(.RAMD2_Area*)        /* RAM_D2 area section */
     . = ALIGN(32);
-  } >RAM
+  } >RAM_D2
 
   ._RAM_Area :
   {

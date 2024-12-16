@@ -25,16 +25,7 @@
 
 #define ex_fsdata_addr FSDATA_ADDR
 
-// 定义RAM区域的起始地址和大小（根据链接器脚本中的定义）
-#define RAM_START_ADDR      0x24000000
-#define RAM_SIZE           (512 * 1024)  // 512KB
-#define RAM_ALIGNMENT      32
-
-// 用于跟踪RAM分配的简单分配器
-static uint32_t current_ram_addr = RAM_START_ADDR;
-
 // 文件数据指针
-static uint8_t* data__favicon_ico = NULL;
 static uint8_t* data__index_html = NULL;
 static uint8_t* data___next_static_js_app_layout_98d8f05da040c46e_js = NULL;
 static uint8_t* data___next_static_js_app_page_6c355a02f395b974_js = NULL;
@@ -42,7 +33,6 @@ static uint8_t* data___next_static_js_app__not_found_page_74cc9060c45c4b1e_js = 
 static uint8_t* data___next_static_js_main_app_027e88ef81fce2e2_js = NULL;
 
 // 文件大小常量
-#define SIZE__FAVICON_ICO 9294
 #define SIZE__INDEX_HTML 24206
 #define SIZE___NEXT_STATIC_JS_APP_LAYOUT_98D8F05DA040C46E_JS 188157
 #define SIZE___NEXT_STATIC_JS_APP_PAGE_6C355A02F395B974_JS 121306
@@ -51,35 +41,8 @@ static uint8_t* data___next_static_js_main_app_027e88ef81fce2e2_js = NULL;
 
 static bool fsdata_inited = false;
 
-// 简单的内存分配函数，返回对齐的地址
-static void* ram_alloc(size_t size) {
-	// 确保大小是32字节对齐的
-	size = (size + RAM_ALIGNMENT - 1) & ~(RAM_ALIGNMENT - 1);
-	
-	// 检查是否有足够的空间
-	if (current_ram_addr + size > RAM_START_ADDR + RAM_SIZE) {
-		return NULL;
-	}
-	
-	// 保存当前地址
-	void* allocated_addr = (void*)current_ram_addr;
-	
-	// 更新下一个可用地址
-	current_ram_addr += size;
-	
-	return allocated_addr;
-}
-
-struct fsdata_file file__favicon_ico[] = {{
-    file_NULL,
-    NULL,  // 将在运行时设置
-    NULL,  // 将在运行时设置
-    SIZE__FAVICON_ICO - 16,
-    FS_FILE_FLAGS_HEADER_INCLUDED | FS_FILE_FLAGS_HEADER_PERSISTENT
-}};
-
 struct fsdata_file file__index_html[] = {{
-    file__favicon_ico,
+    file_NULL,
     NULL,  // 将在运行时设置
     NULL,  // 将在运行时设置
     SIZE__INDEX_HTML - 12,
@@ -120,10 +83,6 @@ struct fsdata_file file___next_static_js_main_app_027e88ef81fce2e2_js[] = {{
 
 static void update_file_pointers(void) {
     // 更新undefined的指针
-    ((struct fsdata_file *)file__favicon_ico)->name = data__favicon_ico;
-    ((struct fsdata_file *)file__favicon_ico)->data = data__favicon_ico + 16;
-
-    // 更新undefined的指针
     ((struct fsdata_file *)file__index_html)->name = data__index_html;
     ((struct fsdata_file *)file__index_html)->data = data__index_html + 12;
 
@@ -146,10 +105,6 @@ static void update_file_pointers(void) {
 }
 
 static bool allocate_memory(void) {
-    // 重置内存分配器
-    current_ram_addr = RAM_START_ADDR;
-
-    data__favicon_ico = (uint8_t *)ram_alloc(SIZE__FAVICON_ICO);
     data__index_html = (uint8_t *)ram_alloc(SIZE__INDEX_HTML);
     data___next_static_js_app_layout_98d8f05da040c46e_js = (uint8_t *)ram_alloc(SIZE___NEXT_STATIC_JS_APP_LAYOUT_98D8F05DA040C46E_JS);
     data___next_static_js_app_page_6c355a02f395b974_js = (uint8_t *)ram_alloc(SIZE___NEXT_STATIC_JS_APP_PAGE_6C355A02F395B974_JS);
@@ -157,7 +112,7 @@ static bool allocate_memory(void) {
     data___next_static_js_main_app_027e88ef81fce2e2_js = (uint8_t *)ram_alloc(SIZE___NEXT_STATIC_JS_MAIN_APP_027E88EF81FCE2E2_JS);
 
     // 检查内存分配是否成功
-    if (data__favicon_ico == NULL || data__index_html == NULL || data___next_static_js_app_layout_98d8f05da040c46e_js == NULL || data___next_static_js_app_page_6c355a02f395b974_js == NULL || data___next_static_js_app__not_found_page_74cc9060c45c4b1e_js == NULL || data___next_static_js_main_app_027e88ef81fce2e2_js == NULL) {
+    if (data__index_html == NULL || data___next_static_js_app_layout_98d8f05da040c46e_js == NULL || data___next_static_js_app_page_6c355a02f395b974_js == NULL || data___next_static_js_app__not_found_page_74cc9060c45c4b1e_js == NULL || data___next_static_js_main_app_027e88ef81fce2e2_js == NULL) {
         return false;
     }
     return true;
@@ -185,35 +140,29 @@ const struct fsdata_file * getFSRoot(void)
 
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 0), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data__favicon_ico, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data__index_html, addr, size);
         addr += size;
 
 
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 1), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data__index_html, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app_layout_98d8f05da040c46e_js, addr, size);
         addr += size;
 
 
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 2), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app_layout_98d8f05da040c46e_js, addr, size);
+        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app_page_6c355a02f395b974_js, addr, size);
         addr += size;
 
 
         result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 3), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
-        result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app_page_6c355a02f395b974_js, addr, size);
-        addr += size;
-
-
-        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 4), sizeof(uint32_t));
-        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
         result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_app__not_found_page_74cc9060c45c4b1e_js, addr, size);
         addr += size;
 
 
-        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 5), sizeof(uint32_t));
+        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + 4), sizeof(uint32_t));
         size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);
         result = QSPI_W25Qxx_ReadBuffer(data___next_static_js_main_app_027e88ef81fce2e2_js, addr, size);
 
@@ -230,7 +179,6 @@ void fsdata_cleanup(void)
 {
     if (fsdata_inited) {
         // 释放所有动态分配的内存
-        free(data__favicon_ico);
         free(data__index_html);
         free(data___next_static_js_app_layout_98d8f05da040c46e_js);
         free(data___next_static_js_app_page_6c355a02f395b974_js);
@@ -238,7 +186,6 @@ void fsdata_cleanup(void)
         free(data___next_static_js_main_app_027e88ef81fce2e2_js);
 
         // 重置指针为 NULL
-        data__favicon_ico = NULL;
         data__index_html = NULL;
         data___next_static_js_app_layout_98d8f05da040c46e_js = NULL;
         data___next_static_js_app_page_6c355a02f395b974_js = NULL;
@@ -250,5 +197,5 @@ void fsdata_cleanup(void)
 }
 
 
-	const uint8_t numfiles = 6;
+	const uint8_t numfiles = 5;
 	

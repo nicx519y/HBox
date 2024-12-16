@@ -11,14 +11,11 @@ const __filename = fileURLToPath(import.meta.url);
 const root = dirname(__filename).replace(normalize('www'), '');
 const rootwww = dirname(__filename);
 const buildPath = join(rootwww, 'build');
-const ex_fsdata_addr = 0x00000000;			// 读取外部fsdata文件在qspiflash中的地址
-const memory_section = '._Text_Area';		// 运行时保存fsdata数据所用的 RAM section，需要在ld文件中定义
 const fsdataPath = normalize(join(root, 'Libs/httpd/fsdata.c'));
 const exfilePath = normalize(join(root, 'Libs/httpd/ex_fsdata.bin'));
 const extnames = ['.html', '.htm', '.shtml', '.shtm', '.ssi', '.xml', '.json', '.js', '.css', '.svg', '.ico', '.png', '.jpg', '.jpeg', '.bmp', '.gif'];
 const includes_files = [ // 需要包含的文件
 	/index(\.[a-z|A-Z|0-9|]*)?\.html/, 
-	/favicon(\.[a-z|A-Z|0-9|]*)?\.ico/, 
 	/main\-app(\.[a-z|A-Z|0-9|]*)?\.js/, 
 	/layout(\.[a-z|A-Z|0-9|]*)?\.js/, 
 	/page(\.[a-z|A-Z|0-9|]*)?\.js/
@@ -270,16 +267,6 @@ function makefsdata() {
 	fsdata += '#endif\n\n';
 	fsdata += '#define ex_fsdata_addr FSDATA_ADDR\n\n';
 	
-	// 添加RAM区域定义
-	fsdata += '// 定义RAM区域的起始地址和大小（根据链接器脚本中的定义）\n';
-	fsdata += '#define RAM_START_ADDR      0x24000000\n';
-	fsdata += '#define RAM_SIZE           (512 * 1024)  // 512KB\n';
-	fsdata += '#define RAM_ALIGNMENT      32\n\n';
-	
-	// 添加RAM分配器
-	fsdata += '// 用于跟踪RAM分配的简单分配器\n';
-	fsdata += 'static uint32_t current_ram_addr = RAM_START_ADDR;\n\n';
-	
 	// 添加文件数据指针声明
 	fsdata += '// 文件数据指针\n';
 	const fileInfos = [];
@@ -329,26 +316,6 @@ function makefsdata() {
 	
 	fsdata += 'static bool fsdata_inited = false;\n\n';
 	
-	// 添加RAM分配函数
-	fsdata += `// 简单的内存分配函数，返回对齐的地址
-static void* ram_alloc(size_t size) {
-	// 确保大小是32字节对齐的
-	size = (size + RAM_ALIGNMENT - 1) & ~(RAM_ALIGNMENT - 1);
-	
-	// 检查是否有足够的空间
-	if (current_ram_addr + size > RAM_START_ADDR + RAM_SIZE) {
-		return NULL;
-	}
-	
-	// 保存当前地址
-	void* allocated_addr = (void*)current_ram_addr;
-	
-	// 更新下一个可用地址
-	current_ram_addr += size;
-	
-	return allocated_addr;
-}\n\n`;
-	
 	// 添加文件结构体定义
 	let prevFile = 'NULL';
 	fileInfos.forEach((info) => {
@@ -373,8 +340,6 @@ static void* ram_alloc(size_t size) {
 	
 	// 添加内存分配函数
 	fsdata += `static bool allocate_memory(void) {\n`;
-	fsdata += `    // 重置内存分配器\n`;
-	fsdata += `    current_ram_addr = RAM_START_ADDR;\n\n`;
 	
 	fileInfos.forEach(info => {
 		fsdata += `    data_${info.varName} = (uint8_t *)ram_alloc(SIZE_${info.varName.toUpperCase()});\n`;

@@ -28,7 +28,7 @@ struct RGBColor hexToRGB(uint32_t color);
  * @param R 磁芯半径
  * @param d 两个测试点的距离
  */
-void newton_raphson(double vars[], double B1, double B2, double L, double R, double d);
+void newton_raphson(float_t vars[], float_t B1, float_t B2, float_t L, float_t R, float_t d);
 
 /**
  * 已知磁芯长度、磁芯半径、磁化强度，求解磁芯轴向磁场为某个值时，磁芯轴向距离
@@ -38,12 +38,16 @@ void newton_raphson(double vars[], double B1, double B2, double L, double R, dou
  * @param B_target 目标磁场
  * @return 磁芯轴向距离
  */
-double find_distance_for_axial_field(double L, double R, double M, double B_target);
+float_t find_distance_for_axial_field(float_t L, float_t R, float_t M, float_t B_target);
 
 /******************************** hack 解决 未定义的符号__aeabi_assert 报错 begin ******************************************/
 __attribute__((weak, noreturn)) void __aeabi_assert(const char *expr, const char *file, int line);
 __attribute__((weak)) void abort(void);
 /******************************** hack 解决 未定义的符号__aeabi_assert 报错 end ********************************************/
+
+/******************************** RAM内存动态分配 begin ******************************************/
+void* ram_alloc(size_t size);
+/******************************** RAM内存动态分配 end ******************************************/
 
 #ifdef __cplusplus
 }

@@ -33,8 +33,7 @@ static uint8_t LED_Colors[NUM_LED * 3];
 
 static uint8_t LED_Brightness[NUM_LED];
 
-__RAM_Area__ static uint32_t DMA_LED_Buffer[DMA_BUFFER_LEN];
-
+__RAMD2_Area__ static uint32_t DMA_LED_Buffer[DMA_BUFFER_LEN];
 
 void LEDDataToDMABuffer(const uint16_t start, const uint16_t length)
 {
@@ -95,8 +94,9 @@ void HAL_TIM_ErrorCallback(TIM_HandleTypeDef *htim)
 
 void WS2812B_Init(void)
 {
-	memset(&DMA_LED_Buffer, 0, sizeof(DMA_LED_Buffer)); 
-	memset(&LED_Brightness, LED_DEFAULT_BRIGHTNESS, sizeof(LED_Brightness));
+	// init_dma_buffer(); // 分配DMA缓冲区
+	memset(DMA_LED_Buffer, 0, DMA_BUFFER_LEN * sizeof(uint32_t)); // 清空DMA缓冲区
+	memset(&LED_Brightness, LED_DEFAULT_BRIGHTNESS, sizeof(LED_Brightness)); // 设置LED亮度
 
 	LEDDataToDMABuffer(0, NUM_LED);
 
