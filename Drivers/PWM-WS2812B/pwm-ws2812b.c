@@ -33,10 +33,23 @@ static uint8_t LED_Colors[NUM_LED * 3];
 
 static uint8_t LED_Brightness[NUM_LED];
 
-__RAMD2_Area__ static uint32_t DMA_LED_Buffer[DMA_BUFFER_LEN];
+__RAM_D1_Area__ static uint32_t DMA_LED_Buffer[DMA_BUFFER_LEN];
+
+void clearDCache(void *addr, uint32_t size)
+{
+	uint32_t alignedAddr = (uint32_t)addr & ~(32u - 1);
+	uint32_t alignedSize = ((size + 31) & ~31);
+
+	SCB_CleanInvalidateDCache_by_Addr((uint32_t *)alignedAddr, alignedSize);
+}
 
 void LEDDataToDMABuffer(const uint16_t start, const uint16_t length)
 {
+	// 检查缓冲区对齐
+    if(((uint32_t)DMA_LED_Buffer & 0x1F) != 0) {
+        printf("Error: DMA buffer not 32-byte aligned\n");
+        return;
+    }
 	if(start + length > NUM_LED) {
 		return;
 	}
@@ -44,8 +57,11 @@ void LEDDataToDMABuffer(const uint16_t start, const uint16_t length)
 	uint16_t i, j;
 	uint16_t len = (start + length) * 3;
 	
+	// printf("LEDDataToDMABuffer start: %d, length: %d\n", start, length);
+
 	for(j = start * 3; j < len; j += 3)
 	{
+		// printf("LEDDataToDMABuffer for start: %d, length: %d\n", start, length);
 		double_t brightness = (double_t)LED_Brightness[j / 3] / 255.0;
 		uint32_t color = RGBToHex((uint8_t)round(LED_Colors[j] * brightness), (uint8_t)round(LED_Colors[j + 1] * brightness), (uint8_t)round(LED_Colors[j + 2] * brightness));
 		for(i = 0; i < 24; i ++) {
@@ -57,7 +73,11 @@ void LEDDataToDMABuffer(const uint16_t start, const uint16_t length)
 		}
 	}
 
-	SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)DMA_LED_Buffer, sizeof(DMA_LED_Buffer));
+	// printf("LEDDataToDMABuffer end: %d, length: %d\n", start, length);
+
+	clearDCache(DMA_LED_Buffer, sizeof(DMA_LED_Buffer));
+
+	// printf("LEDDataToDMABuffer SCB_CleanInvalidateDCache_by_Addr end: %d, length: %d\n", start, length);
 }
 
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
@@ -90,20 +110,28 @@ void HAL_TIM_ErrorCallback(TIM_HandleTypeDef *htim)
 	printf("PWM-WS2812B-ErrorCallback...\r\n");
 }
 
-
-
 void WS2812B_Init(void)
 {
-	// init_dma_buffer(); // 分配DMA缓冲区
+	printf("WS2812B_Init start...\n");
+
 	memset(DMA_LED_Buffer, 0, DMA_BUFFER_LEN * sizeof(uint32_t)); // 清空DMA缓冲区
+
+	printf("WS2812B_Init memset DMA_LED_Buffer end...\n");
+
 	memset(&LED_Brightness, LED_DEFAULT_BRIGHTNESS, sizeof(LED_Brightness)); // 设置LED亮度
+
+	printf("WS2812B_Init memset LED_Brightness end...\n");
 
 	LEDDataToDMABuffer(0, NUM_LED);
 
+	printf("WS2812B_Init LEDDataToDMABuffer end...\n");
+
 	if(HAL_TIM_Base_GetState(&htim4) != HAL_TIM_STATE_READY) {
-		printf("WS2812B_Init..\n");
+		printf("WS2812B_Init MX_TIM4_Init start...\n");
 		MX_TIM4_Init();
 	}
+
+	printf("WS2812B_Init end...\n");
 }
 
 WS2812B_StateTypeDef WS2812B_Start()
@@ -143,7 +171,7 @@ WS2812B_StateTypeDef WS2812B_Stop()
 void WS2812B_SetAllLEDBrightness(const uint8_t brightness)
 {
     memset(&LED_Brightness, brightness, sizeof(LED_Brightness));
-	SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)LED_Brightness, sizeof(LED_Brightness));
+	clearDCache(LED_Brightness, sizeof(LED_Brightness));
 }
 
 void WS2812B_SetAllLEDColor(const uint8_t r, const uint8_t g, const uint8_t b)
@@ -154,14 +182,13 @@ void WS2812B_SetAllLEDColor(const uint8_t r, const uint8_t g, const uint8_t b)
         LED_Colors[i + 1] = g;
         LED_Colors[i + 2] = b;
     }
-	SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)LED_Colors, sizeof(LED_Colors));
+	clearDCache(LED_Colors, sizeof(LED_Colors));
 }
 
 void WS2812B_SetLEDBrightness(const uint8_t brightness, const uint16_t index)
 {
 	if(index >= 0 && index < NUM_LED) {
 		LED_Brightness[index] = brightness;
-		SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)LED_Brightness[index], sizeof(LED_Brightness[0]));
 	}
 }
 
@@ -172,7 +199,6 @@ void WS2812B_SetLEDColor(const uint8_t r, const uint8_t g, const uint8_t b, cons
 		LED_Colors[idx] = r;
 		LED_Colors[idx + 1] = g;
 		LED_Colors[idx + 2] = b;
-		SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)LED_Colors[idx], sizeof(LED_Colors[0]) * 3);
 	}
 }
 
@@ -192,7 +218,7 @@ void WS2812B_SetLEDBrightnessByMask(
 		}
 	}
 
-	SCB_CleanInvalidateDCache_by_Addr ((uint8_t *)LED_Brightness, sizeof(LED_Brightness));
+	clearDCache(LED_Brightness, NUM_LED);
 }
 
 /**
@@ -209,7 +235,6 @@ void WS2812B_SetLEDColorByMask(
     const struct RGBColor backgroundColor, 
 	const uint32_t mask)
 {
-
 	uint8_t len = NUM_LED > 32 ? 32 : NUM_LED;
 	uint16_t idx;
 
@@ -226,7 +251,7 @@ void WS2812B_SetLEDColorByMask(
 		}
 	}
 
-	SCB_CleanInvalidateDCache_by_Addr ((uint32_t *)LED_Colors, sizeof(LED_Colors));
+	clearDCache(LED_Colors, NUM_LED * 3);
 }
 
 WS2812B_StateTypeDef WS2812B_GetState()

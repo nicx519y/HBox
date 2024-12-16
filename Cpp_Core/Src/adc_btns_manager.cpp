@@ -13,7 +13,7 @@ __DTCMRAM_Area__ static float_t ADC_tmp[NUM_ADC_BUTTONS];
 __DTCMRAM_Area__ static float_t ADC_lastTriggerPositions[NUM_ADC_BUTTONS];
 __DTCMRAM_Area__ static bool ADC_lastActions[NUM_ADC_BUTTONS];
 
-__RAMD2_Area__ static uint32_t ADC_Values[NUM_ADC_BUTTONS];
+__RAM_D1_Area__ static uint32_t ADC_Values[NUM_ADC_BUTTONS];
 
 // 定义静态成员
 ADCButton* ADCBtnsManager::buttonPtrs[NUM_ADC_BUTTONS];

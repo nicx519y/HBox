@@ -50,8 +50,8 @@ extern "C" {
 
 #define __RAM_Area__                __attribute__((section("._RAM_Area")))
 #define __DTCMRAM_Area__            __attribute__((section("._DTCMRAM_Area")))
-#define __RAMD2_Area__              __attribute__((section("._RAMD2_Area")))
-
+#define __RAM_D1_Area__             __attribute__((section("._RAM_D1_Area")))
+#define __RAM_D2_Area__             __attribute__((section("._RAM_D2_Area")))
 
 #ifdef __cplusplus
 }

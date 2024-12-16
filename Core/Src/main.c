@@ -105,6 +105,10 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
+  // Enable the CPU Cache
+  SCB_EnableICache(); /* Enable I-Cache */
+  SCB_EnableDCache(); /* Enable D-Cache */
+
   cpp_main();
   /* USER CODE END Init */
 
