@@ -159,11 +159,14 @@ export function LEDsSettingContent() {
 
                                 {/* LED Effect Style */}
                                 <Stack direction={"column"} gap={6} >
-                                    <Switch colorPalette={"green"} checked={ledEnabled}
-                                        onChange={() => {
-                                            setLedEnabled(!ledEnabled);
-                                            setIsDirty?.(true);
-                                        }} >{t.SETTINGS_LEDS_ENABLE_LABEL}</Switch>
+                                    <Stack direction={"row"} gap={2} >
+                                        <Switch colorPalette={"green"} checked={ledEnabled}
+                                                onChange={() => {
+                                                    setLedEnabled(!ledEnabled);
+                                                    setIsDirty?.(true);
+                                                }} >{t.SETTINGS_LEDS_ENABLE_LABEL}</Switch>
+                                        <Text fontSize={"sm"} opacity={!ledEnabled ? "0.35" : "0.85"} >{t.SETTINGS_LEDS_ENABLE_LABEL}</Text>
+                                    </Stack>
                                     {/* LED Effect Style */}
                                     <RadioCardRoot
                                         colorPalette={ledEnabled ? "green" : "gray"}

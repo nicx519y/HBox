@@ -185,17 +185,18 @@ export function RapidTriggerContent() {
                             </Fieldset.HelperText>
                             <Fieldset.Content pt="30px" >
                                 <Stack gap={6}>
-
-                                    <Switch
-                                        colorPalette={"green"}
-                                        checked={isAllBtnsConfiguring}
-                                        onChange={() => {
-                                            switchAllBtnsConfiging(!isAllBtnsConfiguring);
-                                            setIsDirty?.(true);
-                                        }}
-                                    >
-                                        <Text fontSize={"sm"} opacity={0.75} >{t.SETTINGS_RAPID_TRIGGER_CONFIGURE_ALL}</Text>
-                                    </Switch>
+                                    <Stack direction={"row"} gap={2} >
+                                        <Switch
+                                            colorPalette={"green"}
+                                            checked={isAllBtnsConfiguring}
+                                            onChange={() => {
+                                                switchAllBtnsConfiging(!isAllBtnsConfiguring);
+                                                setIsDirty?.(true);
+                                            }}
+                                        >
+                                            <Text fontSize={"sm"} opacity={0.75} >{t.SETTINGS_RAPID_TRIGGER_CONFIGURE_ALL}</Text>
+                                        </Switch>
+                                    </Stack>
 
                                     <Text opacity={!isAllBtnsConfiguring ? "0.75" : "0.25"} fontSize={"sm"} >
                                         {(selectedButton !== null && !isAllBtnsConfiguring) ?
@@ -251,7 +252,7 @@ export function RapidTriggerContent() {
 
                                     <DialogRoot lazyMount placement={"center"} unmountOnExit={true} >
                                         <DialogTrigger asChild >
-                                            <Box>
+                                            <Box width={"120px"} >
                                                 <Button variant={"ghost"} colorPalette={"green"} size={"sm"} ><LuSheet />{t.BUTTON_PREVIEW_IN_TABLE_VIEW}</Button>
                                             </Box>
                                         </DialogTrigger>
