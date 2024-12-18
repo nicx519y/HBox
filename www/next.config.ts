@@ -13,8 +13,9 @@ const nextConfig: NextConfig = {
     // telemetry: {
     //     enabled: false,
     // },
-    webpack: (config, { isServer }) => {
-        if (!isServer) {
+    webpack: (config, { isServer, dev }) => {
+        // 只在生产环境下应用优化配置
+        if (!isServer && !dev) {
             // 禁用代码分割
             config.optimization = {
                 minimize: true,
@@ -54,24 +55,6 @@ const nextConfig: NextConfig = {
                 ...config.output,
                 filename: 'static/js/[name].[contenthash].js',
                 chunkFilename: 'static/js/[name].[contenthash].js',
-                // assetModuleFilename: 'static/media/[name].[hash][ext]',
-                // path: paths.appBuild,
-                // publicPath: '/',
-                // clean: true,
-                // library: 'myApp',
-                // libraryTarget: 'umd',
-                // strictModuleExceptionHandling: true,
-                // environment: {
-                //     arrowFunction: true,
-                //     bigIntLiteral: false,
-                //     const: true,
-                //     destructuring: true,
-                //     dynamicImport: false,
-                //     forOf: true,
-                //     module: false,   
-                // },
-                // hashFunction: 'xxhash64',
-                // hashDigestLength: 8,
             };
         }
         return config;
@@ -93,10 +76,6 @@ const nextConfig: NextConfig = {
                 source: '/leds',
                 destination: '/',
             },
-            // {
-            //     source: '/calibration',
-            //     destination: '/',
-            // },
             {
                 source: '/rapid-trigger',
                 destination: '/',

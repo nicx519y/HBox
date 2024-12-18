@@ -27,7 +27,7 @@ export default function KeymappingField(
     return (
         <>
             <VStack onClick={onClick} gap={0.5} mt={3} >
-                <Text fontSize={"xs"} color={isActive ? "green.500" : colorMode === "dark" ? "gray.400" : "gray.600"} fontWeight={"bold"} >{`[ ${label} ]`}</Text>
+                <Text fontFamily={'icomoon'}  fontSize={"xs"} color={isActive ? "green.500" : colorMode === "dark" ? "gray.400" : "gray.600"} fontWeight={"bold"} >{`[ ${label} ]`}</Text>
                 <Box width={"230px"} 
                     height={"32px"} 
                     padding={"5px"} 

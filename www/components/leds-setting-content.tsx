@@ -165,7 +165,6 @@ export function LEDsSettingContent() {
                                                     setLedEnabled(!ledEnabled);
                                                     setIsDirty?.(true);
                                                 }} >{t.SETTINGS_LEDS_ENABLE_LABEL}</Switch>
-                                        <Text fontSize={"sm"} opacity={!ledEnabled ? "0.35" : "0.85"} >{t.SETTINGS_LEDS_ENABLE_LABEL}</Text>
                                     </Stack>
                                     {/* LED Effect Style */}
                                     <RadioCardRoot

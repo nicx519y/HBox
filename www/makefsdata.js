@@ -13,12 +13,13 @@ const rootwww = dirname(__filename);
 const buildPath = join(rootwww, 'build');
 const fsdataPath = normalize(join(root, 'Libs/httpd/fsdata.c'));
 const exfilePath = normalize(join(root, 'Libs/httpd/ex_fsdata.bin'));
-const extnames = ['.html', '.htm', '.shtml', '.shtm', '.ssi', '.xml', '.json', '.js', '.css', '.svg', '.ico', '.png', '.jpg', '.jpeg', '.bmp', '.gif'];
+const extnames = ['.html', '.htm', '.shtml', '.shtm', '.ssi', '.xml', '.json', '.js', '.css', '.svg', '.ico', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.ttf'];
 const includes_files = [ // 需要包含的文件
 	/index(\.[a-z|A-Z|0-9|]*)?\.html/, 
 	/main\-app(\.[a-z|A-Z|0-9|]*)?\.js/, 
 	/layout(\.[a-z|A-Z|0-9|]*)?\.js/, 
-	/page(\.[a-z|A-Z|0-9|]*)?\.js/
+	/page(\.[a-z|A-Z|0-9|]*)?\.js/,
+	/icomoon\.ttf/,
 ];
 
 // These are the same content types that are used by the original makefsdata
@@ -52,13 +53,14 @@ const contentTypes = new Map([
 	['xsl', 'text/xml'],
 	['pdf', 'application/pdf'],
 	['json', 'application/json'],
+	['ttf', 'application/x-font-ttf'],
 ]);
 
 const defaultContentType = 'text/plain';
 
-const shtmlExtensions = new Set(['shtml', 'shtm', 'ssi', 'xml', 'json']);
+const shtmlExtensions = new Set(['shtml', 'shtm', 'ssi', 'xml', 'json', 'ttf']);
 
-const skipCompressionExtensions = new Set(['png', 'json']);
+const skipCompressionExtensions = new Set(['png', 'json', 'ttf']);
 
 const serverHeader = 'IONIX-Hitbox';
 
