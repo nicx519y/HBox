@@ -48,8 +48,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "utils.h"
+#include <stdbool.h>
 
-QSPI_HandleTypeDef hqspi;	// 定义QSPI句柄，这里保留使用cubeMX生成的变量命名，方便用户参考和移植
+QSPI_HandleTypeDef hqspi;
+static bool xip_enabled = false;  // 跟踪XIP模式状态
 
 /**
  * @brief 
@@ -162,22 +164,30 @@ void MX_QUADSPI_Init(void)
  */
 int8_t QSPI_W25Qxx_Init(void)
 {
-	uint32_t	Device_ID;	// 器件ID
+	uint32_t Device_ID;
 	
-	MX_QUADSPI_Init();							// 初始化 QSPI 配置
-	QSPI_W25Qxx_Reset();						// 复位器件
-	Device_ID = QSPI_W25Qxx_ReadID(); 			// 读取器件ID
+	MX_QUADSPI_Init();
+	QSPI_W25Qxx_Reset();
+	Device_ID = QSPI_W25Qxx_ReadID();
 	
-	if( Device_ID == W25Qxx_FLASH_ID )			// 进行匹配
+	if(Device_ID == W25Qxx_FLASH_ID)
 	{
-		printf ("W25Q64 OK,flash ID:%X\r\n", (unsigned int)Device_ID);		// 初始化成功
-		return QSPI_W25Qxx_OK;					// 返回成功标志		
+		printf("W25Q64 OK, flash ID:%X\r\n", (unsigned int)Device_ID);
+		
+		// 初始化成功后立即开启XIP模式
+		if(QSPI_W25Qxx_MemoryMappedMode() != QSPI_W25Qxx_OK) {
+			printf("Enable XIP mode failed!\r\n");
+			return W25Qxx_ERROR_INIT;
+		}
+		printf("XIP mode enabled.\r\n");
+		
+		return QSPI_W25Qxx_OK;
 	}
 	else
 	{
-		printf ("W25Q64 ERROR!!!!!  ID:%X\r\n", (unsigned int)Device_ID);	// 初始化失败
-		return W25Qxx_ERROR_INIT;				// 返回错误标志
-	}	
+		printf("W25Q64 ERROR!!!!!  ID:%X\r\n", (unsigned int)Device_ID);
+		return W25Qxx_ERROR_INIT;
+	}
 }
 
 /**
@@ -328,33 +338,36 @@ uint32_t QSPI_W25Qxx_ReadID(void)
  */
 int8_t QSPI_W25Qxx_MemoryMappedMode(void)
 {
-		// 定义QSPI句柄，这里保留使用cubeMX生成的变量命名，方便用户参考和移植
-
-	QSPI_CommandTypeDef      s_command;				 // QSPI传输配置
-	QSPI_MemoryMappedTypeDef s_mem_mapped_cfg;	 // 内存映射访问参数
-
-	s_command.InstructionMode   = QSPI_INSTRUCTION_1_LINE;    		// 1线指令模式
-	s_command.AddressSize       = QSPI_ADDRESS_24_BITS;            	// 24位地址
-	s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;  		// 无交替字节 
-	s_command.DdrMode           = QSPI_DDR_MODE_DISABLE;     		// 禁止DDR模式
-	s_command.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY; 		// DDR模式中数据延迟，这里用不到
-	s_command.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;			// 每次传输数据都发送指令	
-	s_command.AddressMode 		= QSPI_ADDRESS_4_LINES; 			// 4线地址模式
-	s_command.DataMode    		= QSPI_DATA_4_LINES;    			// 4线数据模式
-	s_command.DummyCycles 		= 6;                    			// 空周期个数
-	s_command.Instruction 		= W25Qxx_CMD_FastReadQuad_IO; 		// 1-4-4模式下(1线指令4线地址4线数据)，快速读取指令
-	
-	s_mem_mapped_cfg.TimeOutActivation = QSPI_TIMEOUT_COUNTER_DISABLE; // 禁用超时计数器, nCS 保持激活状态
-	s_mem_mapped_cfg.TimeOutPeriod     = 0;									 // 超时判断周期
-
-	QSPI_W25Qxx_Reset();		// 复位W25Qxx
-	
-	if (HAL_QSPI_MemoryMapped(&hqspi, &s_command, &s_mem_mapped_cfg) != HAL_OK)	// 进行配置
-	{
-		return W25Qxx_ERROR_MemoryMapped; 	// 设置内存映射模式错误
+	if(xip_enabled) {
+		return QSPI_W25Qxx_OK;
 	}
 
-	return QSPI_W25Qxx_OK; // 配置成功
+	QSPI_CommandTypeDef      s_command;
+	QSPI_MemoryMappedTypeDef s_mem_mapped_cfg;
+
+	s_command.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
+	s_command.AddressSize       = QSPI_ADDRESS_24_BITS;
+	s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+	s_command.DdrMode           = QSPI_DDR_MODE_DISABLE;
+	s_command.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+	s_command.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+	s_command.AddressMode       = QSPI_ADDRESS_4_LINES;
+	s_command.DataMode          = QSPI_DATA_4_LINES;
+	s_command.DummyCycles       = 6;
+	s_command.Instruction       = W25Qxx_CMD_FastReadQuad_IO;
+	
+	s_mem_mapped_cfg.TimeOutActivation = QSPI_TIMEOUT_COUNTER_DISABLE;
+	s_mem_mapped_cfg.TimeOutPeriod     = 0;
+
+	if (HAL_QSPI_MemoryMapped(&hqspi, &s_command, &s_mem_mapped_cfg) != HAL_OK)
+	{
+		// printf("Enter XIP mode failed!\n");
+		return W25Qxx_ERROR_MemoryMapped;
+	}
+
+	xip_enabled = true;
+	// printf("Enter XIP mode success!\n");
+	return QSPI_W25Qxx_OK;
 }
 
 /**
@@ -629,7 +642,7 @@ int8_t QSPI_W25Qxx_ChipErase (void)
  * @param pBuffer 			要写入的数据
  * @param WriteAddr 		要写入 W25Qxx 的地址
  * @param NumByteToWrite 	数据长度，最大只能256字节
- * @return int8_t  			QSPI_W25Qxx_OK 		     - 写数据成功
+ * @return int8_t  			QSPI_W25Qxx_OK 		     - 写数据成���
  *			    			W25Qxx_ERROR_WriteEnable - 写使能失败
  *				 			W25Qxx_ERROR_TRANSMIT	 - 传输失败
  *				 			W25Qxx_ERROR_AUTOPOLLING - 轮询等待无响应
@@ -681,7 +694,7 @@ int8_t QSPI_W25Qxx_WritePage(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumB
  *	函数功能: 写入数据，最大不能超过flash芯片的大小，请务必完成擦除操作
  *	说    明: 	1.Flash的写入时间和擦除时间一样，是有限定的，并不是说QSPI驱动时钟133M就可以以这个速度进行写入
  *				2.按照 W25Q64JV 数据手册给出的 页 写入参考时间，典型值为 0.4ms，最大值为3ms
- *				3.实际的写入速度可能大于0.4ms，也可能小于0.4ms
+ *				3.实际的写入速度可能大于0.4ms，也可��小于0.4ms
  *				4.Flash使用的时间越长，写入所需时间也会越长
  *				5.在数据写入之前，请务必完成擦除操作
  *				6.该函数移植于 stm32h743i_eval_qspi.c
@@ -694,53 +707,59 @@ int8_t QSPI_W25Qxx_WritePage(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumB
  *				 			W25Qxx_ERROR_AUTOPOLLING - 轮询等待无响应
  */
 int8_t QSPI_W25Qxx_WriteBuffer(uint8_t* pBuffer, uint32_t WriteAddr, uint32_t NumByteToWrite)
-{	
-	uint32_t end_addr, current_size, current_addr;
-	uint8_t *write_data;  // 要写入的数据
-
-	current_size = W25Qxx_PageSize - (WriteAddr % W25Qxx_PageSize); // 计算当前页还剩余的空间
-
-	if (current_size > NumByteToWrite)	// 判断当前页剩余的空间是否足够写入所有数据
-	{
-		current_size = NumByteToWrite;		// 如果足够，则直接获取当前长度
+{   
+	int8_t status;
+	
+	// 退出XIP模式
+	if((status = QSPI_W25Qxx_ExitMemoryMappedMode()) != QSPI_W25Qxx_OK) {
+		return status;
 	}
 
-	current_addr = WriteAddr;		// 获取要写入的地址
-	end_addr = WriteAddr + NumByteToWrite;	// 计算结束地址
-	write_data = pBuffer;			// 获取要写入的数据
-
-	do
-	{
-		// 发送写使能
-		if (QSPI_W25Qxx_WriteEnable() != QSPI_W25Qxx_OK)
-		{
-			return W25Qxx_ERROR_WriteEnable;
-		}
-
-		// 按页写入数据
-		else if(QSPI_W25Qxx_WritePage(write_data, current_addr, current_size) != QSPI_W25Qxx_OK)
-		{
-			return W25Qxx_ERROR_TRANSMIT;
-		}
-
-		// 使用自动轮询标志位，等待写入的结束 
-		else 	if (QSPI_W25Qxx_AutoPollingMemReady() != QSPI_W25Qxx_OK)
-		{
-			return W25Qxx_ERROR_AUTOPOLLING;
-		}
-
-		else // 按页写入数据成功，进行下一次写数据的准备工作
-		{
-			current_addr += current_size;	// 计算下一次要写入的地址
-			write_data += current_size;	// 获取下一次要写入的数据存储区地址
-			// 计算下一次写数据的长度
-			current_size = ((current_addr + W25Qxx_PageSize) > end_addr) ? (end_addr - current_addr) : W25Qxx_PageSize;
+	// 计算需要擦除的扇区范围
+	uint32_t start_sector = WriteAddr & ~(W25Qxx_SECTOR_SIZE - 1);
+	uint32_t end_sector = (WriteAddr + NumByteToWrite - 1) & ~(W25Qxx_SECTOR_SIZE - 1);
+	
+	// 擦除所需的扇区
+	for(uint32_t sector = start_sector; sector <= end_sector; sector += W25Qxx_SECTOR_SIZE) {
+		printf("Erasing sector at address 0x%X\n", (unsigned int)sector);
+		if((status = QSPI_W25Qxx_SectorErase(sector)) != QSPI_W25Qxx_OK) {
+			goto exit;
 		}
 	}
-	while (current_addr < end_addr) ; // 判断数据是否全部写入完毕
 
-	return QSPI_W25Qxx_OK;	// 写入数据成功
+	// 执行写入操作
+	uint32_t current_addr = WriteAddr;
+	uint32_t end_addr = WriteAddr + NumByteToWrite;
+	uint32_t current_size;
+	uint8_t* write_data = pBuffer;
 
+	while(current_addr < end_addr) {
+		current_size = W25Qxx_PageSize - (current_addr % W25Qxx_PageSize);
+		if(current_size > (end_addr - current_addr)) {
+			current_size = end_addr - current_addr;
+		}
+
+		// 写使能
+		if (QSPI_W25Qxx_WriteEnable() != QSPI_W25Qxx_OK) {
+			status = W25Qxx_ERROR_WriteEnable;
+			goto exit;
+		}
+
+		// 写入数据
+		if((status = QSPI_W25Qxx_WritePage(write_data, current_addr, current_size)) != QSPI_W25Qxx_OK) {
+			goto exit;
+		}
+
+		current_addr += current_size;
+		write_data += current_size;
+	}
+
+	status = QSPI_W25Qxx_OK;
+
+exit:
+	// 恢复XIP模式
+	int8_t xip_status = QSPI_W25Qxx_MemoryMappedMode();
+	return (status != QSPI_W25Qxx_OK) ? status : xip_status;
 }
 
 /**
@@ -749,7 +768,7 @@ int8_t QSPI_W25Qxx_WriteBuffer(uint8_t* pBuffer, uint32_t WriteAddr, uint32_t Nu
  * 说    明: 1.Flash的读取速度取决于QSPI的通信时钟，最大不能超过133M
  *			2.这里使用的是1-4-4模式下(1线指令4线地址4线数据)，快速读取指令 Fast Read Quad I/O
  *			3.使用快速读取指令是有空周期的，具体参考W25Q64JV的手册  Fast Read Quad I/O  （0xEB）指令
- *			4.实际使用中，是否使用DMA、编译器的优化等级以及数据存储区的位置(内部 TCM SRAM 或者 AXI SRAM)都会影响读取的速度
+ *			4.实际使用中，是否使用DMA、编译器的优化等��以及数据存储区的位置(内部 TCM SRAM 或 AXI SRAM)都会影响读取的速度
  *			5.在本例程中，使用的是库函数进行直接读写，keil版本5.30，编译器AC6.14，编译等级Oz image size，读取速度为 7M字节/S ，数据放在 TCM SRAM 或者 AXI SRAM 都是差不多的结果
  *		    6.因为CPU直接访问外设寄存器的效率很低，直接使用HAL库进行读写的话，速度很慢，使用MDMA进行读取，可以达到 58M字节/S
  *	        7. W25Q64JV 所允许的最高驱动频率为133MHz，750的QSPI最高驱动频率也是133MHz ，但是对于HAL库函数直接读取而言，驱动时钟超过15M已经不会对性能有提升，对速度要求高的场合可以用MDMA的方式
@@ -762,44 +781,116 @@ int8_t QSPI_W25Qxx_WriteBuffer(uint8_t* pBuffer, uint32_t WriteAddr, uint32_t Nu
  */
 int8_t QSPI_W25Qxx_ReadBuffer(uint8_t* pBuffer, uint32_t ReadAddr, uint32_t NumByteToRead)
 {
-		// 定义QSPI句柄，这里保留使用cubeMX生成的变量命名，方便用户参考和移植
-
-	QSPI_CommandTypeDef s_command;	// QSPI传输配置
+	int8_t status;
 	
-	s_command.InstructionMode   = QSPI_INSTRUCTION_1_LINE;    		// 1线指令模式
-	s_command.AddressSize       = QSPI_ADDRESS_24_BITS;            // 24位地址
-	s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;  		// 无交替字节 
-	s_command.DdrMode           = QSPI_DDR_MODE_DISABLE;     		// 禁止DDR模式
-	s_command.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY; 		// DDR模式中数据延迟，这里用不到
-	s_command.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;			// 每次传输数据都发送指令	
-	s_command.AddressMode 		 = QSPI_ADDRESS_4_LINES; 				// 4线地址模式
-	s_command.DataMode    		 = QSPI_DATA_4_LINES;    				// 4线数据模式
-	s_command.DummyCycles 		 = 6;                    				// 空周期个数
-	s_command.NbData      		 = NumByteToRead;      			   	// 数据长度，最大不能超过flash芯片的大小
-	s_command.Address     		 = ReadAddr;         					// 要读取 W25Qxx 的地址
-	s_command.Instruction 		 = W25Qxx_CMD_FastReadQuad_IO; 		// 1-4-4模式下(1线指令4线地址4线数据)，快速读取指令
-	
-	// 发送读取命令
-	if (HAL_QSPI_Command(&hqspi, &s_command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-	{
-		return W25Qxx_ERROR_TRANSMIT;		// 传输数据错误
+	// 退出XIP模式
+	if((status = QSPI_W25Qxx_ExitMemoryMappedMode()) != QSPI_W25Qxx_OK) {
+		return status;
 	}
 
-	//	接收数据
+	QSPI_CommandTypeDef s_command;
 	
-	if (HAL_QSPI_Receive(&hqspi, pBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-	{
-		return W25Qxx_ERROR_TRANSMIT;		// 传输数据错误
+	s_command.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
+	s_command.AddressSize       = QSPI_ADDRESS_24_BITS;
+	s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+	s_command.DdrMode           = QSPI_DDR_MODE_DISABLE;
+	s_command.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+	s_command.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+	s_command.AddressMode       = QSPI_ADDRESS_4_LINES;
+	s_command.DataMode          = QSPI_DATA_4_LINES;
+	s_command.DummyCycles       = 6;
+	s_command.NbData           = NumByteToRead;
+	s_command.Address          = ReadAddr;
+	s_command.Instruction      = W25Qxx_CMD_FastReadQuad_IO;
+	
+	if (HAL_QSPI_Command(&hqspi, &s_command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+		status = W25Qxx_ERROR_TRANSMIT;
+		goto exit;
 	}
 
-	// 使用自动轮询标志位，等待接收的结束 
-	if (QSPI_W25Qxx_AutoPollingMemReady() != QSPI_W25Qxx_OK)
-	{
-		return W25Qxx_ERROR_AUTOPOLLING; // 轮询等待无响应
+	if (HAL_QSPI_Receive(&hqspi, pBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+		status = W25Qxx_ERROR_TRANSMIT;
+		goto exit;
 	}
-	return QSPI_W25Qxx_OK;	// 读取数据成功
+
+	status = QSPI_W25Qxx_OK;
+
+exit:
+	// 恢复XIP模式
+	int8_t xip_status = QSPI_W25Qxx_MemoryMappedMode();
+	return (status != QSPI_W25Qxx_OK) ? status : xip_status;
 }
 
+// 添加测试函数
+int8_t QSPI_W25Qxx_Test(uint32_t test_addr)
+{
+	int8_t status;
+	uint8_t write_buf[256];
+	uint8_t read_buf[256];
+	const uint32_t test_size = 256;
+	
+	printf("\r\nStarting QSPI Flash R/W test...\r\n");
+	
+	// 准备测试数据
+	for(uint32_t i = 0; i < test_size; i++) {
+		write_buf[i] = i & 0xFF;
+	}
+	
+	// 写入测试数据
+	printf("Writing test data to address 0x%08X...\r\n", (unsigned int)test_addr);
+	status = QSPI_W25Qxx_WriteBuffer(write_buf, test_addr, test_size);
+	if(status != QSPI_W25Qxx_OK) {
+		printf("Write test failed! Error code: %d\r\n", status);
+		return status;
+	}
+	printf("Write test data completed.\r\n");
+	
+	// 读取测试数据
+	printf("Reading test data from address 0x%08X...\r\n", (unsigned int)test_addr);
+	status = QSPI_W25Qxx_ReadBuffer(read_buf, test_addr, test_size);
+	if(status != QSPI_W25Qxx_OK) {
+		printf("Read test failed! Error code: %d\r\n", status);
+		return status;
+	}
+	printf("Read test data completed.\r\n");
+	
+	// 验证数据
+	printf("Verifying test data...\r\n");
+	bool verify_ok = true;
+	for(uint32_t i = 0; i < test_size; i++) {
+		if(read_buf[i] != write_buf[i]) {
+			printf("Data mismatch at offset %d: wrote 0x%02X, read 0x%02X\r\n", 
+				   (int)i, write_buf[i], read_buf[i]);
+			verify_ok = false;
+			break;
+		}
+	}
+	
+	if(verify_ok) {
+		printf("QSPI Flash R/W test passed!\r\n");
+		return QSPI_W25Qxx_OK;
+	} else {
+		printf("QSPI Flash R/W test failed!\r\n");
+		return W25Qxx_ERROR_TRANSMIT;
+	}
+}
+
+// 添加退出XIP模式的函数
+static int8_t QSPI_W25Qxx_ExitMemoryMappedMode(void)
+{
+	if(!xip_enabled) {
+		return QSPI_W25Qxx_OK;
+	}
+
+	if(HAL_QSPI_Abort(&hqspi) != HAL_OK) {
+		printf("Exit XIP mode failed!\n");
+		return W25Qxx_ERROR_MemoryMapped;
+	}
+
+	xip_enabled = false;
+	printf("Exit XIP mode success.\n");
+	return QSPI_W25Qxx_OK;
+}
 
 //	实验平台：反客STM32H750XBH6核心板 （型号：FK750M4-XBH6）
 

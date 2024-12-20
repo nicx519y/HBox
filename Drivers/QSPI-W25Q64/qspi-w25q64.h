@@ -40,6 +40,10 @@ extern "C" {
 #define W25Qxx_FLASH_ID           			0Xef4017    // W25Q64 JEDEC ID
 #define W25Qxx_ChipErase_TIMEOUT_MAX		100000U		// 超时等待时间，W25Q64整片擦除所需最大时间是100S
 #define W25Qxx_Mem_Addr							0x90000000 	// 内存映射模式的地址
+#define W25Qxx_SECTOR_SIZE     0x1000      // 4KB
+
+#define W25Qxx_CMD_PageProgram           0x02  // 标准页编程指令
+#define W25Qxx_CMD_QuadPageProgram       0x32  // 四线页编程指令
 
 
 /*----------------------------------------------- 引脚配置宏 ------------------------------------------*/
@@ -94,9 +98,11 @@ int8_t	QSPI_W25Qxx_WritePage(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumB
 int8_t	QSPI_W25Qxx_WriteBuffer(uint8_t* pData, uint32_t WriteAddr, uint32_t Size);				// 写入数据，最大不能超过flash芯片的大小
 int8_t 	QSPI_W25Qxx_ReadBuffer(uint8_t* pBuffer, uint32_t ReadAddr, uint32_t NumByteToRead);	// 读取数据，最大不能超过flash芯片的大小
 
+static int8_t QSPI_W25Qxx_ExitMemoryMappedMode(void);
 int8_t QSPI_W25Qxx_WriteString(char* string, uint32_t ReadAddr);
 int8_t QSPI_W25Qxx_ReadString(char* buffer, uint32_t ReadAddr);
 
+int8_t QSPI_W25Qxx_Test(uint32_t test_addr);  // 修改测试函数声明，添加地址参数
 
 #ifdef __cplusplus
 }
