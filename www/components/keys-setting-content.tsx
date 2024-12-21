@@ -36,6 +36,7 @@ import { useGamepadConfig } from "@/contexts/gamepad-config-context";
 import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
 import { useLanguage } from "@/contexts/language-context";
 import { ContentActionButtons } from "@/components/content-action-buttons";
+import { useColorMode } from "./ui/color-mode";
 
 export function KeysSettingContent() {
 
@@ -51,6 +52,7 @@ export function KeysSettingContent() {
     const [keyMapping, setKeyMapping] = useState<{ [key in GameControllerButton]?: number[] }>({});
     const [autoSwitch, setAutoSwitch] = useState<boolean>(true);
     const [inputKey, setInputKey] = useState<number>(-1);
+    const { colorMode } = useColorMode();
 
     useEffect(() => {
         setInputMode(defaultProfile.keysConfig?.inputMode ?? Platform.XINPUT);
@@ -120,7 +122,7 @@ export function KeysSettingContent() {
                                 <RadioCardRoot
                                     colorPalette={"green"}
                                     size={"sm"}
-                                    variant={"surface"}
+                                    variant={colorMode === "dark" ? "surface" : "outline"}
                                     value={inputMode?.toString() ?? Platform.XINPUT.toString()}
                                     onValueChange={(detail) => {
                                         setInputMode(detail.value as Platform);
@@ -178,7 +180,7 @@ export function KeysSettingContent() {
                                 <RadioCardRoot
                                     colorPalette={"green"}
                                     size={"sm"}
-                                    variant={"surface"}
+                                    variant={colorMode === "dark" ? "surface" : "outline"}
                                     value={socdMode?.toString() ?? GameSocdMode.SOCD_MODE_UP_PRIORITY.toString()}
                                     onValueChange={(detail) => {
                                         setSocdMode(detail.value as GameSocdMode);

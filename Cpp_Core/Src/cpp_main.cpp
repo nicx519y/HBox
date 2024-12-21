@@ -4,7 +4,7 @@
 #include "main_state_machine.hpp"
 #include "fsdata.h"
 #include "led.h"
-
+#include "qspi-w25q64.h"
 
 int cpp_main(void) 
 {   
@@ -18,6 +18,15 @@ int cpp_main(void)
     Storage::getInstance().init();
     printf("================== Storage init success. =======================\n");
     
+
+    // 测试存储区读写功能
+    int8_t result = QSPI_W25Qxx_Test(0x400000);
+    if(result != QSPI_W25Qxx_OK) {
+        printf("========================== QSPI_W25Qxx_Test failed! Error: %d====================\n", result);
+    } else {
+        printf("========================== QSPI_W25Qxx_Test passed!=============================\n");
+    }
+
     getFSRoot();
     printf("================== getFSRoot success. =======================\n");
     // MainStateMachine::getInstance().setup();

@@ -125,15 +125,8 @@ bool ConfigUtils::save(Config& config)
 {
     printf("ConfigUtils::save begin\n");
 
-    // 先擦除存储区域
-    int8_t result = QSPI_W25Qxx_BlockErase_32K(CONFIG_ADDR);
-    if(result != QSPI_W25Qxx_OK) {
-        printf("ConfigUtils::save - block erase failure.\n");
-        return false;
-    }
-
     // 写入配置数据
-    result = QSPI_W25Qxx_WriteBuffer((uint8_t*)&config, CONFIG_ADDR, sizeof(Config));
+    int8_t result = QSPI_W25Qxx_WriteBuffer((uint8_t*)&config, CONFIG_ADDR, sizeof(Config));
     if(result == QSPI_W25Qxx_OK) {
         printf("ConfigUtils::save - success.\n");
         return true;

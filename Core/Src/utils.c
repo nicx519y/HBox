@@ -174,3 +174,21 @@ void* ram_alloc(size_t size) {
 	return allocated_addr;
 }
 /******************************** RAM内存动态分配 end ******************************************/
+
+// 大端读取函数定义
+uint32_t read_uint32_be(const uint8_t* data) {
+    return ((uint32_t)data[0] << 24) | 
+           ((uint32_t)data[1] << 16) | 
+           ((uint32_t)data[2] << 8) | 
+           (uint32_t)data[3];
+}
+
+// 小端读取函数定义
+uint32_t read_uint32_le(const uint8_t* data) {
+    return ((uint32_t)data[3] << 24) | 
+           ((uint32_t)data[2] << 16) | 
+           ((uint32_t)data[1] << 8) | 
+           (uint32_t)data[0];
+}
+
+

@@ -170,7 +170,7 @@ export function LEDsSettingContent() {
                                     <RadioCardRoot
                                         colorPalette={ledEnabled ? "green" : "gray"}
                                         size={"sm"}
-                                        variant={"surface"}
+                                        variant={colorMode === "dark" ? "surface" : "outline"}
                                         value={ledsEffectStyle?.toString() ?? LedsEffectStyle.STATIC.toString()}
                                         onValueChange={(detail) => {
                                             setLedsEffectStyle(detail.value as LedsEffectStyle);

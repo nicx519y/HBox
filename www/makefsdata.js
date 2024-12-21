@@ -267,7 +267,6 @@ function makefsdata() {
 	fsdata += '#ifndef FSDATA_ALIGN_POST\n';
 	fsdata += '#define FSDATA_ALIGN_POST\n';
 	fsdata += '#endif\n\n';
-	fsdata += '#define ex_fsdata_addr FSDATA_ADDR\n\n';
 	
 	// 添加文件数据指针声明
 	fsdata += '// 文件数据指针\n';
@@ -298,6 +297,9 @@ function makefsdata() {
 			fileContent
 		);
 		
+
+		console.log('make file buffer success - filename: ', file.replace(buildPath, ''), ' - size: ', Math.round(fileBuffer.byteLength / 1024), 'KB');
+
 		fileDataBuffers.push(fileBuffer);
 		
 		fileInfos.push({
@@ -340,43 +342,26 @@ function makefsdata() {
 	});
 	fsdata += `}\n\n`;
 	
-	// 添加内存分配函数
-	fsdata += `static bool allocate_memory(void) {\n`;
-	
-	fileInfos.forEach(info => {
-		fsdata += `    data_${info.varName} = (uint8_t *)ram_alloc(SIZE_${info.varName.toUpperCase()});\n`;
-	});
-	
-	fsdata += `\n    // 检查内存分配是否成功\n`;
-	fsdata += `    if (`;
-	fsdata += fileInfos.map(info => `data_${info.varName} == NULL`).join(' || ');
-	fsdata += `) {\n        return false;\n    }\n    return true;\n}\n\n`;
 	
 	// 添加getFSRoot函数
 	fsdata += `const struct fsdata_file * getFSRoot(void)\n{\n`;
 	fsdata += `    if(fsdata_inited == false) {\n`;
-	fsdata += `        int8_t result;\n`;
-	fsdata += `        uint8_t d[4];\n`;
 	fsdata += `        uint32_t len;\n`;
 	fsdata += `        uint32_t addr;\n`;
 	fsdata += `        uint32_t size;\n\n`;
-	fsdata += `        // 分配内存\n`;
-	fsdata += `        if (!allocate_memory()) {\n`;
-	fsdata += `            return NULL;\n`;
-	fsdata += `        }\n\n`;
-	fsdata += `        printf("getFSRoot: allocate_memory success.\\n");\n\n`;
 	
-	fsdata += `        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr, 4);\n`;
-	fsdata += `        len = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]); // 文件数量\n`;
-	fsdata += `        addr = ex_fsdata_addr + 4 * (len + 1);\n\n`;
+	// 使用内存指针直接读取
+	fsdata += `        uint8_t *base_ptr = (uint8_t*)(EX_ADDR);\n`;
+	fsdata += `        uint32_t *size_ptr = (uint32_t*)base_ptr;\n`;
+	// 读取文件数量
+	fsdata += `        len = read_uint32_be(base_ptr);\n`;
+	fsdata += `        addr = EX_ADDR + 4 * (len + 1);  // 跳过文件数量和所有size\n\n`;
 	
 	fileInfos.forEach((info, index) => {
-		fsdata += `        result = QSPI_W25Qxx_ReadBuffer(d, ex_fsdata_addr + 4 * (1 + ${index}), sizeof(uint32_t));\n`;
-		fsdata += `        size = (uint32_t)((uint32_t)d[0]<<24 | (uint32_t)d[1]<<16 | (uint32_t)d[2]<<8 | (uint32_t)d[3]);\n`;
-		fsdata += `        result = QSPI_W25Qxx_ReadBuffer(data_${info.varName}, addr, size);\n`;
-		if (index < fileInfos.length - 1) {
-			fsdata += `        addr += size;\n\n\n`;
-		}
+		// 读取第index个文件
+		fsdata += `        size = read_uint32_be(base_ptr + ${(index + 1) * 4});\n`;
+		fsdata += `        data_${info.varName} = (uint8_t*)addr;\n`;
+		fsdata += `        addr += size;\n\n`;
 	});
 	
 	fsdata += `\n        // 更新文件结构体中的指针\n`;
@@ -385,24 +370,9 @@ function makefsdata() {
 	fsdata += `    }\n\n`;
 	fsdata += `    return file_${fileInfos[fileInfos.length - 1].varName};\n`;
 	fsdata += `}\n\n`;
-	
-	// 添加清理函数
-	fsdata += `void fsdata_cleanup(void)\n{\n`;
-	fsdata += `    if (fsdata_inited) {\n`;
-	fsdata += `        // 释放所有动态分配的内存\n`;
-	fileInfos.forEach(info => {
-		fsdata += `        free(data_${info.varName});\n`;
-	});
-	fsdata += `\n        // 重置指针为 NULL\n`;
-	fileInfos.forEach(info => {
-		fsdata += `        data_${info.varName} = NULL;\n`;
-	});
-	fsdata += `\n        fsdata_inited = false;\n`;
-	fsdata += `    }\n`;
-	fsdata += `}\n
 
-	const uint8_t numfiles = ${fileInfos.length};
-	`;
+
+	fsdata += `const uint8_t numfiles = ${fileInfos.length};\n`;
 	
 	fs.writeFileSync(fsdataPath, fsdata, 'utf8');
 	
@@ -410,7 +380,7 @@ function makefsdata() {
 		// 生成外部文件
 		const allFileData = makeAllFileData(fileDataBuffers);
 		fs.writeFileSync(exfilePath, allFileData.buffer, 'utf8');
-		console.log('make bin file success.');
+		console.log('make bin file success. - size: ', Math.round(allFileData.buffer.byteLength / 1024), 'KB');
 	}
 }
 
