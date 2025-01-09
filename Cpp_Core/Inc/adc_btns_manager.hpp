@@ -31,6 +31,7 @@ class ADCBtnsManager {
         void read();
         void calibrate();
         void setState(const ADCButtonManagerState state);
+        void test();
 
         ADCButtonState* getButtonStates();
         inline ADCButtonManagerState getState() { return this->state; }

@@ -107,6 +107,38 @@ void ADCBtnsManager::deinit()
     HAL_Delay(50);
 }
 
+void ADCBtnsManager::test()
+{
+    for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i ++) {
+        ADC_Values[i] = 0;
+    }
+
+    HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
+    if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Values[0], NUM_ADC1_BUTTONS) != HAL_OK) {
+        printf("================== ADCBtnsManager: DMA1 start fail. =======================\n");
+    } else {
+        printf("================== ADCBtnsManager: DMA1 start success. =======================\n");
+    }
+
+    HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
+    if(HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&ADC_Values[NUM_ADC1_BUTTONS], NUM_ADC2_BUTTONS) != HAL_OK) {
+        printf("================== ADCBtnsManager: DMA2 start fail. =======================\n");
+    } else {
+        printf("================== ADCBtnsManager: DMA2 start success. =======================\n");
+    }
+
+    HAL_Delay(50);
+
+    while(1) {  
+        SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
+        HAL_Delay(20);
+        
+        printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n", 
+            ADC_Values[0], ADC_Values[1], ADC_Values[2], ADC_Values[3], ADC_Values[4], ADC_Values[5], ADC_Values[6], ADC_Values[7], ADC_Values[8], ADC_Values[9],
+            ADC_Values[10], ADC_Values[11], ADC_Values[12], ADC_Values[13], ADC_Values[14], ADC_Values[15], ADC_Values[16]);
+    }
+}
+
 
 void ADCBtnsManager::read()
 {

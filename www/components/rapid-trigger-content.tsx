@@ -56,7 +56,7 @@ export function RapidTriggerContent() {
     const [tableViewConfig, setTableViewConfig] = useState<RapidTriggerConfig[]>([]); // 表格视图配置
 
     // 所有按钮的键值
-    const allKeys = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    const allKeys = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
     /**
      * 加载触发配置

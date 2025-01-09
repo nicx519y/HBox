@@ -8,10 +8,10 @@ void GPIO_Btn_Init()
     GPIO_InitTypeDef GPIO_Init;
 
     GPIO_Init.Mode = GPIO_MODE_INPUT;
-    GPIO_Init.Pin = GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12;
+    GPIO_Init.Pin = GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9;
     GPIO_Init.Pull = GPIO_PULLDOWN;
     GPIO_Init.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOB, &GPIO_Init);
+    HAL_GPIO_Init(GPIOC, &GPIO_Init);
 
 }
 

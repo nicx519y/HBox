@@ -5,6 +5,7 @@
 #include "fsdata.h"
 #include "led.h"
 #include "qspi-w25q64.h"
+#include "adc_btns_manager.hpp"
 
 int cpp_main(void) 
 {   
@@ -30,6 +31,11 @@ int cpp_main(void)
     getFSRoot();
     printf("================== getFSRoot success. =======================\n");
     // MainStateMachine::getInstance().setup();
+
+    printf("================== ADCBtnsManager test start. =======================\n");
+    ADCBtnsManager::getInstance().test();
+    printf("================== ADCBtnsManager test end. =======================\n");
+
     InputMode inputMode = InputMode::INPUT_MODE_CONFIG;
     // InputMode inputMode = InputMode::INPUT_MODE_XINPUT;
     ConfigType configType = ConfigType::CONFIG_TYPE_WEB;

@@ -50,15 +50,6 @@ const StyledCircle = styled.circle<{
   }
 `;
 
-const StyledPath = styled.path`
-  fill: none;
-  stroke: gray;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1px;
-  filter: drop-shadow(0 0 1px rgba(128, 128, 128, 0.5));
-`;
-
 const StyledFrame = styled.rect`
   fill: none;
   stroke: gray;
@@ -82,6 +73,7 @@ const btnPosList = [
     { x: 376.2, y: 379.8, r: 36 },
     { x: 299.52, y: 352.44, r: 28.63 },
     { x: 452.88, y: 352.44, r: 28.63 },
+    { x: 523.00, y: 328.44, r: 28.63 },
     { x: 304.97, y: 182.0, r: 28.63 },
     { x: 239.31, y: 170.56, r: 28.63 },
     { x: 359.52, y: 220.35, r: 28.63 },
@@ -110,8 +102,9 @@ const lerpColor = (color1: Color, color2: Color, t: number) => {
     const r = Math.round(color1.getChannelValue('red') + (color2.getChannelValue('red') - color1.getChannelValue('red')) * t);
     const g = Math.round(color1.getChannelValue('green') + (color2.getChannelValue('green') - color1.getChannelValue('green')) * t);
     const b = Math.round(color1.getChannelValue('blue') + (color2.getChannelValue('blue') - color1.getChannelValue('blue')) * t);
+    const a = Math.round(color1.getChannelValue('alpha') + (color2.getChannelValue('alpha') - color1.getChannelValue('alpha')) * t);
 
-    return parseColor(`rgb(${r}, ${g}, ${b})`);
+    return parseColor(`rgb(${r}, ${g}, ${b}, ${a})`);
 
 };
 
@@ -120,9 +113,10 @@ function invertColor(color: Color) {
     const r = color.getChannelValue('red');
     const g = color.getChannelValue('green');
     const b = color.getChannelValue('blue');
-    const invertedR = 255 - r;
-    const invertedG = 255 - g;
-    const invertedB = 255 - b;
+    const a = color.getChannelValue('alpha');
+    const invertedR = 255 - r * a;
+    const invertedG = 255 - g * a;
+    const invertedB = 255 - b * a;
     return parseColor(`rgb(${invertedR}, ${invertedG}, ${invertedB})`);
 }
 
@@ -210,7 +204,8 @@ export default function Hitbox(props: {
      * @returns 
      */
     const getBtnFontColor = (index: number): string => {
-        if ([16, 17, 18, 19].includes(index)) {
+        const lastIndex = btnLen - 1;
+        if ([lastIndex, lastIndex - 1, lastIndex - 2, lastIndex - 3].includes(index)) {
             return defaultFrontColor.toString('css');
         }
         return colorList[index]?.toString('css') ?? defaultFrontColor.toString('css');
@@ -327,32 +322,10 @@ export default function Hitbox(props: {
                 <title>hitbox</title>
                 <StyledFrame x="0.36" y="0.36" width="787.82" height="507.1" rx="10" />
 
-                {/* 渲染按钮边框路径 */}
-                <StyledPath d="
-              M328.23,220.98 a10,10,0,0,0-4.27-8
-              M323.97,212.95 a10,10,0,0,0-9-1.26
-              M276.83,195.89 a31.22,31.22,0,0,0,38.31,15.87
-              M276.83,195.89 a10,10,0,0,0-7.25-5.48
-              M269.59,190.24 a9.94,9.94,0,0,0-8.7,2.66
-              M267.32,157.1 a31.23,31.23,0,1,0-6.36,36.06
-              M267.31,157.09 a10,10,0,0,0,7.26,5.48
-              M274.55,162.57 a10,10,0,0,0,8.7-2.66
-              M297.69,151.87 a31.28,31.28,0,0,0-14.51,8
-              M297.7,152.01 a10,10,0,0,0,6.91-5.9
-              M304.61,146.13 a10,10,0,0,0-.72-9.07
-              M337.53,151.07 a31.22,31.22,0,1,0-33.83-14
-              M337.53,150.93 a10,10,0,0,0-6.92,5.9
-              M330.62,156.81 a10,10,0,0,0,.71,9.08
-              M336.15,181.77 a31.32,31.32,0,0,0-4.63-15.89
-              M335.97,181.67 a10,10,0,0,0,4.26,8
-              M340.22,189.67 a10,10,0,0,0,9,1.26
-              M328.24,220.89 a31.23,31.23,0,1,0,21-30"
-                />
 
                 {/* 渲染按钮外框 */}
                 {btnPosList.map((item, index) => {
                     const radius = item.r + btnFrameRadiusDistance;
-                    if (![3, 4, 5, 6].includes(index)) {
                         return (
                             <StyledCircle
                                 id={`btn-${index}`}
@@ -364,7 +337,6 @@ export default function Hitbox(props: {
                                 $highlight={false}
                             />
                         )
-                    }
                 })}
 
                 {/* 渲染按钮 */}
@@ -376,7 +348,7 @@ export default function Hitbox(props: {
                         cy={item.y}
                         r={item.r}
                         onMouseLeave={handleLeave}
-                        $color={[16, 17, 18, 19].includes(index) ? defaultFrontColor.toString('css') : colorList[index]?.toString('css') ?? defaultFrontColor.toString('css')}
+                        $color={[btnPosList.length-1, btnPosList.length-2, btnPosList.length-3, btnPosList.length-4].includes(index) ? defaultFrontColor.toString('css') : colorList[index]?.toString('css') ?? defaultFrontColor.toString('css')}
                         $opacity={1}
                         $interactive={props.interactiveIds?.includes(index) ?? false}
                         $highlight={props.highlightIds?.includes(index) ?? false}

@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #define FIRMWARE_VERSION                    (uint32_t)0x010000  //固件版本
-#define CONFIG_VERSION                      (uint32_t)0x01000d  //配置版本 三位版本号 0x aa bb cc
+#define CONFIG_VERSION                      (uint32_t)0x000100  //配置版本 三位版本号 0x aa bb cc
 
 #define EX_ADDR                             0x90000000
 #define FSDATA_ADDR                         0x0
@@ -15,8 +15,8 @@ extern "C" {
 // #define EX_FSDATA_ADDR                      (EX_ADDR + FSDATA_ADDR)  // 0x90000000 ~ 0x903FFFFF      (4MB)
 // #define EX_CONFIG_ADDR                      (EX_ADDR + CONFIG_ADDR)  // 0x90400000 ~ 0x905FFFFF      (2MB)
 
-#define NUM_PROFILES                        8
-#define NUM_ADC1_BUTTONS                    8
+#define NUM_PROFILES                        16
+#define NUM_ADC1_BUTTONS                    9
 #define NUM_ADC2_BUTTONS                    8
 #define NUM_ADC_BUTTONS                     (NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS)
 #define TIMES_ADC_CALIBRATION               100             // 单个按钮校准时的循环次数，必须100次连续稳定的值用于校准

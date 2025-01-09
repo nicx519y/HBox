@@ -17,7 +17,7 @@ GPIOBtnsManager::GPIOBtnsManager() : btns(getButtonPtrs()) {
 
 void GPIOBtnsManager::setup()
 {
-    memset(&GPIO_lastActionValues[0], 0, sizeof(GPIO_lastActionValues));
+    memset(&GPIO_lastActionValues[0], 1, sizeof(GPIO_lastActionValues)); // 1 表示松开 0 表示按下
     memset(&GPIO_debounce_t[0], 0, sizeof(GPIO_debounce_t));
     this->virtualPinMask = 0x0;
 }
@@ -31,7 +31,7 @@ void GPIOBtnsManager::read()
                 GPIO_debounce_t[i] = HAL_GetTick();
             } else if(HAL_GetTick() - GPIO_debounce_t[i] >= GPIO_BUTTONS_DEBOUNCE) {   //触发
                 GPIO_lastActionValues[i] = r;
-                (r == 1) ? this->virtualPinMask |= btns[i]->virtualPin : this->virtualPinMask &= ~ btns[i]->virtualPin;
+                (r == 0) ? this->virtualPinMask |= btns[i]->virtualPin : this->virtualPinMask &= ~ btns[i]->virtualPin; // 0 表示按下 1 表示松开
             }
         } else {
             GPIO_debounce_t[i] = 0;

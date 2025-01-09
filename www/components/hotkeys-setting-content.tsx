@@ -73,7 +73,7 @@ export function HotkeysSettingContent() {
     };
 
     const handleHitboxClick = (id: number) => {
-        if (id >= 0 && id < 19) {
+        if (id >= 0 && id < 20) {
             updateHotkey(activeHotkeyIndex, { ...hotkeys[activeHotkeyIndex], key: id });
         }
     };
@@ -82,7 +82,7 @@ export function HotkeysSettingContent() {
         <Flex direction="row" width="1700px" padding="18px">
             <Center width="100%" flex={1}>
                 <Hitbox
-                    interactiveIds={[...Array(19).fill(0).map((_, i) => i)]} // 0-18 共19个按键可以交互，并设置为hotkey
+                    interactiveIds={[...Array(20).fill(0).map((_, i) => i)]} // 0-19 共20个按键可以交互，并设置为hotkey
                     onClick={handleHitboxClick}
                 />
             </Center>

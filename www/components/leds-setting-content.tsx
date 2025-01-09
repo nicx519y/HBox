@@ -141,8 +141,8 @@ export function LEDsSettingContent() {
                         backColor2={color3}
                         effectStyle={ledsEffectStyle}
                         brightness={ledBrightness}
-                        interactiveIds={[
-                            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                        interactiveIds={[ // 0-16 共17个按键可以交互，并设置为led
+                            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
                         ]}
                     />
                 </Center>

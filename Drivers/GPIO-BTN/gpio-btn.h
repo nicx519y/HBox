@@ -7,10 +7,10 @@ extern "C" {
 
 #include "main.h"
 
-#define GPIO_Btn_0   HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9)
-#define GPIO_Btn_1   HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10)
-#define GPIO_Btn_2   HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_11)
-#define GPIO_Btn_3   HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12)
+#define GPIO_Btn_0   HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6)
+#define GPIO_Btn_1   HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7)
+#define GPIO_Btn_2   HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8)
+#define GPIO_Btn_3   HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_9)
 
 void GPIO_Btn_Init(void);
 uint8_t GPIO_Btn_IsPressed(uint8_t idx);

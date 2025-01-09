@@ -9,16 +9,21 @@ export async function POST(request: Request) {
         if (!profileId) {
             return NextResponse.json({ errNo: 1, errorMessage: 'Profile ID is required' });
         }
-        if (profileId === "default") {
-            return NextResponse.json({ errNo: 1, errorMessage: 'First profile cannot be deleted' });
-        }
 
         const config = await getConfig();
+
+        if(config.profiles.length <= 1) {
+            return NextResponse.json({ errNo: 1, errorMessage: 'At least one profile is required' });
+        }
+
+
         if (!config.profiles || config.profiles.length <= 1) {
             return NextResponse.json({ errNo: 1, errorMessage: 'Profile not found' });
         }
 
         config.profiles = config.profiles.filter((p: GameProfile) => p.id !== profileId);
+
+        
         config.defaultProfileId = config.profiles[0]?.id ?? "";
         await updateConfig(config);
 
