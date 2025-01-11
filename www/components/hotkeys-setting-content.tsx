@@ -12,6 +12,7 @@ import {
     HotkeyAction,
     DEFAULT_NUM_HOTKEYS_MAX,
     Hotkey,
+    HOTKEYS_SETTINGS_INTERACTIVE_IDS,
 } from "@/types/gamepad-config";
 import Hitbox from "@/components/hitbox";
 import HotkeysField from "./hotkeys-field";
@@ -82,7 +83,7 @@ export function HotkeysSettingContent() {
         <Flex direction="row" width="1700px" padding="18px">
             <Center width="100%" flex={1}>
                 <Hitbox
-                    interactiveIds={[...Array(20).fill(0).map((_, i) => i)]} // 0-19 共20个按键可以交互，并设置为hotkey
+                    interactiveIds={HOTKEYS_SETTINGS_INTERACTIVE_IDS}
                     onClick={handleHitboxClick}
                 />
             </Center>

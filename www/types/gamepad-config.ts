@@ -3,14 +3,50 @@ export const NUM_PROFILES_MAX = 8;
 export const LEDS_ANIMATION_CYCLE = 6000;
 // LEDS animation step in milliseconds
 export const LEDS_ANIMATION_STEP = 80;
-// Default color for LEDs
-export const LEDS_COLOR_DEFAULT = "#000000";
 // Default number of hotkeys max
 export const DEFAULT_NUM_HOTKEYS_MAX = 11;
 // max number of key binding per button
 export const NUM_BIND_KEY_PER_BUTTON_MAX = 3;
 // max length of profile name
 export const PROFILE_NAME_MAX_LENGTH = 20;
+
+// hitbox button position list
+export const HITBOX_BTN_POS_LIST = [
+    { x: 376.2, y: 379.8, r: 36 },
+    { x: 299.52, y: 352.44, r: 28.63 },
+    { x: 452.88, y: 352.44, r: 28.63 },
+    { x: 523.00, y: 328.44, r: 28.63 },
+    { x: 304.97, y: 182.0, r: 28.63 },
+    { x: 239.31, y: 170.56, r: 28.63 },
+    { x: 359.52, y: 220.35, r: 28.63 },
+    { x: 330.43, y: 120.46, r: 28.63 },
+    { x: 435.24, y: 226.76, r: 28.63 },
+    { x: 404.82, y: 163.22, r: 28.63 },
+    { x: 398.52, y: 92.67, r: 28.63 },
+    { x: 493.2, y: 186.48, r: 28.63 },
+    { x: 462.78, y: 122.94, r: 28.63 },
+    { x: 559.8, y: 162.36, r: 28.63 },
+    { x: 529.43, y: 98.67, r: 28.63 },
+    { x: 630.36, y: 156.06, r: 28.63 },
+    { x: 599.94, y: 92.52, r: 28.63 },
+    { x: 184.03, y: 46.03, r: 11.37 },
+    { x: 140.02, y: 46.03, r: 11.37 },
+    { x: 96.01, y: 46.03, r: 11.37 },
+    { x: 51.99, y: 46.03, r: 11.37 },
+];
+
+// keys settings interactive ids
+export const KEYS_SETTINGS_INTERACTIVE_IDS = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ]; // 0-19 共20个按键可以交互，并设置为按键
+
+// leds settings interactive ids
+export const LEDS_SETTINGS_INTERACTIVE_IDS = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ]; // 0-19 共20个按键可以交互，并设置为led
+
+// hotkeys settings interactive ids
+export const HOTKEYS_SETTINGS_INTERACTIVE_IDS = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ]; // 0-19 共20个按键可以交互，并设置为hotkey
+
+// rapid trigger settings interactive ids
+export const RAPID_TRIGGER_SETTINGS_INTERACTIVE_IDS = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ]; // 0-16 共17个按键可以交互，并设置为rapid trigger
+
 
 
 export enum Platform {

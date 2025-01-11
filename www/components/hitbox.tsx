@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from "react";
-import { LEDS_ANIMATION_CYCLE, LedsEffectStyle } from "@/types/gamepad-config";
+import { HITBOX_BTN_POS_LIST, LEDS_ANIMATION_CYCLE, LedsEffectStyle } from "@/types/gamepad-config";
 import { Color, parseColor, Box } from '@chakra-ui/react';
 import styled from "styled-components";
 import { useGamepadConfig } from "@/contexts/gamepad-config-context";
@@ -69,29 +69,7 @@ const StyledText = styled.text`
   pointer-events: none;
 `;
 
-const btnPosList = [
-    { x: 376.2, y: 379.8, r: 36 },
-    { x: 299.52, y: 352.44, r: 28.63 },
-    { x: 452.88, y: 352.44, r: 28.63 },
-    { x: 523.00, y: 328.44, r: 28.63 },
-    { x: 304.97, y: 182.0, r: 28.63 },
-    { x: 239.31, y: 170.56, r: 28.63 },
-    { x: 359.52, y: 220.35, r: 28.63 },
-    { x: 330.43, y: 120.46, r: 28.63 },
-    { x: 435.24, y: 226.76, r: 28.63 },
-    { x: 404.82, y: 163.22, r: 28.63 },
-    { x: 398.52, y: 92.67, r: 28.63 },
-    { x: 493.2, y: 186.48, r: 28.63 },
-    { x: 462.78, y: 122.94, r: 28.63 },
-    { x: 559.8, y: 162.36, r: 28.63 },
-    { x: 529.43, y: 98.67, r: 28.63 },
-    { x: 630.36, y: 156.06, r: 28.63 },
-    { x: 599.94, y: 92.52, r: 28.63 },
-    { x: 184.03, y: 46.03, r: 11.37 },
-    { x: 140.02, y: 46.03, r: 11.37 },
-    { x: 96.01, y: 46.03, r: 11.37 },
-    { x: 51.99, y: 46.03, r: 11.37 },
-];
+const btnPosList = HITBOX_BTN_POS_LIST;
 
 const btnFrameRadiusDistance = 3;
 
@@ -348,7 +326,8 @@ export default function Hitbox(props: {
                         cy={item.y}
                         r={item.r}
                         onMouseLeave={handleLeave}
-                        $color={[btnPosList.length-1, btnPosList.length-2, btnPosList.length-3, btnPosList.length-4].includes(index) ? defaultFrontColor.toString('css') : colorList[index]?.toString('css') ?? defaultFrontColor.toString('css')}
+                        // $color={(!props.interactiveIds?.includes(index)) ? defaultFrontColor.toString('css') : colorList[index]?.toString('css') ?? defaultFrontColor.toString('css')}
+                        $color={colorList[index]?.toString('css') ?? defaultFrontColor.toString('css')}
                         $opacity={1}
                         $interactive={props.interactiveIds?.includes(index) ?? false}
                         $highlight={props.highlightIds?.includes(index) ?? false}

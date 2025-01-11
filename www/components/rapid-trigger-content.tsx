@@ -13,7 +13,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useEffect, useState } from "react";
-import { RapidTriggerConfig } from "@/types/gamepad-config";
+import { RAPID_TRIGGER_SETTINGS_INTERACTIVE_IDS, RapidTriggerConfig } from "@/types/gamepad-config";
 import Hitbox from "@/components/hitbox";
 import { useGamepadConfig } from "@/contexts/gamepad-config-context";
 import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
@@ -56,7 +56,7 @@ export function RapidTriggerContent() {
     const [tableViewConfig, setTableViewConfig] = useState<RapidTriggerConfig[]>([]); // 表格视图配置
 
     // 所有按钮的键值
-    const allKeys = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+    const allKeys = RAPID_TRIGGER_SETTINGS_INTERACTIVE_IDS;
 
     /**
      * 加载触发配置
