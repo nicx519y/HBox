@@ -136,6 +136,7 @@ export function LEDsSettingContent() {
                 <Center flex={1}  >
                     <Hitbox
                         hasLeds={true}
+                        hasText={false}
                         colorEnabled={ledEnabled}
                         frontColor={color1}
                         backColor1={color2}

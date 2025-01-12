@@ -16,26 +16,26 @@ const StyledSvg = styled.svg`
 /**
  * StyledCircle
  * @param props 
- *  $color: string - 颜色
  *  $opacity: number - 透明度
  *  $interactive: boolean - 是否可交互  
  * @returns 
  */
 const StyledCircle = styled.circle<{
-    $color?: string;
+    // $color?: string;
     $opacity?: number;
     $interactive?: boolean;
     $highlight?: boolean;
+    $fillNone?: boolean;
 }>`
   stroke: 'gray';
   stroke-width: 1px;
   cursor: ${props => props.$interactive ? 'pointer' : 'default'};
   pointer-events: ${props => props.$interactive ? 'auto' : 'none'};
   opacity: ${props => props.$opacity};
-  fill: ${props => props.$color ?? 'transparent'};
   stroke: ${props => props.$highlight ? 'yellowgreen' : 'gray'};
   stroke-width: ${props => props.$highlight ? '2px' : '1px'};
   filter: ${props => props.$highlight ? 'drop-shadow(0 0 2px rgba(154, 205, 50, 0.8))' : 'none'};
+  fill: ${props => props.$fillNone ? 'none' : ''};
 
   &:hover {
     stroke-width: ${props => props.$interactive ? '2px' : '1px'};
@@ -86,18 +86,6 @@ const lerpColor = (color1: Color, color2: Color, t: number) => {
 
 };
 
-// 反转颜色
-function invertColor(color: Color) {
-    const r = color.getChannelValue('red');
-    const g = color.getChannelValue('green');
-    const b = color.getChannelValue('blue');
-    const a = color.getChannelValue('alpha');
-    const invertedR = 255 - r * a;
-    const invertedG = 255 - g * a;
-    const invertedB = 255 - b * a;
-    return parseColor(`rgb(${invertedR}, ${invertedG}, ${invertedB})`);
-}
-
 
 
 /**
@@ -114,6 +102,7 @@ function invertColor(color: Color) {
 export default function Hitbox(props: {
     onClick?: (id: number) => void,
     hasLeds?: boolean,
+    hasText?: boolean,
     colorEnabled?: boolean,
     frontColor?: Color,
     backColor1?: Color,
@@ -124,33 +113,26 @@ export default function Hitbox(props: {
     highlightIds?: number[],
 }) {
 
+    const [hasLeds, _setHasLeds] = useState(props.hasLeds ?? false);
+    const [hasText, _setHasText] = useState(props.hasText ?? true);
+
     const { colorMode } = useColorMode()
-    const [defaultFrontColor, setDefaultFrontColor] = useState(parseColor("#ffffff"));
-    const [colorList, setColorList] = useState<Color[]>(Array(btnLen).fill(defaultFrontColor));
-    const frontColorRef = useRef(props.frontColor ?? defaultFrontColor);
-    const backColor1Ref = useRef(props.backColor1 ?? defaultFrontColor);
-    const backColor2Ref = useRef(props.backColor2 ?? defaultFrontColor);
+    const frontColorRef = useRef(props.frontColor ?? parseColor("#ffffff"));
+    const backColor1Ref = useRef(props.backColor1 ?? parseColor("#000000"));
+    const backColor2Ref = useRef(props.backColor2 ?? parseColor("#000000"));
+    const defaultBackColorRef = useRef(props.backColor1 ?? parseColor("#000000"));
+    const brightnessRef = useRef(props.brightness ?? 100);
     const colorEnabledRef = useRef(props.colorEnabled ?? false);
     const effectStyleRef = useRef(props.effectStyle ?? LedsEffectStyle.STATIC);
     const pressedButtonListRef = useRef(Array(btnLen).fill(-1));
-    const defaultFrontColorRef = useRef(defaultFrontColor);
 
     const { contextJsReady, setContextJsReady } = useGamepadConfig();
 
-    /**
-     * 根据颜色模式设置默认颜色
-     */
-    useEffect(() => {
-        if (colorMode === "dark") {
-            setDefaultFrontColor(parseColor("#000000"));
-            defaultFrontColorRef.current = parseColor("#000000");
-            setColorList(Array(btnLen).fill(parseColor("#000000")));
-        } else {
-            setDefaultFrontColor(parseColor("#ffffff"));
-            defaultFrontColorRef.current = parseColor("#ffffff");
-            setColorList(Array(btnLen).fill(parseColor("#ffffff")));
-        }
-    }, [colorMode]);
+    const circleRefs = useRef<(SVGCircleElement | null)[]>([]);
+    const colorListRef = useRef<Color[]>(Array(btnLen).fill(backColor1Ref.current));
+    const textRefs = useRef<(SVGTextElement | null)[]>([]);
+    const animationFrameRef = useRef<number>();
+    const timerRef = useRef<number>(0);
 
     const handleClick = (event: React.MouseEvent<SVGElement>) => {
         const target = event.target as SVGElement;
@@ -172,30 +154,9 @@ export default function Hitbox(props: {
         const id = Number(target.id.replace("btn-", ""));
         if (id === Number.NaN || !(props.interactiveIds?.includes(id) ?? false)) return;
         if (event.type === "mouseleave") {
+            console.log("mouseleave", id);
             pressedButtonListRef.current[id] = -1;
         }
-    }
-
-    /**
-     * 获取按钮表面颜色
-     * @param index 
-     * @returns 
-     */
-    const getBtnFontColor = (index: number): string => {
-        const lastIndex = btnLen - 1;
-        if ([lastIndex, lastIndex - 1, lastIndex - 2, lastIndex - 3].includes(index)) {
-            return defaultFrontColor.toString('css');
-        }
-        return colorList[index]?.toString('css') ?? defaultFrontColor.toString('css');
-    }
-
-    /**
-     * 获取按钮字体颜色 是按钮表面颜色的反色
-     * @param index 
-     * @returns 
-     */
-    const getTextColor = (index: number) => {
-        return invertColor(parseColor(getBtnFontColor(index))).toString('css');
     }
 
     /**
@@ -204,84 +165,44 @@ export default function Hitbox(props: {
     useEffect(() => {
         setContextJsReady(true);
     }, []);
-
-    /**
-     * 更新按钮颜色
-     */
+    
     useEffect(() => {
-
-        if (!props.hasLeds) {
-            return;
-        }
-
-        let animationFrameId: number;
-        let timer: number;
-
-        // 更新按钮颜色 
-        const updateColors = () => {
-
-            const now = new Date().getTime();
-            const deltaTime = now - timer;
-            const progress = deltaTime % LEDS_ANIMATION_CYCLE / LEDS_ANIMATION_CYCLE;
-            const newColors = colorList.map((_, index) => {
-                if (1 === pressedButtonListRef.current[index] && colorEnabledRef.current) {
-                    return frontColorRef.current;
-                } else if (colorEnabledRef.current) {
-                    if (effectStyleRef.current === LedsEffectStyle.BREATHING) {
-                        const t = Math.sin(progress * Math.PI);
-                        return lerpColor(backColor1Ref.current as Color, backColor2Ref.current as Color, t);
-                    } else if (effectStyleRef.current === LedsEffectStyle.STATIC) {
-                        return backColor1Ref.current;
-                    }
-                }
-                return defaultFrontColorRef.current;
-            });
-
-            setColorList(newColors as Color[]);
-            animationFrameId = requestAnimationFrame(updateColors);
-        };
-
-        timer = new Date().getTime();
-        // 启动动画 
-        animationFrameId = requestAnimationFrame(updateColors);
-
-        return () => {
-            cancelAnimationFrame(animationFrameId);
-            timer = 0;
-        };
-
-
-    }, []);
+        defaultBackColorRef.current = colorMode === 'light' ? parseColor("#ffffff") : parseColor("#000000");
+    }, [colorMode]);
 
     useEffect(() => {
-        const brightness = props.brightness ?? 100;
         if (props.frontColor) {
             const r = props.frontColor.getChannelValue('red');
             const g = props.frontColor.getChannelValue('green');
             const b = props.frontColor.getChannelValue('blue');
-            frontColorRef.current = parseColor(`rgba(${r}, ${g}, ${b}, ${brightness / 100})`);
+            const a = props.frontColor.getChannelValue('alpha');
+            frontColorRef.current = parseColor(`rgba(${r}, ${g}, ${b}, ${a})`);
         }
-    }, [props.frontColor, props.brightness]);
+    }, [props.frontColor]);
 
     useEffect(() => {
-        const brightness = props.brightness ?? 100;
         if (props.backColor1) {
             const r = props.backColor1.getChannelValue('red');
             const g = props.backColor1.getChannelValue('green');
             const b = props.backColor1.getChannelValue('blue');
-            backColor1Ref.current = parseColor(`rgba(${r}, ${g}, ${b}, ${brightness / 100})`);
+            const a = props.backColor1.getChannelValue('alpha');
+            backColor1Ref.current = parseColor(`rgba(${r}, ${g}, ${b}, ${a})`);
         }
-    }, [props.backColor1, props.brightness]);
+    }, [props.backColor1]);
 
     useEffect(() => {
-        const brightness = props.brightness ?? 100;
         if (props.backColor2) {
             const r = props.backColor2.getChannelValue('red');
             const g = props.backColor2.getChannelValue('green');
             const b = props.backColor2.getChannelValue('blue');
-            backColor2Ref.current = parseColor(`rgba(${r}, ${g}, ${b}, ${brightness / 100})`);
+            const a = props.backColor2.getChannelValue('alpha');
+            backColor2Ref.current = parseColor(`rgba(${r}, ${g}, ${b}, ${a})`);
         }
-    }, [props.backColor2, props.brightness]);
+    }, [props.backColor2]);
+
+    useEffect(() => {
+        brightnessRef.current = props.brightness ?? 100;
+    }, [props.brightness]);
 
     useEffect(() => {
         effectStyleRef.current = props.effectStyle ?? LedsEffectStyle.STATIC;
@@ -290,6 +211,72 @@ export default function Hitbox(props: {
     useEffect(() => {
         colorEnabledRef.current = props.colorEnabled ?? true;
     }, [props.colorEnabled]);
+
+    useEffect(() => {
+        if (hasLeds) {
+            startAnimation();
+        }
+        // 清理函数
+        return () => {
+            stopAnimation();
+            timerRef.current = 0;
+        };
+    }, []);
+
+
+    // leds 颜色动画
+    const animate = () => {
+        
+        const now = new Date().getTime();
+        const deltaTime = now - timerRef.current;
+        const progress = deltaTime % LEDS_ANIMATION_CYCLE / LEDS_ANIMATION_CYCLE;
+
+        // 更新颜色列表
+        for (let i = 0; i < btnLen; i++) {
+
+            if(colorEnabledRef.current) {
+                if (1 === pressedButtonListRef.current[i] && colorEnabledRef.current) {
+                    colorListRef.current[i] = frontColorRef.current;
+                } else {
+                    if (effectStyleRef.current === LedsEffectStyle.BREATHING) {
+                        const t = Math.sin(progress * Math.PI);
+                        colorListRef.current[i] = lerpColor(backColor1Ref.current as Color, backColor2Ref.current as Color, t);
+                    } else if (effectStyleRef.current === LedsEffectStyle.STATIC) {
+                        colorListRef.current[i] = backColor1Ref.current;
+                    }
+                }
+            } else {
+                colorListRef.current[i] = defaultBackColorRef.current;
+            }
+
+        }
+
+        // 更新按钮颜色
+        circleRefs.current.forEach((circle, index) => {
+            if (circle) {
+                const a = brightnessRef.current / 100;
+                const color = parseColor(`rgba(${colorListRef.current[index]?.getChannelValue('red')}, ${colorListRef.current[index]?.getChannelValue('green')}, ${colorListRef.current[index]?.getChannelValue('blue')}, ${a * colorListRef.current[index]?.getChannelValue('alpha')})`) ?? backColor1Ref.current;
+
+                circle.setAttribute('fill', color.toString('css'));
+            }
+        });
+
+        animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    const startAnimation = () => {
+        if (!animationFrameRef.current) {
+            animationFrameRef.current = requestAnimationFrame(animate);
+            timerRef.current = new Date().getTime();
+        }
+    };
+
+    const stopAnimation = () => {
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = undefined;
+        }
+    };
 
     return (
         <Box display={contextJsReady ? "block" : "none"} >
@@ -313,6 +300,7 @@ export default function Hitbox(props: {
                                 r={radius}
                                 $interactive={false}
                                 $highlight={false}
+                                $fillNone={true}
                             />
                         )
                 })}
@@ -320,29 +308,34 @@ export default function Hitbox(props: {
                 {/* 渲染按钮 */}
                 {btnPosList.map((item, index) => (
                     <StyledCircle
+                        ref={(el: SVGCircleElement | null) => {
+                            circleRefs.current[index] = el;
+                        }}
                         id={`btn-${index}`}
                         key={index}
                         cx={item.x}
                         cy={item.y}
                         r={item.r}
-                        onMouseLeave={handleLeave}
-                        // $color={(!props.interactiveIds?.includes(index)) ? defaultFrontColor.toString('css') : colorList[index]?.toString('css') ?? defaultFrontColor.toString('css')}
-                        $color={colorList[index]?.toString('css') ?? defaultFrontColor.toString('css')}
                         $opacity={1}
                         $interactive={props.interactiveIds?.includes(index) ?? false}
                         $highlight={props.highlightIds?.includes(index) ?? false}
+                        fill={colorMode === 'light' ? 'white' : 'black'}
+                        onMouseLeave={handleLeave}
                     />
                 ))}
 
                 {/* 渲染按钮文字 */}
-                {btnPosList.map((item, index) => (
+                {hasText && btnPosList.map((item, index) => (
                     <StyledText
+                        ref={(el: SVGTextElement | null) => {
+                            textRefs.current[index] = el;
+                        }}
                         textAnchor="middle"
                         dominantBaseline="middle"
                         key={index}
                         x={item.x}
                         y={index < btnLen - 4 ? item.y : item.y + 30}
-                        fill={getTextColor(index)}
+                        fill={colorMode === 'light' ? 'black' : 'white'}
                     >
                         {index !== btnLen - 1 ? index + 1 : "Fn"}
                     </StyledText>
