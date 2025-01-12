@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useRef } from "react";
 import { HITBOX_BTN_POS_LIST, LEDS_ANIMATION_CYCLE, LedsEffectStyle } from "@/types/gamepad-config";
-import { Color, parseColor, Box } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import styled from "styled-components";
 import { useGamepadConfig } from "@/contexts/gamepad-config-context";
 import { useColorMode } from "./ui/color-mode";
+import { GamePadColor } from "@/types/gamepad-color";
 
 const StyledSvg = styled.svg`
   width: 800px;
@@ -75,14 +76,17 @@ const btnFrameRadiusDistance = 3;
 
 const btnLen = btnPosList.length;
 
-const lerpColor = (color1: Color, color2: Color, t: number) => {
+const lerpColor = (targetColor: GamePadColor, color1: GamePadColor, color2: GamePadColor, t: number) => {
 
     const r = Math.round(color1.getChannelValue('red') + (color2.getChannelValue('red') - color1.getChannelValue('red')) * t);
     const g = Math.round(color1.getChannelValue('green') + (color2.getChannelValue('green') - color1.getChannelValue('green')) * t);
     const b = Math.round(color1.getChannelValue('blue') + (color2.getChannelValue('blue') - color1.getChannelValue('blue')) * t);
     const a = Math.round(color1.getChannelValue('alpha') + (color2.getChannelValue('alpha') - color1.getChannelValue('alpha')) * t);
 
-    return parseColor(`rgb(${r}, ${g}, ${b}, ${a})`);
+    targetColor.setChannelValue('red', r);
+    targetColor.setChannelValue('green', g);
+    targetColor.setChannelValue('blue', b);
+    targetColor.setChannelValue('alpha', a);
 
 };
 
@@ -104,9 +108,9 @@ export default function Hitbox(props: {
     hasLeds?: boolean,
     hasText?: boolean,
     colorEnabled?: boolean,
-    frontColor?: Color,
-    backColor1?: Color,
-    backColor2?: Color,
+    frontColor?: GamePadColor,
+    backColor1?: GamePadColor,
+    backColor2?: GamePadColor,
     brightness?: number,
     effectStyle?: LedsEffectStyle,
     interactiveIds?: number[],
@@ -117,10 +121,10 @@ export default function Hitbox(props: {
     const [hasText, _setHasText] = useState(props.hasText ?? true);
 
     const { colorMode } = useColorMode()
-    const frontColorRef = useRef(props.frontColor ?? parseColor("#ffffff"));
-    const backColor1Ref = useRef(props.backColor1 ?? parseColor("#000000"));
-    const backColor2Ref = useRef(props.backColor2 ?? parseColor("#000000"));
-    const defaultBackColorRef = useRef(props.backColor1 ?? parseColor("#000000"));
+    const frontColorRef = useRef(props.frontColor?.clone() ?? GamePadColor.fromString("#ffffff"));
+    const backColor1Ref = useRef(props.backColor1?.clone() ?? GamePadColor.fromString("#000000"));
+    const backColor2Ref = useRef(props.backColor2?.clone() ?? GamePadColor.fromString("#000000"));
+    const defaultBackColorRef = useRef(colorMode === 'light' ? GamePadColor.fromString("#ffffff") : GamePadColor.fromString("#000000"));
     const brightnessRef = useRef(props.brightness ?? 100);
     const colorEnabledRef = useRef(props.colorEnabled ?? false);
     const effectStyleRef = useRef(props.effectStyle ?? LedsEffectStyle.STATIC);
@@ -129,10 +133,12 @@ export default function Hitbox(props: {
     const { contextJsReady, setContextJsReady } = useGamepadConfig();
 
     const circleRefs = useRef<(SVGCircleElement | null)[]>([]);
-    const colorListRef = useRef<Color[]>(Array(btnLen).fill(backColor1Ref.current));
+    const colorListRef = useRef<GamePadColor[]>(Array(btnLen));
     const textRefs = useRef<(SVGTextElement | null)[]>([]);
     const animationFrameRef = useRef<number>();
     const timerRef = useRef<number>(0);
+
+
 
     const handleClick = (event: React.MouseEvent<SVGElement>) => {
         const target = event.target as SVGElement;
@@ -154,7 +160,6 @@ export default function Hitbox(props: {
         const id = Number(target.id.replace("btn-", ""));
         if (id === Number.NaN || !(props.interactiveIds?.includes(id) ?? false)) return;
         if (event.type === "mouseleave") {
-            console.log("mouseleave", id);
             pressedButtonListRef.current[id] = -1;
         }
     }
@@ -164,39 +169,30 @@ export default function Hitbox(props: {
      */
     useEffect(() => {
         setContextJsReady(true);
+        for (let i = 0; i < btnLen; i++) {
+            colorListRef.current[i] = backColor1Ref.current.clone();
+        }
     }, []);
     
     useEffect(() => {
-        defaultBackColorRef.current = colorMode === 'light' ? parseColor("#ffffff") : parseColor("#000000");
+        defaultBackColorRef.current = colorMode === 'light' ? GamePadColor.fromString("#ffffff") : GamePadColor.fromString("#000000");
     }, [colorMode]);
 
     useEffect(() => {
         if (props.frontColor) {
-            const r = props.frontColor.getChannelValue('red');
-            const g = props.frontColor.getChannelValue('green');
-            const b = props.frontColor.getChannelValue('blue');
-            const a = props.frontColor.getChannelValue('alpha');
-            frontColorRef.current = parseColor(`rgba(${r}, ${g}, ${b}, ${a})`);
+            frontColorRef.current.setValue(props.frontColor);
         }
     }, [props.frontColor]);
 
     useEffect(() => {
         if (props.backColor1) {
-            const r = props.backColor1.getChannelValue('red');
-            const g = props.backColor1.getChannelValue('green');
-            const b = props.backColor1.getChannelValue('blue');
-            const a = props.backColor1.getChannelValue('alpha');
-            backColor1Ref.current = parseColor(`rgba(${r}, ${g}, ${b}, ${a})`);
+            backColor1Ref.current.setValue(props.backColor1);
         }
     }, [props.backColor1]);
 
     useEffect(() => {
         if (props.backColor2) {
-            const r = props.backColor2.getChannelValue('red');
-            const g = props.backColor2.getChannelValue('green');
-            const b = props.backColor2.getChannelValue('blue');
-            const a = props.backColor2.getChannelValue('alpha');
-            backColor2Ref.current = parseColor(`rgba(${r}, ${g}, ${b}, ${a})`);
+            backColor2Ref.current.setValue(props.backColor2);
         }
     }, [props.backColor2]);
 
@@ -236,28 +232,30 @@ export default function Hitbox(props: {
 
             if(colorEnabledRef.current) {
                 if (1 === pressedButtonListRef.current[i] && colorEnabledRef.current) {
-                    colorListRef.current[i] = frontColorRef.current;
+                    colorListRef.current[i].setValue(frontColorRef.current as GamePadColor);
                 } else {
                     if (effectStyleRef.current === LedsEffectStyle.BREATHING) {
                         const t = Math.sin(progress * Math.PI);
-                        colorListRef.current[i] = lerpColor(backColor1Ref.current as Color, backColor2Ref.current as Color, t);
+                        lerpColor(colorListRef.current[i], backColor1Ref.current, backColor2Ref.current, t);
                     } else if (effectStyleRef.current === LedsEffectStyle.STATIC) {
-                        colorListRef.current[i] = backColor1Ref.current;
+                        colorListRef.current[i].setValue(backColor1Ref.current);
                     }
                 }
             } else {
-                colorListRef.current[i] = defaultBackColorRef.current;
+                colorListRef.current[i].setValue(defaultBackColorRef.current as GamePadColor);
             }
+            
+            // 设置透明度
+            const a = brightnessRef.current / 100;
+
+            colorListRef.current[i].setChannelValue('alpha', a * colorListRef.current[i].getChannelValue('alpha'));
 
         }
 
         // 更新按钮颜色
         circleRefs.current.forEach((circle, index) => {
             if (circle) {
-                const a = brightnessRef.current / 100;
-                const color = parseColor(`rgba(${colorListRef.current[index]?.getChannelValue('red')}, ${colorListRef.current[index]?.getChannelValue('green')}, ${colorListRef.current[index]?.getChannelValue('blue')}, ${a * colorListRef.current[index]?.getChannelValue('alpha')})`) ?? backColor1Ref.current;
-
-                circle.setAttribute('fill', color.toString('css'));
+                circle.setAttribute('fill', colorListRef.current[index].toString('css'));
             }
         });
 

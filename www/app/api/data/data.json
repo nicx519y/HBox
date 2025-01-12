@@ -202,10 +202,10 @@
         "ledsEffectStyle": "BREATHING",
         "ledColors": [
           "#000000",
-          "#6636CF",
-          "#000000"
+          "#0C24C9",
+          "#3A9611"
         ],
-        "ledBrightness": 100
+        "ledBrightness": 90
       },
       "triggerConfigs": {
         "isAllBtnsConfiguring": true,

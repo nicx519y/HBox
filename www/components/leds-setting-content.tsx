@@ -48,6 +48,7 @@ import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
 import { useLanguage } from "@/contexts/language-context";
 import { useColorMode } from "./ui/color-mode";
 import { ContentActionButtons } from "@/components/content-action-buttons";
+import { GamePadColor } from "@/types/gamepad-color";
 
 export function LEDsSettingContent() {
     const { t } = useLanguage();
@@ -138,9 +139,9 @@ export function LEDsSettingContent() {
                         hasLeds={true}
                         hasText={false}
                         colorEnabled={ledEnabled}
-                        frontColor={color1}
-                        backColor1={color2}
-                        backColor2={color3}
+                        frontColor={GamePadColor.fromString(color1.toString('css'))}
+                        backColor1={GamePadColor.fromString(color2.toString('css'))}
+                        backColor2={GamePadColor.fromString(color3.toString('css'))}
                         effectStyle={ledsEffectStyle}
                         brightness={ledBrightness}
                         interactiveIds={LEDS_SETTINGS_INTERACTIVE_IDS}
