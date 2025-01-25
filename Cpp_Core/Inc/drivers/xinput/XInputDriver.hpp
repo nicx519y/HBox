@@ -11,6 +11,9 @@
 #include "drivers/shared/gpauthdriver.hpp"
 #include "drivers/xinput/XInputAuth.hpp"
 #include "drivers/xinput/XInputDescriptors.hpp"
+#include "drivers/shared/driverhelper.hpp"
+#include "storagemanager.hpp"
+#include "gamepad.hpp"
 
 #define XINPUT_OUT_SIZE 32
 

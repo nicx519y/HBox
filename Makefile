@@ -83,10 +83,12 @@ Middlewares/ST/STM32_USB_Device_Library/Core/Src \
 # Cpp cource dir
 CPP_SOURCE_DIRS = \
 Cpp_Core/Src \
+Cpp_Core/Src/adc_btns \
 Cpp_Core/Src/drivers/net \
 Cpp_Core/Src/drivers/xinput \
 Cpp_Core/Src/configs \
 Cpp_Core/Src/gamepad \
+Cpp_Core/Src/states \
 Libs/CRC32/src \
 Libs/httpd \
 
@@ -169,8 +171,6 @@ C_INCLUDES =  \
 -ILibs/rndis \
 -ILibs/httpd \
 -ILibs/lwip-port \
--ITinyusbUser \
--ICpp_Core/Inc \
 -ILibs/stm32_mw_lwip/src/include \
 -ILibs/cJSON \
 -ILibs/CRC32/src \

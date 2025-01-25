@@ -2,15 +2,16 @@
 #include "config.hpp"
 #include "stm32h750xx.h"
 #include <stdio.h>
+#include "constant.hpp"
 
 
-void Storage::init() {
+void Storage::initConfig() {
 	printf("================== Storage::init begin ==========================\n");
 	ConfigUtils::load(config);
 	// ConfigUtils::reset(config);
 }
 
-bool Storage::save()
+bool Storage::saveConfig()
 {
 	return ConfigUtils::save(config);
 }
@@ -33,10 +34,12 @@ GamepadProfile* Storage::getGamepadProfile(char* id) {
 }
 
 
-bool Storage::ResetSettings()
+bool Storage::resetConfig()
 {
 	printf("================== Storage::resettings begin ==========================\n");
 	return ConfigUtils::reset(config);
 	// NVIC_SystemReset();				//reboot
 }
+
+
 

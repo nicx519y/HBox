@@ -79,15 +79,11 @@ bool ConfigUtils::load(Config& config)
         config.version = CONFIG_VERSION;
         config.bootMode = BOOT_MODE_WEB_CONFIG;
         strcpy(config.defaultProfileId, "profile-0");
-        config.isCalibrateCompleted = false;
         config.numProfilesMax = NUM_PROFILES;
 
         // 设置ADCButtons
         for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
             config.ADCButtons[i].virtualPin = i;
-            config.ADCButtons[i].topPosition = 0.0f;
-            config.ADCButtons[i].bottomPosition = 0.0f;
-            config.ADCButtons[i].magnettization = -1.0f;
         }
 
         // 设置GPIOButtons

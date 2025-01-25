@@ -13,6 +13,7 @@
 #include "storagemanager.hpp"
 #include "cJSON.h"
 #include "cJSON_Utils.h"
+#include "adc_btns/adc_btns_marker.hpp"
 #include "main.h"  // 用于 HAL_GetTick
 
 extern "C" struct fsdata_file file__index_html[];
@@ -936,7 +937,7 @@ std::string apiUpdateProfile() {
     }
 
     // 保存配置
-    if(!Storage::getInstance().save()) {
+    if(!Storage::getInstance().saveConfig()) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to save configuration");
     }
@@ -1032,7 +1033,7 @@ std::string apiCreateProfile() {
     }
 
     // 保存配置
-    if(!Storage::getInstance().save()) {
+    if(!Storage::getInstance().saveConfig()) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to save configuration");
     }
@@ -1154,7 +1155,7 @@ std::string apiDeleteProfile() {
     }
 
     // 保存配置
-    if(!Storage::getInstance().save()) {
+    if(!Storage::getInstance().saveConfig()) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to save configuration");
     }
@@ -1242,7 +1243,7 @@ std::string apiSwitchDefaultProfile() {
     strcpy(config.defaultProfileId, targetProfile->id);
 
     // 保存配置
-    if(!Storage::getInstance().save()) {
+    if(!Storage::getInstance().saveConfig()) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to save configuration");
     }
@@ -1370,7 +1371,7 @@ std::string apiUpdateHotkeysConfig() {
     }
 
     // 保存配置
-    if(!Storage::getInstance().save()) {
+    if(!Storage::getInstance().saveConfig()) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to save configuration");
     }
@@ -1424,16 +1425,441 @@ std::string apiReboot() {
 }
 
 /**
- * @brief 测试用
- * 
+ * @brief 获取标记状态
  * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "markStatus": {
+ *              "isMarking": true,
+ *              "markIndex": 0,
+ *              "isCompleted": false,
+ *              "mapping": {
+ *                  "name": "mappingName",
+ *                  "length": 10,
+ *                  "step": 0.1,
+ *                  "originalValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+ *                  "calibratedValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+ *                  "markingValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *              }
+ *          }
+ *      }
+ * }
  */
-std::string apiEcho()
-{
-    cJSON* response = get_post_data();
-    std::string result = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, response);
-    cJSON_Delete(response);
-    return result;
+std::string apiMSGetMarkStatus() {
+    printf("apiMSGetMarkStatus start.\n");
+    
+    // 创建响应数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* markStatusJSON = cJSON_CreateObject();
+    
+    // 获取标记状态
+    ADCBtnsMarker& marker = ADC_BTNS_MARKER;
+    
+    // 获取当前标记值
+    uint8_t markIndex = marker.getStepInfo().index;
+    uint32_t* markingValues = marker.getCurrentMarkingValues();
+    
+    // 添加标记状态
+    cJSON_AddBoolToObject(markStatusJSON, "isMarking", marker.getStepInfo().is_marking);
+    cJSON_AddBoolToObject(markStatusJSON, "isCompleted", marker.getStepInfo().is_completed);
+    cJSON_AddNumberToObject(markStatusJSON, "markIndex", markIndex);
+    
+    // 如果正在标记，添加映射信息
+    if(marker.getStepInfo().is_marking) {
+        // 使用getMappingJSON获取映射数据
+        cJSON* mappingJSON = ADC_VALUES_MAPPING.getMappingJSON(marker.getMappingName());
+        if(mappingJSON) {
+            // 添加当前标记值数组
+            cJSON* markingValuesJSON = cJSON_CreateArray();
+            for(uint8_t i = 0; i < markIndex; i++) {
+                cJSON_AddItemToArray(markingValuesJSON, cJSON_CreateNumber(markingValues[i]));
+            }
+            cJSON_AddItemToObject(mappingJSON, "markingValues", markingValuesJSON);
+            
+            // 添加映射信息到标记状态
+            cJSON_AddItemToObject(markStatusJSON, "mapping", mappingJSON);
+        }
+    }
+    
+    // 添加标记状态到响应数据
+    cJSON_AddItemToObject(dataJSON, "markStatus", markStatusJSON);
+    
+    // 获取标准格式的响应
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(markStatusJSON);
+    cJSON_Delete(dataJSON);
+
+    printf("apiMSGetMarkStatus response: %s\n", response.c_str());
+    return response;
+}
+
+/**
+ * @brief 设置默认轴体
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "defaultMapping": {
+ *              "name": "mappingName",
+ *              "length": 10,
+ *              "step": 0.1,
+ *              "originalValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+ *              "calibratedValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *          }
+ *      }
+ * }
+ */
+std::string apiMSSetDefault() {
+    printf("apiMSSetDefault start.\n");
+    
+    // 解析请求参数
+    cJSON* params = cJSON_Parse(http_post_payload);
+    if (!params) {
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Invalid request parameters");
+    }
+    
+    // 获取映射名称
+    cJSON* nameJSON = cJSON_GetObjectItem(params, "name");
+    if (!nameJSON || !cJSON_IsString(nameJSON)) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Missing or invalid mapping name");
+    }
+    
+    const char* mappingName = nameJSON->valuestring;
+    
+    // 设置默认映射名称
+    if(QSPI_W25Qxx_WriteBuffer((uint8_t*)mappingName, ADC_VALUES_MAPPING_ADDR + 1, 16) != QSPI_W25Qxx_OK) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to set default mapping");
+    }
+    
+    // 创建响应数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    
+    // 使用getMappingJSON获取映射数据
+    cJSON* defaultMappingJSON = ADC_VALUES_MAPPING.getMappingJSON(mappingName);
+    if(!defaultMappingJSON) {
+        cJSON_Delete(params);
+        cJSON_Delete(dataJSON);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to get mapping data");
+    }
+    
+    // 添加默认映射到响应数据
+    cJSON_AddItemToObject(dataJSON, "defaultMapping", defaultMappingJSON);
+    
+    // 获取标准格式的响应
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(params);
+    cJSON_Delete(defaultMappingJSON);
+    printf("apiMSSetDefault response: %s\n", response.c_str());
+    return response;
+}
+
+/**
+ * @brief 获取默认轴体
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "defaultMapping": {
+ *              "name": "mappingName",
+ *              "length": 10,
+ *              "step": 0.1,
+ *              "originalValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+ *              "calibratedValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *          }
+ *      }
+ * }
+ */
+std::string apiMSGetDefault() {
+    printf("apiMSGetDefault start.\n");
+    
+    // 创建响应数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    
+    // 获取默认映射名称
+    char* defaultName = ADC_VALUES_MAPPING.getMappingDefaultName();
+    if(!defaultName) {
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to get default mapping name");
+    }
+    
+    // 使用getMappingJSON获取映射数据
+    cJSON* defaultMappingJSON = ADC_VALUES_MAPPING.getMappingJSON(defaultName);
+    free(defaultName);  // 释放名称内存
+    
+    if(!defaultMappingJSON) {
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to get mapping data");
+    }
+    
+    // 添加默认映射到响应数据
+    cJSON_AddItemToObject(dataJSON, "defaultMapping", defaultMappingJSON);
+    
+    // 获取标准格式的响应
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(dataJSON);
+
+    printf("apiMSGetDefault response: %s\n", response.c_str());
+    return response;
+}
+
+/**
+ * @brief 创建轴体映射
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "mapping": {
+ *              "name": "mappingName",
+ *              "length": 10,
+ *              "step": 0.1,
+ *              "originalValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+ *              "calibratedValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *          }
+ *      }
+ * }
+ */
+std::string apiMSCreateMapping() {
+    printf("apiMSCreateMapping start.\n");
+    
+    // 解析请求参数
+    cJSON* params = cJSON_Parse(http_post_payload);
+    if (!params) {
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Invalid request parameters");
+    }
+    
+    // 获取映射名称
+    cJSON* nameJSON = cJSON_GetObjectItem(params, "name");
+    if (!nameJSON || !cJSON_IsString(nameJSON)) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Missing or invalid mapping name");
+    }
+    
+    // 获取映射长度
+    cJSON* lengthJSON = cJSON_GetObjectItem(params, "length");
+    if (!lengthJSON || !cJSON_IsNumber(lengthJSON)) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Missing or invalid mapping length");
+    }
+    
+    // 获取步长
+    cJSON* stepJSON = cJSON_GetObjectItem(params, "step");
+    if (!stepJSON || !cJSON_IsNumber(stepJSON)) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Missing or invalid mapping step");
+    }
+    
+    const char* mappingName = nameJSON->valuestring;
+    size_t length = (size_t)lengthJSON->valueint;
+    float_t step = (float_t)stepJSON->valuedouble;
+    
+    // 创建映射
+    ADCBtnsError error = ADC_VALUES_MAPPING.create(mappingName, length, step);
+    if(error != ADCBtnsError::SUCCESS) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to create mapping");
+    }
+    
+    // 创建响应数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    
+    // 获取创建的映射数据
+    cJSON* mappingJSON = ADC_VALUES_MAPPING.getMappingJSON(mappingName);
+    if(!mappingJSON) {
+        cJSON_Delete(params);
+        cJSON_Delete(dataJSON);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to get mapping data");
+    }
+    
+    // 添加映射到响应数据
+    cJSON_AddItemToObject(dataJSON, "mapping", mappingJSON);
+    
+    // 获取标准格式的响应
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(params);
+    cJSON_Delete(dataJSON);
+    
+    printf("apiMSCreateMapping response: %s\n", response.c_str());
+    return response;
+}
+
+/**
+ * @brief 删除轴体映射
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "mapping": {
+ *              "name": "mappingName",
+ *              "length": 10,
+ *              "step": 0.1,
+ *              "originalValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+ *              "calibratedValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *          }
+ *      }
+ * }
+ */
+std::string apiMSDeleteMapping() {
+    printf("apiMSDeleteMapping start.\n");
+    
+    // 解析请求参数
+    cJSON* params = cJSON_Parse(http_post_payload);
+    if (!params) {
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Invalid request parameters");
+    }
+    
+    // 获取映射名称
+    cJSON* nameJSON = cJSON_GetObjectItem(params, "name");
+    if (!nameJSON || !cJSON_IsString(nameJSON)) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Missing or invalid mapping name");
+    }
+    
+    const char* mappingName = nameJSON->valuestring;
+    
+    // 获取映射数据（用于返回）
+    cJSON* mappingJSON = ADC_VALUES_MAPPING.getMappingJSON(mappingName);
+    if(!mappingJSON) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to get mapping data");
+    }
+    
+    // 删除映射
+    ADCBtnsError error = ADC_VALUES_MAPPING.remove(mappingName);
+    if(error != ADCBtnsError::SUCCESS) {
+        cJSON_Delete(params);
+        cJSON_Delete(mappingJSON);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to delete mapping");
+    }
+    
+    // 创建响应数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    
+    // 添加被删除的映射信息到响应数据
+    cJSON_AddItemToObject(dataJSON, "mapping", mappingJSON);
+    
+    // 获取标准格式的响应
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(params);
+    cJSON_Delete(dataJSON);
+    
+    printf("apiMSDeleteMapping response: %s\n", response.c_str());
+    return response;
+}
+
+/**
+ * @brief 开始标记
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "message": "Marking started"
+ *      }
+ * }
+ */
+std::string apiMSMarkMappingStart() {
+    printf("apiMSMarkMappingStart start.\n");
+    
+    // 解析请求参数
+    cJSON* params = cJSON_Parse(http_post_payload);
+    if (!params) {
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Invalid request parameters");
+    }
+    
+    // 获取映射名称
+    cJSON* nameJSON = cJSON_GetObjectItem(params, "name");
+    if (!nameJSON || !cJSON_IsString(nameJSON)) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Missing or invalid mapping name");
+    }
+    
+    const char* mappingName = nameJSON->valuestring;
+    
+    // 开始标记
+    ADCBtnsError error = ADC_BTNS_MARKER.setup(mappingName);
+    if(error != ADCBtnsError::SUCCESS) {
+        cJSON_Delete(params);
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to start marking");
+    }
+    
+    // 创建响应数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON_AddStringToObject(dataJSON, "message", "Marking started");
+    
+    // 获取标准格式的响应
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(params);
+    cJSON_Delete(dataJSON);
+    
+    printf("apiMSMarkMappingStart response: %s\n", response.c_str());
+    return response;
+}
+
+/**
+ * @brief 停止标记
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "message": "Marking stopped"
+ *      }
+ * }
+ */
+std::string apiMSMarkMappingStop() {
+    printf("apiMSMarkMappingStop start.\n");
+    
+    // 停止标记
+    ADC_BTNS_MARKER.reset();
+    
+    // 创建响应数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON_AddStringToObject(dataJSON, "message", "Marking stopped");
+    
+    // 获取标准格式的响应
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(dataJSON);
+    
+    printf("apiMSMarkMappingStop response: %s\n", response.c_str());
+    return response;
+}
+
+/**
+ * @brief 标记步进
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "message": "Marking step"
+ *      }
+ * }
+ */
+std::string apiMSMarkMappingStep() {
+    printf("apiMSMarkMappingStep start.\n");
+    
+    // 执行标记步进
+    ADCBtnsError error = ADC_BTNS_MARKER.step();
+    if(error != ADCBtnsError::SUCCESS) {
+        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to perform marking step");
+    }
+    
+    // 创建响应数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON_AddStringToObject(dataJSON, "message", "Marking step");
+    
+    // 获取标准格式的响应
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    
+    cJSON_Delete(dataJSON);
+    
+    printf("apiMSMarkMappingStep response: %s\n", response.c_str());
+    return response;
 }
 
 /*============================================ apis end =================================================*/
@@ -1451,7 +1877,14 @@ static const std::pair<const char*, HandlerFuncPtr> handlerFuncs[] =
     { "/api/switch-default-profile", apiSwitchDefaultProfile },
     { "/api/update-hotkeys-config", apiUpdateHotkeysConfig },
     { "/api/reboot", apiReboot },
-    { "/api/echo", apiEcho },
+    { "/api/ms-get-mark-status", apiMSGetMarkStatus },      // 获取标记状态
+    { "/api/ms-set-default", apiMSSetDefault },            // 设置默认轴体
+    { "/api/ms-get-default", apiMSGetDefault },            // 获取默认轴体
+    { "/api/ms-create-mapping", apiMSCreateMapping },      // 创建轴体映射
+    { "/api/ms-delete-mapping", apiMSDeleteMapping },      // 删除轴体映射
+    { "/api/ms-mark-mapping-start", apiMSMarkMappingStart },// 开始标记
+    { "/api/ms-mark-mapping-stop", apiMSMarkMappingStop },    // 停止标记
+    { "/api/ms-mark-mapping-step", apiMSMarkMappingStep },    // 标记步进
 #if !defined(NDEBUG)
     // { "/api/echo", echo },
 #endif

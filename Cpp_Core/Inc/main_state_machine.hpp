@@ -1,9 +1,8 @@
 #ifndef _MAIN_STATE_MACHINE_
 #define _MAIN_STATE_MACHINE_
 
-#include "adc_btns_manager.hpp"
 #include "leds_manager.hpp"
-#include "gpio_btns_manager.hpp"
+#include "gpio_btns_worker.hpp"
 #include "storagemanager.hpp"
 #include "drivermanager.hpp"
 #include "configmanager.hpp"
@@ -11,6 +10,8 @@
 #include "enums.hpp"
 #include "config.hpp"
 #include "stm32h7xx.h"
+#include "states/base_state.hpp"
+#include "states/webconfig_state.hpp"
 
 class MainStateMachine {
     public:
@@ -23,14 +24,13 @@ class MainStateMachine {
         void setup();
 
     private:
-        uint32_t ust;
-        
-        DriverManager& driverManager;
-        ConfigManager& configManager;
+        MainStateMachine();
         Gamepad& gamepad;
         Storage& storage;
+        BaseState& state;
 
-        MainStateMachine();
 };
+
+#define MAIN_STATE_MACHINE MainStateMachine::getInstance()
 
 #endif // ! _MAIN_STATE_MACHINE_

@@ -17,15 +17,16 @@
 |-------------------------------------------
 */
 
-#define NUM_LED	NUM_ADC_BUTTONS
 
-#define DMA_BUFFER_LEN (((NUM_LED % 2 == 0) ? (NUM_LED + 4) : (NUM_LED + 5)) * 24) //RES >= 4 * 24 * 300 * 1/240 = 120us
+#define DMA_BUFFER_LEN (((NUM_LED % 2 == 0) ? (NUM_LED + 4) : (NUM_LED + 5)) * 24) * NUM_LEDs_PER_ADC_BUTTON //RES >= 4 * 24 * 300 * 1/240 = 120us
 
 #define HIGH_CCR_CODE 183 // 1/240 * 183 = 0.76us; 1/240 * (300 - 183) = 0.49us;
 
 #define LOW_CCR_CODE 83 // 1/240 * 83 = 0.35us; 1/240 * (300 - 83) = 0.90us;
 
 #define LED_DEFAULT_BRIGHTNESS 128
+
+static bool WS2812B_IsInitialized = false;
 
 static WS2812B_StateTypeDef WS2812B_State = WS2812B_STOP;
 
@@ -54,24 +55,30 @@ void LEDDataToDMABuffer(const uint16_t start, const uint16_t length)
 		return;
 	}
 
-	uint16_t i, j;
+	uint16_t i, j, k;
 	uint16_t len = (start + length) * 3;
 	
 	// printf("LEDDataToDMABuffer start: %d, length: %d\n", start, length);
 
 	for(j = start * 3; j < len; j += 3)
-	{
-		// printf("LEDDataToDMABuffer for start: %d, length: %d\n", start, length);
-		double_t brightness = (double_t)LED_Brightness[j / 3] / 255.0;
-		uint32_t color = RGBToHex((uint8_t)round(LED_Colors[j] * brightness), (uint8_t)round(LED_Colors[j + 1] * brightness), (uint8_t)round(LED_Colors[j + 2] * brightness));
-		for(i = 0; i < 24; i ++) {
-			if(0x800000 & (color << i)) {
-				DMA_LED_Buffer[j * 8 + i] = HIGH_CCR_CODE;
-			} else {
-				DMA_LED_Buffer[j * 8 + i] = LOW_CCR_CODE;
-			}
-		}
-	}
+    {
+        double_t brightness = (double_t)LED_Brightness[j / 3] / 255.0;
+        uint32_t color = RGBToHex((uint8_t)round(LED_Colors[j] * brightness), 
+                                 (uint8_t)round(LED_Colors[j + 1] * brightness), 
+                                 (uint8_t)round(LED_Colors[j + 2] * brightness));
+
+        for(k = 0; k < NUM_LEDs_PER_ADC_BUTTON; k++) { // 每个BUTTON有NUM_LEDs_PER_ADC_BUTTON个LED，连续NUM_LEDs_PER_ADC_BUTTON个LED颜色一致
+            for(i = 0; i < 24; i++) { // 每个LED有24个bit
+                // 修复：修正 DMA buffer 索引计算
+                uint32_t dma_idx = (j / 3 + k) * 24 + i;
+                if(0x800000 & (color << i)) {
+                    DMA_LED_Buffer[dma_idx] = HIGH_CCR_CODE;
+                } else {
+                    DMA_LED_Buffer[dma_idx] = LOW_CCR_CODE;
+                }
+            }
+        }
+    }
 
 	// printf("LEDDataToDMABuffer end: %d, length: %d\n", start, length);
 
@@ -84,7 +91,7 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
 	// printf("PWM-WS2812B-PulseFinished...\r\n");
 
-	uint16_t start = DMA_BUFFER_LEN / 2 / 24;
+	uint16_t start = DMA_BUFFER_LEN / 2 / 24 / NUM_LEDs_PER_ADC_BUTTON;
 
 	uint16_t length = NUM_LED - start;
 
@@ -99,7 +106,7 @@ void HAL_TIM_PWM_PulseFinishedHalfCpltCallback(TIM_HandleTypeDef *htim)
 {
 	// printf("PWM-WS2812B-PulseFinishedHalfCplt...\r\n");
 
-	uint16_t length = DMA_BUFFER_LEN / 2 / 24;
+	uint16_t length = DMA_BUFFER_LEN / 2 / 24 / NUM_LEDs_PER_ADC_BUTTON;
 
 	(length < NUM_LED) ? LEDDataToDMABuffer(0, length): LEDDataToDMABuffer(0, NUM_LED);
 
@@ -112,6 +119,13 @@ void HAL_TIM_ErrorCallback(TIM_HandleTypeDef *htim)
 
 void WS2812B_Init(void)
 {
+	if(WS2812B_IsInitialized) {
+		printf("WS2812B_Init already initialized\n");
+		return;
+	}
+
+	WS2812B_IsInitialized = true;
+
 	printf("WS2812B_Init start...\n");
 
 	memset(DMA_LED_Buffer, 0, DMA_BUFFER_LEN * sizeof(uint32_t)); // 清空DMA缓冲区
@@ -187,18 +201,20 @@ void WS2812B_SetAllLEDColor(const uint8_t r, const uint8_t g, const uint8_t b)
 
 void WS2812B_SetLEDBrightness(const uint8_t brightness, const uint16_t index)
 {
-	if(index >= 0 && index < NUM_LED) {
+	if(index < NUM_LED) {
 		LED_Brightness[index] = brightness;
+		clearDCache(&LED_Brightness[index], sizeof(uint8_t));
 	}
 }
 
 void WS2812B_SetLEDColor(const uint8_t r, const uint8_t g, const uint8_t b, const uint16_t index)
 {
-	if(index >= 0 && index < NUM_LED) {
+	if(index < NUM_LED) {
 		uint16_t idx = index * 3;
 		LED_Colors[idx] = r;
 		LED_Colors[idx + 1] = g;
 		LED_Colors[idx + 2] = b;
+		clearDCache(&LED_Colors[idx], 3 * sizeof(uint8_t));
 	}
 }
 
@@ -211,7 +227,7 @@ void WS2812B_SetLEDBrightnessByMask(
 	uint8_t len = NUM_LED > 32 ? 32 : NUM_LED;
 
 	for(uint8_t i = 0; i < len; i ++) {
-		if(mask >> i & 1 == 1) {
+		if((mask >> i & 1) == 1) {
 			LED_Brightness[i] = fontBrightness;
 		} else {
 			LED_Brightness[i] = backgroundBrightness;
@@ -240,7 +256,7 @@ void WS2812B_SetLEDColorByMask(
 
 	for(uint8_t i = 0; i < len; i ++) {
 		idx = i * 3;
-		if(mask >> i & 1 == 1) {
+		if((mask >> i & 1) == 1) {
 			LED_Colors[idx] = frontColor.r;
 			LED_Colors[idx + 1] = frontColor.g;
 			LED_Colors[idx + 2] = frontColor.b;
@@ -259,5 +275,21 @@ WS2812B_StateTypeDef WS2812B_GetState()
 	return WS2812B_State;
 }
 
+void WS2812B_Test()
+{
+	uint8_t r = 171;
+	uint8_t g = 21;
+	uint8_t b = 176;
+
+	WS2812B_Init();
+	WS2812B_SetAllLEDBrightness(20);
+	WS2812B_SetAllLEDColor(r, g, b);
+	WS2812B_SetLEDColor(255, 0, 0, 20);
+	WS2812B_SetLEDColor(235, 103, 198, 19);
+	WS2812B_SetLEDColor(14, 242, 177, 18);
+	WS2812B_Start();
+
+	printf("Hex: %x\n", RGBToHex(r, g, b));
+}	
 
 

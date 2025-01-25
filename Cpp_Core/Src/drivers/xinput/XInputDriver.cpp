@@ -4,8 +4,9 @@
  */
 
 #include "drivers/xinput/XInputDriver.hpp"
-#include "drivers/shared/driverhelper.hpp"
-#include "storagemanager.hpp"
+#include "gamepad.hpp"
+#include "gamepad/GamepadState.hpp"
+
 
 #define USB_SETUP_DEVICE_TO_HOST 0x80
 #define USB_SETUP_HOST_TO_DEVICE 0x00

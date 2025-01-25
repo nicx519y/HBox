@@ -5,67 +5,47 @@
 
 static uint32_t usTick = 0;
 
-MainStateMachine::MainStateMachine():
-    driverManager(DriverManager::getInstance()),
-    configManager(ConfigManager::getInstance()),
-    gamepad(Gamepad::getInstance()),
-    storage(Storage::getInstance())
-{}
+MainStateMachine::MainStateMachine() 
+    : gamepad(Gamepad::getInstance())
+    , storage(Storage::getInstance())
+    , state(WebConfigState::getInstance())
+{
+}
 
 void MainStateMachine::setup()
 {
     printf("MainStateMachine::setup \n");
-    Storage::getInstance().init();
-    printf("Storage init success.\n");
+    Storage::getInstance().initConfig();
+    printf("Storage initConfig success.\n");
 
-    BootMode bootMode = Storage::getInstance().config.bootMode;
+    // BootMode bootMode = Storage::getInstance().config.bootMode;
+    BootMode bootMode = BootMode::BOOT_MODE_WEB_CONFIG;
     printf("BootMode: %d\n", bootMode);
-
-    GamepadProfile* opts = Storage::getInstance().getDefaultGamepadProfile();
-    InputMode inputMode = opts->keysConfig.inputMode;
-    printf("InputMode: %d\n", inputMode);
-    // mainState = MainState::MAIN_STATE_WEB_CONFIG;
-
-    // printf("MainState: %d\n", (uint8_t) mainState);
-
-    GPDriver* driver;
 
     switch(bootMode) {
         case BootMode::BOOT_MODE_WEB_CONFIG:
         
-            driverManager.setup(InputMode::INPUT_MODE_CONFIG);      
-            configManager.setup(ConfigType::CONFIG_TYPE_WEB);
-            gamepad.setup();
-            tud_init(TUD_OPT_RHPORT);
-            while(1) {
-                configManager.loop();
-                if(this->ust != usTick) {
-                    this->ust = usTick;
-                    gamepad.loop();
-                }
-            }
-            break;
-        case BootMode::BOOT_MODE_ADC_BTNS_CALIBRATING:
+            state = WEB_CONFIG_STATE;
+            state.setup();
+
             
-            gamepad.setup();
-            gamepad.ADCBtnsCalibrateStart();
 
             while(1) {
-                gamepad.loop();
+                state.process();
             }
 
             break;
         case BootMode::BOOT_MODE_INPUT:
             // driverManager.setup((InputMode)Storage::getInstance().getGamepadOptions().inputMode);
-            driverManager.setup(inputMode);
-            driver = driverManager.getDriver();
-            gamepad.setup();
-            tud_init(TUD_OPT_RHPORT);
-            while(1) {
-                gamepad.loop();                 // 获取按键状态
-                driver->process(&gamepad);      // 把按键状态形成usb report
-                tud_task();                     // usb device task.  report
-            }
+            // driverManager.setup(inputMode);
+            // driver = driverManager.getDriver();
+            // gamepad.setup();
+            // tud_init(TUD_OPT_RHPORT);
+            // while(1) {
+            //     gamepad.loop();                 // 获取按键状态
+            //     driver->process(&gamepad);      // 把按键状态形成usb report
+            //     tud_task();                     // usb device task.  report
+            // }
             break;
         default:    // NONE
             break;

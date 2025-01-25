@@ -5,9 +5,8 @@
 #include "enums.hpp"
 #include "config.hpp"
 #include "gamepad/GamepadState.hpp"
-#include "adc_btns_manager.hpp"
 #include "leds_manager.hpp"
-#include "gpio_btns_manager.hpp"
+#include "gpio_btns_worker.hpp"
 
 struct GamepadButtonMapping
 {
@@ -32,20 +31,9 @@ class Gamepad {
         }
 
         void setup();
-        void reinit();
-        void save();
+        void deinit();
+        void read(Mask_t values);
         void clearState();
-        void loop();
-
-        inline void __attribute__((always_inline)) ADCBtnsCalibrateStart()
-        {
-            ADCBtnsManager::getInstance().setState(ADCButtonManagerState::CALIBRATING);
-        }
-
-        inline void __attribute__((always_inline)) ADCBtnsCalibrateStop()
-        {
-            ADCBtnsManager::getInstance().setState(ADCButtonManagerState::WORKING);
-        }
 
         /**
          * @brief Check for a button press. Used by `pressed[Button]` helper methods.
@@ -129,7 +117,7 @@ class Gamepad {
         GamepadProfile* options;
 
         void process();
-        void read();
+        
 
 };
 

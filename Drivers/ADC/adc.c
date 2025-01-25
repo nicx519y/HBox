@@ -19,7 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "adc.h"
-#include "stm32h7xx_hal.h"
+
 
 /* USER CODE BEGIN 0 */
 void ADC_Clock_Init(void)

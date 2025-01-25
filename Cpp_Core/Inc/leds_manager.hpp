@@ -7,7 +7,6 @@
 #include "constant.hpp"
 #include "config.hpp"
 #include "gradient_color.hpp"
-#include "adc_btns_manager.hpp"
 
 class LEDsManager {
     public:

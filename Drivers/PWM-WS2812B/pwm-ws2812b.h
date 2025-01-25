@@ -45,8 +45,11 @@ WS2812B_StateTypeDef WS2812B_Stop();
 
 WS2812B_StateTypeDef WS2812B_GetState();
 
+void WS2812B_Test();
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __WS2812B_H__ */
+

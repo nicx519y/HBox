@@ -39,7 +39,17 @@ void equations(float_t vars[], float_t B1, float_t B2, float_t L, float_t R, flo
     eqs[1] = B2 - (MU_0 / 2) * M * (term2_1 - term2_2);
 }
 
-// 牛顿-拉夫森法求解方程组
+/**
+ * 牛顿-拉夫森法求解方程组，求解磁化强度
+ * 通过迭代法求解方程组，直到误差小于1e-6
+ * 
+ * @param vars 用于存储猜测的磁化强度范围
+ * @param B1 第一个点的磁场强度
+ * @param B2 第二个点的磁场强度
+ * @param L 磁芯长度
+ * @param R 磁芯半径
+ * @param d 两个测试点之间的距离
+ */
 void newton_raphson(float_t vars[], float_t B1, float_t B2, float_t L, float_t R, float_t d) {
     float_t tol = 1e-6; // 误差容限
     int max_iter = 100; // 最大迭代次数

@@ -24,4 +24,6 @@ private:
     InputMode inputMode;
 };
 
+#define DRIVER_MANAGER DriverManager::getInstance()
+
 #endif  //_DRIVERMANAGER_H

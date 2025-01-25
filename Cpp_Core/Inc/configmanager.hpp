@@ -23,4 +23,6 @@ private:
     GPConfig * config;
 };
 
+#define CONFIG_MANAGER ConfigManager::getInstance()
+
 #endif

@@ -1,43 +1,38 @@
-#ifndef STORAGE_H_
-#define STORAGE_H_
+#ifndef _STORAGE_MANAGER_H_
+#define _STORAGE_MANAGER_H_
 
-// #include "config.hpp"
-#include "gamepad.hpp"
-#include <stdint.h>
-#include <string>
+#include "config.hpp"
+
+// Forward declarations
+class ADCValuesCalibrator;
+class ADCValuesMarker;
 
 #define SI Storage::getInstance()
 
-// Storage manager for board, LED options, and thread-safe settings
 class Storage {
 public:
 	Storage(Storage const&) = delete;
-	void operator=(Storage const&)  = delete;
-	static Storage& getInstance() // Thread-safe storage ensures cross-thread talk
-	{
+	void operator=(Storage const&) = delete;
+	
+	static Storage& getInstance() {
 		static Storage instance;
 		return instance;
 	}
 
-	// Config& getConfig() { return config; }
-
-	void init();
-	bool save();
-	bool ResetSettings(); 				// EEPROM Reset Feature
-	GamepadProfile* getGamepadProfile(char* id);
-	GamepadProfile* getDefaultGamepadProfile() { 
-		return getGamepadProfile(config.defaultProfileId); 
-	}
-
-	void makeDefaultProfile(GamepadProfile& profile, char* id, bool isEnabled) {
-		ConfigUtils::makeDefaultProfile(profile, id, isEnabled);
-	}
-	
 	Config config;
-private:
-	Storage() {}
 	
-	Gamepad* gamepad;
+	void initConfig();
+	bool saveConfig();
+	bool resetConfig();
+	GamepadProfile* getGamepadProfile(char* id);
+	GamepadProfile* getDefaultGamepadProfile() {
+		return getGamepadProfile(config.defaultProfileId);
+	}
+
+private:
+	Storage() {}  // 私有构造函数
 };
 
-#endif
+#define STORAGE_MANAGER Storage::getInstance()
+
+#endif // _STORAGE_MANAGER_H_

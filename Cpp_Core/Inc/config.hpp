@@ -49,9 +49,7 @@ typedef struct
 typedef struct
 {
     uint32_t    virtualPin;             // 虚拟pin 实质上是在所有buttons之内的序号
-    float_t    magnettization;         // 磁化强度 单位特斯拉
-    float_t    topPosition;            // 顶部位置 单位毫米
-    float_t    bottomPosition;         // 底部位置 单位毫米
+    float_t     maxDistance;            // 最大行程 单位毫米
 } ADCButton;
 
 typedef struct __attribute__((packed))
@@ -99,7 +97,6 @@ typedef struct
     uint32_t version;
     BootMode bootMode;
     char defaultProfileId[16];
-    bool isCalibrateCompleted;
     uint8_t numProfilesMax;
     ADCButton ADCButtons[NUM_ADC_BUTTONS];
     GPIOButton GPIOButtons[NUM_GPIO_BUTTONS];

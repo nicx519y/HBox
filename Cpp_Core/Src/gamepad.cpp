@@ -4,14 +4,7 @@
 
 Gamepad::Gamepad()
 {
-    Config& config = Storage::getInstance().config;
-    // 查找默认配置文件的索引
-    for(uint8_t i = 0; i < NUM_PROFILES; i++) {
-        if(strcmp(config.profiles[i].id, config.defaultProfileId) == 0) {
-            options = &config.profiles[i];
-            break;
-        }
-    }
+	options = Storage::getInstance().getDefaultGamepadProfile();
 }
 
 void Gamepad::setup()
@@ -36,23 +29,11 @@ void Gamepad::setup()
 	mapButtonA2  = new GamepadButtonMapping(options->keysConfig.keyButtonA2, GAMEPAD_MASK_A2);
 	mapButtonFn  = new GamepadButtonMapping(options->keysConfig.keyButtonFn, AUX_MASK_FUNCTION);
 
-	ADCBtnsManager::getInstance().setup();
-	GPIOBtnsManager::getInstance().setup();
-
-	#ifdef HAS_LED
-	LEDsManager::getInstance().setup();
-	#endif // HAS_LED
 }
 
 void Gamepad::process()
 {
 	memcpy(&rawState, &state, sizeof(GamepadState));
-
-	// Get the midpoint value for the current mode
-	// uint16_t joystickMid = GAMEPAD_JOYSTICK_MID;
-	// if ( DriverManager::getInstance().getDriver() != nullptr ) {
-	// 	joystickMid = DriverManager::getInstance().getDriver()->GetJoystickMidValue();
-	// }
 
 	// NOTE: Inverted X/Y-axis must run before SOCD and Dpad processing
 	if (options->keysConfig.invertXAxis) {
@@ -83,7 +64,7 @@ void Gamepad::process()
 	state.dpad = runSOCDCleaner(resolveSOCDMode(*options), state.dpad);
 }
 
-void Gamepad::reinit()
+void Gamepad::deinit()
 {
     delete mapDpadUp;
 	delete mapDpadDown;
@@ -107,29 +88,10 @@ void Gamepad::reinit()
 	
 	this->clearState();
 
-	ADCBtnsManager::getInstance().deinit();
-
-	#ifdef HAS_LED
-	LEDsManager::getInstance().deinit();
-	#endif //HAS_LED
-
-	// reinitialize pin mappings
-	this->setup();
 }
 
-void Gamepad::read()
+void Gamepad::read(Mask_t values)
 {
-	ADCBtnsManager::getInstance().read();
-	GPIOBtnsManager::getInstance().read();
-
-	Mask_t values = ADCBtnsManager::getInstance().getButtonIsPressed() | GPIOBtnsManager::getInstance().getButtonIsPressed();
-
-	// Get the midpoint value for the current mode
-	uint16_t joystickMid = GAMEPAD_JOYSTICK_MID;
-	if ( DriverManager::getInstance().getDriver() != nullptr ) {
-		joystickMid = DriverManager::getInstance().getDriver()->GetJoystickMidValue();
-	}
-
 	state.aux = 0
 		| (values & mapButtonFn->virtualPinMask)   ? mapButtonFn->buttonMask : 0;
 
@@ -157,17 +119,14 @@ void Gamepad::read()
 		| ((values & mapButtonA2->virtualPinMask)  ? mapButtonA2->buttonMask  : 0)
 	;
 
-	state.lx = joystickMid;
-	state.ly = joystickMid;
-	state.rx = joystickMid;
-	state.ry = joystickMid;
+	state.lx = GAMEPAD_JOYSTICK_MID;
+	state.ly = GAMEPAD_JOYSTICK_MID;
+	state.rx = GAMEPAD_JOYSTICK_MID;
+	state.ry = GAMEPAD_JOYSTICK_MID;
 	state.lt = 0;
 	state.rt = 0;
-}
 
-void Gamepad::save()
-{
-	Storage::getInstance().save();
+	process();
 }
 
 void Gamepad::clearState()
@@ -183,14 +142,4 @@ void Gamepad::clearState()
 	state.rt = 0;
 }
 
-void Gamepad::loop()
-{
-	read();		//读取按钮按下状态 生成buttonMask  可以通过 ADCBtnsManager::getInstance().getIsPressed() 和 GPIOBtnsManager::getInstance() 获取
-	process();	//做反向设置以及SOCD的数据处理	按钮状态存在 state
-	ADCBtnsManager::getInstance().calibrate();	//ADC按钮校正逻辑
-
-	#ifdef HAS_LED
-	LEDsManager::getInstance().runAnimate();
-	#endif // HAS_LED
-}
 
