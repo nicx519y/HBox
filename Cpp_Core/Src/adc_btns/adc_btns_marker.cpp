@@ -9,15 +9,11 @@ __attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsMarker::ADC_Values[NUM
  * 用于初始化ADC值标记器
  */
 
-ADCBtnsMarker::ADCBtnsMarker() : 
-    is_dma_started(false) {
+ADCBtnsMarker::ADCBtnsMarker() {
     memset(ADC_Values, 0, sizeof(ADC_Values));
-    memset(marking_value, 0, sizeof(marking_value));
-    memset(mapping_name, 0, sizeof(mapping_name));
     memset(&step_info, 0, sizeof(step_info));
     value_tmp = 0;
     num_value_tmp = 0;
-    marking_length = 0;
 }
 
 /**
@@ -26,16 +22,12 @@ ADCBtnsMarker::ADCBtnsMarker() :
 void ADCBtnsMarker::reset() {
     value_tmp = 0;
     num_value_tmp = 0;
-    marking_length = 0;
 
-    memset(marking_value, 0, sizeof(marking_value));
-    memset(mapping_name, 0, sizeof(mapping_name));
     memset(&step_info, 0, sizeof(step_info));
     
     if(HAL_ADC_Stop_DMA(&hadc1) != HAL_OK) {
         printf("ADCValuesMarker: Failed to stop DMA\n");
     }
-    is_dma_started = false;
     // 清空DMA缓存
     memset(ADC_Values, 0, sizeof(ADC_Values));
 }
@@ -50,17 +42,16 @@ ADCBtnsError ADCBtnsMarker::setup(const char* name) {
     reset();
     ADC_VALUES_MAPPING.init(name);
 
-
-    // 保存映射名称
-    strncpy(mapping_name, name, sizeof(mapping_name));
-    mapping_name[sizeof(mapping_name) - 1] = '\0';
-
-
     // 初始化步进信息
-    strncpy(step_info.mapping_name, mapping_name, sizeof(step_info.mapping_name) - 1);
+    strncpy(step_info.mapping_name, name, sizeof(step_info.mapping_name) - 1);
     step_info.mapping_name[sizeof(step_info.mapping_name) - 1] = '\0';
     step_info.index = 0;
-    step_info.value = 0;
+    step_info.length = ADC_VALUES_MAPPING.getLength();
+    step_info.step = ADC_VALUES_MAPPING.getStep();
+    memset(step_info.values, 0, sizeof(step_info.values));
+    step_info.is_marking = true;
+    step_info.is_completed = false;
+    step_info.is_sampling = false;
 
     // 校准ADC1
     if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK) {
@@ -72,7 +63,6 @@ ADCBtnsError ADCBtnsMarker::setup(const char* name) {
         return ADCBtnsError::DMA1_START_FAILED;
     }
 
-    is_dma_started = true;
 
     return ADCBtnsError::SUCCESS;
 }
@@ -85,13 +75,23 @@ ADCBtnsError ADCBtnsMarker::setup(const char* name) {
  * 如果标记值已满，则将标记值保存到映射中，并重置标记器
  */
 ADCBtnsError ADCBtnsMarker::step() {
-    if(step_info.is_marking) {
-        return ADCBtnsError::ALREADY_MARKING;
+    if(!step_info.is_marking) {
+        return ADCBtnsError::NOT_MARKING;
     }
 
+    if(step_info.is_sampling) {
+        return ADCBtnsError::ALREADY_SAMPLING;
+    }
+
+    if(step_info.index >= step_info.length) {
+        markingFinish();
+        return ADCBtnsError::SUCCESS;
+    }
+
+    // 如果未采样，则准备采样
     value_tmp = 0;
     num_value_tmp = 0;
-    step_info.is_marking = true;
+    step_info.is_sampling = true;
 
     return ADCBtnsError::SUCCESS;
 }
@@ -102,18 +102,12 @@ ADCBtnsError ADCBtnsMarker::step() {
  * 如果临时值已满，则将临时值保存到标记值中，并重置临时值
  */
 void ADCBtnsMarker::process() {
-    if(!step_info.is_marking) {
-        return;
-    }
-
-    // 如果标记值已满，则标记完成
-    if(marking_length >= ADC_VALUES_MAPPING.getLength()) {
-        markingFinish();
+    if(!step_info.is_sampling) {
         return;
     }
 
     // 如果临时值已满，则步进完成
-    if(num_value_tmp >= MAX_NUM_MARKING_VALUE) {
+    if(num_value_tmp >= MAX_NUM_TMP_MARKING) {
         stepFinish();
     } else { // 否则，累加临时值
         SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
@@ -136,15 +130,12 @@ void ADCBtnsMarker::process() {
  * 将临时值保存到标记值中，并重置标记器
  */
 void ADCBtnsMarker::stepFinish() {
-    step_info.is_marking = false;
+    step_info.is_sampling = false;
+    step_info.index = num_value_tmp;
+    // 计算平均值，double_t精度更高，round四舍五入
+    step_info.values[step_info.index] = static_cast<uint32_t>(round(static_cast<double_t>(value_tmp) / static_cast<double_t>(num_value_tmp)));
 
-    marking_value[marking_length] = value_tmp / num_value_tmp;
-
-    step_info.index = marking_length;
-    step_info.value = marking_value[marking_length];
     MC.publish(MessageId::ADC_BTNS_MARKER_STEP_FINISH, &step_info);
-
-    marking_length++;
 }
 
 /**
@@ -152,19 +143,42 @@ void ADCBtnsMarker::stepFinish() {
  * 将标记值保存到映射中，并重置标记器
  */
 void ADCBtnsMarker::markingFinish() {
+    step_info.is_completed = true;
+    step_info.is_sampling = false;
     step_info.is_marking = false;
+    step_info.values[step_info.index] = value_tmp / num_value_tmp;
     
     if(HAL_ADC_Stop_DMA(&hadc1) != HAL_OK) {
         printf("ADCValuesMarker: Failed to stop DMA\n");
     }
-    is_dma_started = false;
 
-    step_info.is_completed = true;
-
-    ADC_VALUES_MAPPING.mark(marking_value, marking_length);
-    MC.publish(MessageId::ADC_BTNS_MARKER_FINISH, 0);
+    ADC_VALUES_MAPPING.mark(step_info.values, step_info.length);
+    MC.publish(MessageId::ADC_BTNS_MARKER_FINISH, &step_info);
 }
 
 uint32_t* ADCBtnsMarker::getCurrentMarkingValues() {
-    return marking_value;
+    return step_info.values;
+}
+
+/**
+ * @brief 获取步进信息JSON
+ * @return cJSON* 
+ */
+cJSON* ADCBtnsMarker::getStepInfoJSON() {
+    cJSON* json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "mapping_name", step_info.mapping_name);
+    cJSON_AddNumberToObject(json, "step", step_info.step);
+    cJSON_AddNumberToObject(json, "length", step_info.length);
+    cJSON_AddNumberToObject(json, "index", step_info.index);
+    cJSON_AddBoolToObject(json, "is_marking", step_info.is_marking);
+    cJSON_AddBoolToObject(json, "is_completed", step_info.is_completed);
+    cJSON_AddBoolToObject(json, "is_sampling", step_info.is_sampling);
+
+    cJSON* valuesJSON = cJSON_CreateArray();
+    for(uint8_t i = 0; i < step_info.length; i++) {
+        cJSON_AddItemToArray(valuesJSON, cJSON_CreateNumber(step_info.values[i]));
+    }
+    cJSON_AddItemToObject(json, "values", valuesJSON);
+
+    return json;
 }

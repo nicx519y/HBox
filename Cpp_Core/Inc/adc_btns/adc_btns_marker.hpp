@@ -15,10 +15,13 @@
 // 步进信息结构体
 struct StepInfo {
     char mapping_name[16];
+    float_t step;
+    uint8_t length;
     uint8_t index;
-    uint32_t value;
+    uint32_t values[MAX_ADC_VALUES_LENGTH];
     bool is_marking;
     bool is_completed;
+    bool is_sampling;
 };
 
 class ADCBtnsMarker {
@@ -38,7 +41,7 @@ class ADCBtnsMarker {
         
         // 添加新的公共访问方法
         StepInfo& getStepInfo() { return step_info; }
-        const char* getMappingName() const { return mapping_name; }
+        cJSON* getStepInfoJSON();
 
         // 将 ADC_Values 移到 public 部分并声明为 static
         static __attribute__((section("._RAM_D1_Area"))) uint32_t ADC_Values[NUM_ADC_BUTTONS];
@@ -47,12 +50,8 @@ class ADCBtnsMarker {
         ADCBtnsMarker();
         void stepFinish();
         void markingFinish();
-        bool is_dma_started = false;
-        char mapping_name[16];
         uint32_t value_tmp;     // 临时值和
         uint32_t num_value_tmp;  // 临时值个数 
-        uint8_t marking_length;  // 标记值个数
-        uint32_t marking_value[MAX_ADC_VALUES_LENGTH];  // 标记值
         StepInfo step_info;
 };
 

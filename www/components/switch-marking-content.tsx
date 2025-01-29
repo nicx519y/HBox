@@ -2,7 +2,7 @@ import { useLanguage } from "@/contexts/language-context";
 import { Box, Flex, Center, Stack, IconButton, Button, VStack, Badge } from "@chakra-ui/react";
 import { SegmentedControl } from "./ui/segmented-control";
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ChartData } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ChartData, ChartOptions } from 'chart.js';
 import { useEffect, useRef, useState } from "react";
 import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from "./ui/menu";
 import { LuTrash, LuPlus, LuMenu, LuStar } from "react-icons/lu";
@@ -15,7 +15,7 @@ import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
 // 注册Chart.js组件
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const options = {
+const options: ChartOptions<"line"> = {
     responsive: true,
     plugins: {
         legend: {
@@ -27,6 +27,10 @@ const options = {
             text: 'Chart.js Line Chart',
         },
     },
+    animation: {
+        duration: 500,
+        easing: 'easeInOutCubic',
+    }
 };
 
 

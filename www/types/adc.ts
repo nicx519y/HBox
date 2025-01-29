@@ -27,7 +27,8 @@ export enum ADCBtnsError {
     ALREADY_MARKING = -40,
     ALREADY_SAMPLING = -41,
     NOT_MARKING = -42,
-    MARKING_VALUE_FULL = -43
+    MARKING_VALUE_FULL = -43,
+    MARKING_VALUE_OVERFLOW = -44
 }
 
 // 步进信息结构体

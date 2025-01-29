@@ -27,6 +27,7 @@ enum class ADCBtnsError {
     MAPPING_DELETE_FAILED = -24,   // 删除映射失败
     MAPPING_INVALID_RANGE = -25,   // 映射范围无效
     MAPPING_STORAGE_FULL = -26,   // 映射存储已满
+    MAPPING_STORAGE_EMPTY = -27,  // 映射存储为空
     
     // 标定相关错误 (-30 ~ -39)
     CALIBRATION_IN_PROGRESS = -30, // 正在标定中
@@ -36,9 +37,10 @@ enum class ADCBtnsError {
 
     // 标记相关错误 (-40 ~ -49)
     ALREADY_MARKING = -40,        // 正在标记中
-    NOT_MARKING = -41,           // 未标记
-    MARKING_VALUE_FULL = -42,     // 标记值已满
-    MARKING_VALUE_OVERFLOW = -43, // 标记值溢出
+    ALREADY_SAMPLING = -41,       // 正在采样中
+    NOT_MARKING = -42,           // 未标记
+    MARKING_VALUE_FULL = -43,     // 标记值已满
+    MARKING_VALUE_OVERFLOW = -44, // 标记值溢出
     
     // 按钮相关错误 (-50 ~ -59)
     BUTTON_CONFIG_ERROR = -50,     // 按钮配置错误

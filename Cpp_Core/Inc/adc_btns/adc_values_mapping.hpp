@@ -5,13 +5,16 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <vector>
+#include <string>
 #include "stm32h7xx.h"
 #include "stm32h750xx.h"
 #include "constant.hpp"
 #include "adc_btns_error.hpp"
 #include "cJSON.h"
 
-struct ADCValuesMapping {
+struct 
+ADCValuesMapping {
     char name[16];              // 映射名称
     size_t length;            // 映射长度
     float_t step;               // 步长
@@ -40,11 +43,16 @@ class ADCValuesMappingUtils {
         ADCBtnsError mark(uint32_t* values, uint8_t length);
         ADCBtnsError calibration(uint8_t buttonIndex, float_t firstValue, float_t lastValue);
         ADCBtnsError calibrationAll(float_t* firstValues, float_t* lastValues);
+        ADCBtnsError setDefault(const char* name);
+        std::vector<std::string> getMappingNameList();
+        std::string getDefault();
         float_t map(uint32_t value, uint8_t buttonIndex);
         float_t getMaxDistance();
+        float_t getStep();
         uint8_t getLength();
-        
-        char* getMappingNameList();
+        int8_t findIndex(const char* name);
+
+
         char* getMappingDefaultName();
         cJSON* getMappingJSON(const char* name);
 
@@ -54,7 +62,6 @@ class ADCValuesMappingUtils {
 
         ADCValuesMappingUtils() = default;
         ADCValuesMapping mapping;
-        int8_t findIndex(const char* name);
         float_t maxDistance = 0;
 };
 
