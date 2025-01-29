@@ -20,6 +20,7 @@ const options = {
     plugins: {
         legend: {
             position: 'top' as const,
+            display: false,
         },
         title: {
             display: false,
@@ -100,7 +101,7 @@ export function SwitchMarkingContent() {
             stopMarking();
         }
 
-        const activeMappingIsMarking = markingStatus.is_marking && (markingStatus?.mapping_name === activeMapping?.name);
+        const activeMappingIsMarking = (markingStatus?.mapping_name === activeMapping?.name);
 
         if(activeMappingIsMarking) {
             const myData = {
@@ -167,7 +168,7 @@ export function SwitchMarkingContent() {
         // 如果标记未开始，则弹出提示
         if(!markingStatus.is_marking && !markingStatus.is_completed && !markingStatus.is_sampling) {
             setMarkingStatusToastMessage(t.SETTINGS_SWITCH_MARKING_START_DIALOG_MESSAGE);
-        // 如果标记完成，则弹出确认框
+        // 如果标记完成，则弹出提示
         } else if(!markingStatus.is_marking && markingStatus.is_completed) {
             setMarkingStatusToastMessage(t.SETTINGS_SWITCH_MARKING_COMPLETED_DIALOG_MESSAGE);
         // 如果标记开始，则弹出提示
