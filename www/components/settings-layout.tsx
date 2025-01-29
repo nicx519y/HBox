@@ -4,7 +4,7 @@ import { useRouterStore } from './router';
 import { Flex, Center, Box, Tabs } from '@chakra-ui/react';
 import { ProfileSelect } from '@/components/profile-select';
 import { useLanguage } from "@/contexts/language-context";
-import { LuKeyboard, LuRocket, LuLightbulb, LuKeyRound, LuCpu } from 'react-icons/lu';
+import { LuKeyboard, LuRocket, LuLightbulb, LuKeyRound, LuCpu, LuBraces } from 'react-icons/lu';
 import type { Route } from './router';
 import { navigationEvents } from '@/lib/event-manager';
 
@@ -17,6 +17,7 @@ export function SettingsLayout({ children }: { children: React.ReactNode }) {
         { id: 'leds' as Route, label: t.SETTINGS_TAB_LEDS, icon: LuLightbulb },
         { id: 'rapid-trigger' as Route, label: t.SETTINGS_TAB_RAPID_TRIGGER, icon: LuRocket },
         { id: 'hotkeys' as Route, label: t.SETTINGS_TAB_HOTKEYS, icon: LuKeyRound },
+        { id: 'switch-marking' as Route, label: t.SETTINGS_TAB_SWITCH_MARKING, icon: LuBraces },
         { id: 'firmware' as Route, label: t.SETTINGS_TAB_FIRMWARE, icon: LuCpu },
     ];
 

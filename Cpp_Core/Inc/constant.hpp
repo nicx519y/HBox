@@ -13,7 +13,7 @@ extern "C" {
 #define ADC_VALUES_MAPPING_ADDR             0x00200000       //ADC值映射表地址
 #define CONFIG_ADDR                         0x00400000       //配置数据地址
 
-#define NUM_ADC_VALUES_MAPPING        10             // 最大10个映射 ADC按钮映射表用于值查找
+#define NUM_ADC_VALUES_MAPPING        8             // 最大8个映射 ADC按钮映射表用于值查找
 #define MAX_ADC_VALUES_LENGTH         50             // 每个映射最大50个值 ADC按钮映射表用于值查找
 #define MIN_DIFF_ADC_VALUES_FIRST_AND_LAST 10000          // 最小值和最大值的差值，用于判断是否正确校准
 

@@ -10,6 +10,9 @@ export const NUM_BIND_KEY_PER_BUTTON_MAX = 3;
 // max length of profile name
 export const PROFILE_NAME_MAX_LENGTH = 20;
 
+// max length of switch marking name
+export const SWITCH_MARKING_NAME_MAX_LENGTH = 16;
+
 // hitbox button position list
 export const HITBOX_BTN_POS_LIST = [
     { x: 376.2, y: 379.8, r: 36 },
@@ -420,6 +423,10 @@ export const UI_TEXT = {
     SETTINGS_KEYS_TITLE: "KEYS SETTINGS",
     SETTINGS_KEYS_HELPER_TEXT: `- Input Mode: The input mode of the game controller.\n- Key Mapping: The mapping relationship between the Hitbox buttons and the Game Controller buttons.`,
 
+    // Switch Marking Settings
+    SETTINGS_SWITCH_MARKING_TITLE: "NEW SWITCH MARKINGS",
+    SETTINGS_SWITCH_MARKING_HELPER_TEXT: "Each switch marking can be customized with length and step value.\n- Length: The length of the switch marking.\n- Step: The step value of the switch marking.",
+
     // LEDs Settings
     SETTINGS_LEDS_TITLE: "LEDS SETTINGS",
     SETTINGS_LEDS_HELPER_TEXT: "The LED effect style, colors, and brightness can be customized here.\n- Static: The LEDs are always on with the same color.\n- Breathing: The LEDs breath with the two colors.\n- Front Color: The color of the LEDs when the button is pressed.\n- back Color: The color of the LEDs based on the effect.",
@@ -465,11 +472,31 @@ export const UI_TEXT = {
     SETTINGS_KEYS_FOURWAY_MODE_TOOLTIP: "FourWay Mode: Enable the four-way mode of the Dpad, which means the Dpad will be treated as a four-way direction pad.\n(Only available when the input mode is Switch)",
     SETTINGS_KEYS_MAPPING_TITLE: "Key Mapping",
 
+    // Switch Marking Settings
+    SETTINGS_SWITCH_MARKING_NAME_LABEL: "Name",
+    SETTINGS_SWITCH_MARKING_NAME_PLACEHOLDER: "Enter name",
+    SETTINGS_SWITCH_MARKING_LENGTH_LABEL: "Length",
+    SETTINGS_SWITCH_MARKING_LENGTH_PLACEHOLDER: "Enter length",
+    SETTINGS_SWITCH_MARKING_STEP_LABEL: "Step (mm)",
+    SETTINGS_SWITCH_MARKING_STEP_PLACEHOLDER: "Enter step",
+    SETTINGS_SWITCH_MARKING_VALIDATION_SPECIAL_CHARS: "Switch marking name cannot contain special characters",
+    SETTINGS_SWITCH_MARKING_VALIDATION_LENGTH: `Switch marking name length must be between 1 and ${SWITCH_MARKING_NAME_MAX_LENGTH} characters, current length is {0}`,
+    SETTINGS_SWITCH_MARKING_VALIDATION_SAME_NAME: "Switch marking name cannot be the same as the current switch marking name",
+    SETTINGS_SWITCH_MARKING_VALIDATION_LENGTH_RANGE: "Switch marking length must be between 1 and 50",
+    SETTINGS_SWITCH_MARKING_VALIDATION_STEP_RANGE: "Switch marking step must be between 0.1 and 10",
+    SETTINGS_SWITCH_MARKING_DELETE_DIALOG_TITLE: "Delete Switch Marking",
+    SETTINGS_SWITCH_MARKING_DELETE_CONFIRM_MESSAGE: "Deleting this switch marking can not be undone or reverted. Are you sure you want to delete this switch marking?",
+    SETTINGS_SWITCH_MARKING_COMPLETED_DIALOG_MESSAGE: "Congratulations! Switch marking is completed. You can now close this window and start enjoying the gaming experience.",
+    SETTINGS_SWITCH_MARKING_START_DIALOG_MESSAGE: `Press the [Start Marking] button to start marking.`,
+    SETTINGS_SWITCH_MARKING_SAMPLING_START_DIALOG_MESSAGE: `Step <step> ready to sampling, please keep the button travel at <distance>mm, and press the [Step] button.`,
+    SETTINGS_SWITCH_MARKING_SAMPLING_DIALOG_MESSAGE: `Step <step> is sampling, please keep the button travel at <distance>mm, and wait for the sampling to complete.`,  
+    SETTINGS_SWITCH_MARKING_SAVE_DIALOG_MESSAGE: `All steps have been sampled, please press the [Step] button to save the switch marking.`,
     // Settings Layout
     SETTINGS_TAB_KEYS: "Keys Setting",
     SETTINGS_TAB_LEDS: "LEDs Setting",
     SETTINGS_TAB_RAPID_TRIGGER: "Rapid Trigger",
     SETTINGS_TAB_HOTKEYS: "Hotkeys Setting",
+    SETTINGS_TAB_SWITCH_MARKING: "Switch Marking",
     SETTINGS_TAB_FIRMWARE: "Firmware",
 
     // Keys Settings
@@ -586,6 +613,10 @@ export const UI_TEXT_ZH = {
     // 按键设置
     SETTINGS_KEYS_TITLE: "按键设置",
     SETTINGS_KEYS_HELPER_TEXT: `- 输入模式：游戏控制器的输入模式\n- 按键映射：Hitbox按键与游戏控制器按键的映射关系`,
+
+    // 磁轴标记设置
+    SETTINGS_SWITCH_MARKING_TITLE: "新磁轴标记",
+    SETTINGS_SWITCH_MARKING_HELPER_TEXT: "每个磁轴标记可以自定义长度和步进值。用于形成磁轴行程和模拟电压值的映射关系。\n- 长度：磁轴标记的长度\n- 步进值：磁轴标记的步进值",
     
     // LED设置
     SETTINGS_LEDS_TITLE: "LED设置",
@@ -600,6 +631,7 @@ export const UI_TEXT_ZH = {
     SETTINGS_HOTKEYS_TITLE: "热键设置",
     SETTINGS_HOTKEYS_HELPER_TEXT: `最多可以配置${DEFAULT_NUM_HOTKEYS_MAX}个热键来快速访问各种功能。\n- 点击热键区域并在hitbox上按下想要绑定的按键\n- 从下拉列表中选择热键动作\n- 锁定的热键用于网页配置模式，因为这个功能是必需的`,
     
+
     // 配置选择
     PROFILE_SELECT_CREATE_BUTTON: "创建新配置",
     PROFILE_SELECT_RENAME_BUTTON: "重命名配置",
@@ -632,11 +664,33 @@ export const UI_TEXT_ZH = {
     SETTINGS_KEYS_FOURWAY_MODE_TOOLTIP: "四方向模式：启用十字键的四方向模式，这意味着十字键将被视为四方向键盘。\n(仅在输入模式为Switch时可用)",
     SETTINGS_KEYS_MAPPING_TITLE: "按键映射",
 
+    // Switch Marking Settings
+    SETTINGS_SWITCH_MARKING_NAME_LABEL: "名称",
+    SETTINGS_SWITCH_MARKING_NAME_PLACEHOLDER: "请输入名称",
+    SETTINGS_SWITCH_MARKING_LENGTH_LABEL: "长度",
+    SETTINGS_SWITCH_MARKING_LENGTH_PLACEHOLDER: "请输入长度",
+    SETTINGS_SWITCH_MARKING_STEP_LABEL: "步进值 (mm)",
+    SETTINGS_SWITCH_MARKING_STEP_PLACEHOLDER: "请输入步进值",
+    SETTINGS_SWITCH_MARKING_VALIDATION_SPECIAL_CHARS: "磁轴标记名称不能包含特殊字符",
+    SETTINGS_SWITCH_MARKING_VALIDATION_LENGTH: `磁轴标记名称长度必须在1到${SWITCH_MARKING_NAME_MAX_LENGTH}个字符之间，当前长度为{0}`,
+    SETTINGS_SWITCH_MARKING_VALIDATION_SAME_NAME: "磁轴标记名称不能与当前磁轴标记名称相同",
+    SETTINGS_SWITCH_MARKING_VALIDATION_LENGTH_RANGE: "磁轴标记长度必须在1到50之间",
+    SETTINGS_SWITCH_MARKING_VALIDATION_STEP_RANGE: "磁轴标记步进值必须在0.1到10之间",
+    SETTINGS_SWITCH_MARKING_DELETE_DIALOG_TITLE: "删除磁轴标记",
+    SETTINGS_SWITCH_MARKING_DELETE_CONFIRM_MESSAGE: "删除此磁轴标记后将无法恢复。是否确认删除？",
+    SETTINGS_SWITCH_MARKING_COMPLETED_DIALOG_TITLE: "磁轴标记完成",
+    SETTINGS_SWITCH_MARKING_COMPLETED_DIALOG_MESSAGE: "恭喜！磁轴标记已完成。您现在可以关闭此窗口并开始享受游戏体验。",
+    SETTINGS_SWITCH_MARKING_START_DIALOG_MESSAGE: `按下[Start Marking]按钮开始标记。`,
+    SETTINGS_SWITCH_MARKING_SAMPLING_START_DIALOG_MESSAGE: `准备开始采样第<step>步，请使按钮行程保持在<distance>mm，并按下[step]按钮。`,
+    SETTINGS_SWITCH_MARKING_SAMPLING_DIALOG_MESSAGE: `第<step>步正在采样中，请使按钮行程保持在<distance>mm，等待采样完成。`,
+    SETTINGS_SWITCH_MARKING_SAVE_DIALOG_MESSAGE: "所有步进已采样完成，请按下[step]按钮保存磁轴标记。",
+
     // Settings Layout
     SETTINGS_TAB_KEYS: "按键设置",
     SETTINGS_TAB_LEDS: "LED设置",
     SETTINGS_TAB_RAPID_TRIGGER: "快速触发",
     SETTINGS_TAB_HOTKEYS: "热键设置",
+    SETTINGS_TAB_SWITCH_MARKING: "磁轴标记",
     SETTINGS_TAB_FIRMWARE: "固件",
 
     // Keys Settings

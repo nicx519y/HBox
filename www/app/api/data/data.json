@@ -198,7 +198,7 @@
         "keyMapping": {}
       },
       "ledsConfigs": {
-        "ledEnabled": true,
+        "ledEnabled": false,
         "ledsEffectStyle": "BREATHING",
         "ledColors": [
           "#000000",

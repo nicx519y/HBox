@@ -1,0 +1,16 @@
+import { NextResponse } from 'next/server';
+import { getMarkingStatus, stopMarking } from '../data/adc_store';
+
+export async function POST() {
+    try {
+        const error = stopMarking();
+        return NextResponse.json({ errNo: error, data: {
+            status: getMarkingStatus()
+        } });
+    } catch (error) {
+        return NextResponse.json(
+            { errNo: 1, errorMessage: 'Internal server error' },
+            { status: 500 }
+        );
+    }
+} 

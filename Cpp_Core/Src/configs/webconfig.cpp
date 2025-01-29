@@ -32,6 +32,7 @@ const static char* spaPaths[] = {
     "/leds",
     "/rapid-trigger",
     "/hotkeys",
+    "/switch-marking",
     "/firmware"
 };
 const static char* excludePaths[] = { "/css", "/images", "/js", "/static" };
@@ -1425,6 +1426,40 @@ std::string apiReboot() {
 }
 
 /**
+ * @brief 获取轴体映射名称列表
+ * @return std::string 
+ * {
+ *      "errNo": 0,
+ *      "data": {
+ *          "nameList": ["mappingName1", "mappingName2", ...]
+ *      }
+ * }
+ */
+std::string apiMSGetNameList() {
+    printf("apiMSGetNameList start.\n");
+    // 创建响应数据
+    cJSON* dataJSON = cJSON_CreateObject();
+    cJSON* nameListJSON = cJSON_CreateArray();
+
+    // 获取轴体映射名称列表
+    const char* mappingNames = ADC_VALUES_MAPPING.getMappingNameList();
+    if(mappingNames) {
+        cJSON_AddStringToObject(nameListJSON, "nameList", mappingNames);
+    } 
+
+    // 添加名称列表到响应数据
+    cJSON_AddItemToObject(dataJSON, "nameList", nameListJSON);
+    
+    // 获取标准格式的响应
+    std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
+    printf("apiMSGetNameList response: %s\n", response.c_str());
+
+    cJSON_Delete(dataJSON);
+
+    return response;
+}
+
+/**
  * @brief 获取标记状态
  * @return std::string 
  * {
@@ -1877,6 +1912,7 @@ static const std::pair<const char*, HandlerFuncPtr> handlerFuncs[] =
     { "/api/switch-default-profile", apiSwitchDefaultProfile },
     { "/api/update-hotkeys-config", apiUpdateHotkeysConfig },
     { "/api/reboot", apiReboot },
+    { "/api/ms-get-name-list", apiMSGetNameList },          //获取轴体映射名称列表
     { "/api/ms-get-mark-status", apiMSGetMarkStatus },      // 获取标记状态
     { "/api/ms-set-default", apiMSSetDefault },            // 设置默认轴体
     { "/api/ms-get-default", apiMSGetDefault },            // 获取默认轴体

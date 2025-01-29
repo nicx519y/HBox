@@ -1,7 +1,11 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { GameProfile, LedsEffectStyle, Platform, GameSocdMode, GameControllerButton, Hotkey, RapidTriggerConfig, GameProfileList } from '@/types/gamepad-config';
+import { GameProfile, 
+        LedsEffectStyle, 
+        Platform, GameSocdMode, 
+        GameControllerButton, Hotkey, RapidTriggerConfig, GameProfileList } from '@/types/gamepad-config';
+import { ADCBtnsError, StepInfo, ADCValuesMapping } from '@/types/adc';
 
 interface GamepadConfigContextType {
     contextJsReady: boolean;
@@ -22,6 +26,21 @@ interface GamepadConfigContextType {
     error: string | null;
     setError: (error: string | null) => void;
     rebootSystem: () => Promise<void>;
+    // ADC Mapping 相关
+    defaultMappingName: string;
+    markingStatus: StepInfo;
+    mappingNameList: string[];
+    activeMapping: ADCValuesMapping | null;
+    fetchMappingNameList: () => Promise<void>;
+    fetchDefaultMapping: () => Promise<void>;
+    fetchActiveMapping: (name: string) => Promise<void>;
+    createMapping: (name: string, length: number, step: number) => Promise<void>;
+    deleteMapping: (name: string) => Promise<void>;
+    updateDefaultMapping: (name: string) => Promise<void>;
+    startMarking: (name: string) => Promise<void>;
+    stopMarking: () => Promise<void>;
+    stepMarking: () => Promise<void>;
+    fetchMarkingStatus: () => Promise<void>;
 }
 
 const GamepadConfigContext = createContext<GamepadConfigContextType | undefined>(undefined);
@@ -84,6 +103,19 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     const [error, setError] = useState<string | null>(null);
     const [hotkeysConfig, setHotkeysConfig] = useState<Hotkey[]>([]);
     const [jsReady, setJsReady] = useState(false);
+    const [defaultMappingName, setDefaultMappingName] = useState<string>("");
+    const [mappingNameList, setMappingNameList] = useState<string[]>([]);
+    const [markingStatus, setMarkingStatus] = useState<StepInfo>({
+        mapping_name: "",
+        step: 0,
+        length: 0,
+        index: 0,
+        values: [],
+        is_marking: false,
+        is_sampling: false,
+        is_completed: false
+    });
+    const [activeMapping, setActiveMapping] = useState<ADCValuesMapping | null>(null);
 
     const contextJsReady = useMemo(() => {
         return jsReady;
@@ -105,7 +137,6 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     }
 
     const fetchDefaultProfile = async (): Promise<void> => {
-        console.log("fetchDefaultProfile");
         try {
             setIsLoading(true);
             const response = await fetch('/api/default-profile', {
@@ -129,7 +160,6 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     };
 
     const fetchProfileList = async (): Promise<void> => {
-        console.log("fetchProfileList");
         try {
             setIsLoading(true);
             const response = await fetch('/api/profile-list', {
@@ -153,7 +183,6 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     };
 
     const fetchHotkeysConfig = async (): Promise<void> => {
-        console.log("fetchHotkeysConfig");
         try {
             setIsLoading(true);
             const response = await fetch('/api/hotkeys-config', {
@@ -177,7 +206,6 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     }
 
     const updateProfileDetails = async (profileId: string, profileDetails: GameProfile): Promise<void> => {
-        console.log("updateProfileDetails");
         try {
             setIsLoading(true);
             const response = await fetch('/api/update-profile', {
@@ -210,12 +238,10 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     };
 
     const resetProfileDetails = async (): Promise<void> => {
-        console.log("resetProfileDetails");
         await fetchDefaultProfile();
     };
 
     const createProfile = async (profileName: string): Promise<void> => {
-        console.log("createProfile");
         try {
             setIsLoading(true);
             const response = await fetch('/api/create-profile', {
@@ -242,7 +268,6 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     };
 
     const deleteProfile = async (profileId: string): Promise<void> => {
-        console.log("deleteProfile");
         try {
             setIsLoading(true);
             const response = await fetch('/api/delete-profile', {
@@ -269,7 +294,6 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     };
 
     const switchProfile = async (profileId: string): Promise<void> => {
-        console.log("switchProfile");
         try {
             setIsLoading(true);
             const response = await fetch('/api/switch-default-profile', {
@@ -295,7 +319,6 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     };
 
     const updateHotkeysConfig = async (hotkeysConfig: Hotkey[]): Promise<void> => {
-        console.log("updateHotkeysConfig");
         try {
             setIsLoading(true);
             const response = await fetch('/api/update-hotkeys-config', {
@@ -321,7 +344,6 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     };
 
     const rebootSystem = async (): Promise<void> => {
-        console.log("rebootSystem");
         try {
             setIsLoading(true);
             const response = await fetch('/api/reboot', {
@@ -337,6 +359,264 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
             return Promise.reject(new Error("Failed to reboot system"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchMappingNameList = async (): Promise<void> => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/ms-get-name-list', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const data = await processResponse(response, setError);
+            if (!data) {
+                return Promise.reject(new Error("Failed to fetch mapping name list"));
+            }
+            setMappingNameList(data.nameList);
+            setError(null);
+            return Promise.resolve();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to fetch mapping name list"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchDefaultMapping = async (): Promise<void> => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/ms-get-default', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const data = await processResponse(response, setError);
+            if (!data) {
+                return Promise.reject(new Error("Failed to fetch default mapping"));
+            }
+            setDefaultMappingName(data.name ?? "");
+            return Promise.resolve(data.name);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to fetch default mapping"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const createMapping = async (name: string, length: number, step: number): Promise<void> => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/ms-create-mapping', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, length, step }),
+            });
+            const data = await processResponse(response, setError);
+            if (!data) {
+                return Promise.reject(new Error("Failed to create mapping"));
+            }
+            setError(null);
+            return Promise.resolve();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to create mapping"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const deleteMapping = async (name: string): Promise<void> => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/ms-delete-mapping', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name }),
+            });
+            const data = await processResponse(response, setError);
+            if (!data) {
+                return Promise.reject(new Error("Failed to delete mapping"));
+            }
+            setError(null);
+            return Promise.resolve();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to delete mapping"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const updateDefaultMapping = async (name: string): Promise<void> => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/ms-set-default', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name }),
+            });
+            const data = await processResponse(response, setError);
+            if (!data) {
+                return Promise.reject(new Error("Failed to set default mapping"));
+            }
+            setDefaultMappingName(name);
+            setError(null);
+            return Promise.resolve();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to set default mapping"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const startMarking = async (name: string): Promise<void> => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/ms-mark-mapping-start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name }),
+            });
+            const data = await processResponse(response, setError);
+            if (!data) {
+                return Promise.reject(new Error("Failed to start marking"));
+            }
+
+            if(data.status) {
+                setMarkingStatus(data.status);
+            }
+
+            setError(null);
+            return Promise.resolve();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to start marking"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const stopMarking = async (): Promise<void> => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/ms-mark-mapping-stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const data = await processResponse(response, setError);
+            if (!data) {
+                return Promise.reject(new Error("Failed to stop marking"));
+            }
+
+            if(data.status) {
+                setMarkingStatus(data.status);
+            }
+
+            setError(null);
+            return Promise.resolve();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to stop marking"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const stepMarking = async (): Promise<void> => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/ms-mark-mapping-step', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const data = await processResponse(response, setError);
+            if (!data) {
+                return Promise.reject(new Error("Failed to step marking"));
+            }
+
+            if(data.status) {
+                setMarkingStatus(data.status);
+            }
+
+            setError(null);
+            return Promise.resolve();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to step marking"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchMarkingStatus = async (): Promise<void> => {
+        try {
+            const response = await fetch('/api/ms-get-mark-status', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const data = await processResponse(response, setError);
+            if (!data) {
+                return Promise.reject(new Error("Failed to fetch marking status"));
+            }
+
+            if(data.status) {
+                setMarkingStatus(data.status);
+            }
+
+            setError(null);
+            return Promise.resolve();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to fetch marking status"));
+        }
+    };
+
+    const fetchActiveMapping = async (name: string): Promise<void> => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/ms-get-mapping', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name }),
+            });
+
+            const data = await processResponse(response, setError);
+
+            if (!data) {
+                return Promise.reject(new Error("Failed to fetch mapping"));
+            }
+
+            setActiveMapping(data.mapping);
+            setError(null);
+            return Promise.resolve();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to fetch mapping"));
         } finally {
             setIsLoading(false);
         }
@@ -362,6 +642,21 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             error,
             setError,
             rebootSystem,
+            // ADC Mapping 相关
+            defaultMappingName: defaultMappingName,
+            markingStatus,
+            mappingNameList,
+            activeMapping,
+            fetchMappingNameList,
+            fetchMarkingStatus,
+            updateDefaultMapping,
+            fetchDefaultMapping,
+            fetchActiveMapping,
+            createMapping,
+            deleteMapping,
+            startMarking,
+            stopMarking,
+            stepMarking,
         }}>
             {children}
         </GamepadConfigContext.Provider>

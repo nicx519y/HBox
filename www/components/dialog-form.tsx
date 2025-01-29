@@ -12,15 +12,19 @@ import {
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { Input } from "@chakra-ui/react"
+import { NumberInputField, NumberInputRoot } from "@/components/ui/number-input"
 import { useState } from 'react';
 import { useLanguage } from "@/contexts/language-context";
 
 interface FormField {
     name: string;
     label: string;
-    defaultValue?: string;
+    defaultValue?: string | number;
     placeholder?: string;
     type?: string;
+    min?: number;
+    max?: number;
+    step?: number;
     validate?: (value: string) => string | undefined;
 }
 
@@ -90,18 +94,34 @@ export function DialogForm() {
                         {fields.map((field, index) => (
                             <Field 
                                 key={index}
-                                // label={field.label}
+                                label={field.label}
                                 errorText={errors[field.name] ?? ""}
                                 invalid={!!errors[field.name]}
+                                paddingBottom={index === fields.length - 1 ? "0" : "16px"}
                             >
-                                <Input
-                                    name={field.name}
-                                    defaultValue={field.defaultValue}
-                                    placeholder={field.placeholder}
-                                    type={field.type || "text"}
-                                    autoComplete="off"
-                                    bg="bg.muted"
-                                />
+                                {field.type === "number" ? (
+                                    <NumberInputRoot
+                                        name={field.name}
+                                        bg="bg.muted"
+                                        defaultValue={field.defaultValue?.toString() ?? undefined}
+                                        min={field.min ?? undefined}
+                                        max={field.max ?? undefined}
+                                        step={field.step ?? undefined}
+                                    >
+                                        <NumberInputField
+                                            placeholder={field.placeholder}
+                                        />
+                                    </NumberInputRoot>
+                                ) : (
+                                    <Input
+                                        name={field.name}
+                                        defaultValue={field.defaultValue?.toString() ?? undefined}
+                                        placeholder={field.placeholder}
+                                        type={field.type || "text"}
+                                        autoComplete="off"
+                                        bg="bg.muted"
+                                    />
+                                )}
                             </Field>
                         ))}
                     </DialogBody>

@@ -81,6 +81,10 @@ const nextConfig: NextConfig = {
                 destination: '/',
             },
             {
+                source: '/switch-marking',
+                destination: '/',
+            },
+            {
                 source: '/firmware',
                 destination: '/',
             },

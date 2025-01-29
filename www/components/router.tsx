@@ -7,8 +7,9 @@ import { KeysSettingContent } from "@/components/keys-setting-content";
 import { LEDsSettingContent } from "@/components/leds-setting-content";
 import { RapidTriggerContent } from "@/components/rapid-trigger-content";
 import { FirmwareContent } from '@/components/firmware-content';
+import { SwitchMarkingContent } from '@/components/switch-marking-content';
 
-export type Route = '' | 'keys' | 'hotkeys' | 'leds' | 'rapid-trigger' | 'firmware';
+export type Route = '' | 'keys' | 'hotkeys' | 'leds' | 'rapid-trigger' | 'switch-marking' | 'firmware';
 
 interface RouterState {
     currentRoute: Route;
@@ -51,6 +52,8 @@ export function Router() {
             return <KeysSettingContent />;
         case 'firmware':
             return <FirmwareContent />;
+        case 'switch-marking':
+            return <SwitchMarkingContent />;
         default:
             return <></>;
     }
