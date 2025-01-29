@@ -20,7 +20,7 @@ export async function GET() {
                 }
             });
         }
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { errNo: 1, errorMessage : 'Internal server error' }, 
             { status: 500 }

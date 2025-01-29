@@ -26,7 +26,7 @@ export async function POST(request: Request) {
             errNo: ADCBtnsError.SUCCESS,
             data: { mapping }
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { errNo: 1, errorMessage: 'Internal server error' },
             { status: 500 }

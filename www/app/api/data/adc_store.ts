@@ -17,7 +17,7 @@ function readData(): ADCMappingData {
     try {
         const data = fs.readFileSync(DATA_FILE, 'utf8');
         return JSON.parse(data);
-    } catch (error) {
+    } catch {
         return {
             default_mapping: "",
             mappings: [],

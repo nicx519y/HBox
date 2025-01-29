@@ -1,5 +1,5 @@
 import { useLanguage } from "@/contexts/language-context";
-import { Text, Box, Table, Flex, HStack, Center, Stack, IconButton, Button, VStack, Badge } from "@chakra-ui/react";
+import { Box, Flex, Center, Stack, IconButton, Button, VStack, Badge } from "@chakra-ui/react";
 import { SegmentedControl } from "./ui/segmented-control";
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ChartData } from 'chart.js';
@@ -10,7 +10,7 @@ import { openForm } from "./dialog-form";
 import { PROFILE_NAME_MAX_LENGTH } from "@/types/gamepad-config";
 import { openConfirm } from "./dialog-confirm";
 import { useGamepadConfig } from "@/contexts/gamepad-config-context";
-import { ADCValuesMapping } from "@/types/adc";
+import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
 
 // 注册Chart.js组件
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -32,6 +32,7 @@ const options = {
 
 export function SwitchMarkingContent() {
     const { t } = useLanguage();
+    const [_isDirty, setIsDirty] = useUnsavedChangesWarning(t.SETTINGS_SWITCH_MARKING_UNSAVED_CHANGES_WARNING_TITLE, t.SETTINGS_SWITCH_MARKING_UNSAVED_CHANGES_WARNING_MESSAGE);
 
     const [mappingData, setMappingData] = useState<ChartData<"line">>({
         labels: [],
@@ -53,6 +54,16 @@ export function SwitchMarkingContent() {
         fetchMappingNameList();
         fetchDefaultMapping();
         fetchMarkingStatus();
+
+        return () => {
+            if(timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+            if(markingStatus?.is_marking) {
+                stopMarking();
+            }
+        }
     }, []);
 
     useEffect(() => {
@@ -77,7 +88,19 @@ export function SwitchMarkingContent() {
     }, [mappingNameList]);
 
     useEffect(() => {
-        const activeMappingIsMarking = markingStatus?.mapping_name === activeMapping?.name;
+        // 如果标记中，则设置为脏状态，跳转页面时弹出确认框
+        if(markingStatus?.is_marking) {
+            setIsDirty(true);
+        } else {
+            setIsDirty(false);
+        }
+
+        // 如果标记中，但标记的不是当前映射，则停止标记
+        if(markingStatus?.is_marking && markingStatus?.mapping_name !== activeMapping?.name) {
+            stopMarking();
+        }
+
+        const activeMappingIsMarking = markingStatus.is_marking && (markingStatus?.mapping_name === activeMapping?.name);
 
         if(activeMappingIsMarking) {
             const myData = {
@@ -326,7 +349,10 @@ export function SwitchMarkingContent() {
                                     ))}
                                 </MenuContent>
                             </MenuRoot>
-                            <Button colorPalette={ markingStatus?.is_marking ? "red" : "green" } size="xs" variant="solid" onClick={() => {
+                            <Button 
+                                colorPalette={ markingStatus?.is_marking ? "red" : "green" } 
+                                size="xs" variant={ !markingStatus?.is_marking ? "solid" : "outline" } 
+                                onClick={() => {
                                 if(markingStatus?.is_marking) {
                                     stopMarking();
                                 } else {
@@ -335,7 +361,11 @@ export function SwitchMarkingContent() {
                             }}>
                                 { markingStatus?.is_marking ? "Stop Marking" : "Start Marking" }
                             </Button>
-                            <Button size="xs" variant="outline" disabled={!markingStatus?.is_marking || markingStatus?.is_sampling} onClick={() => {
+                            <Button 
+                                colorPalette={"green"} size="xs" 
+                                variant={ markingStatus?.is_marking ? "solid" : "outline" } 
+                                disabled={!markingStatus?.is_marking || markingStatus?.is_sampling} 
+                                onClick={() => {
                                 stepMarking();
                             }}>
                                 { "Step" }

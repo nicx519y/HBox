@@ -12,7 +12,7 @@ export async function GET() {
             errNo: ADCBtnsError.SUCCESS,
             data: { nameList }
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { errNo: 1, errorMessage: 'Internal server error' },
             { status: 500 }

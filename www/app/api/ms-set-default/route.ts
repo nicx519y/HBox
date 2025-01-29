@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
         const error = setDefaultMapping(name);
         return NextResponse.json({ errNo: error, data: {} });
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { errNo: 1, errorMessage: 'Internal server error' },
             { status: 500 }

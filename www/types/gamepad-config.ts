@@ -491,6 +491,9 @@ export const UI_TEXT = {
     SETTINGS_SWITCH_MARKING_SAMPLING_START_DIALOG_MESSAGE: `Step <step> ready to sampling, please keep the button travel at <distance>mm, and press the [Step] button.`,
     SETTINGS_SWITCH_MARKING_SAMPLING_DIALOG_MESSAGE: `Step <step> is sampling, please keep the button travel at <distance>mm, and wait for the sampling to complete.`,  
     SETTINGS_SWITCH_MARKING_SAVE_DIALOG_MESSAGE: `All steps have been sampled, please press the [Step] button to save the switch marking.`,
+    SETTINGS_SWITCH_MARKING_UNSAVED_CHANGES_WARNING_TITLE: "Uncompleted Switch Marking",
+    SETTINGS_SWITCH_MARKING_UNSAVED_CHANGES_WARNING_MESSAGE: "You have uncompleted switch marking. If you leave without saving, the switch marking data will be lost.",
+
     // Settings Layout
     SETTINGS_TAB_KEYS: "Keys Setting",
     SETTINGS_TAB_LEDS: "LEDs Setting",
@@ -684,6 +687,8 @@ export const UI_TEXT_ZH = {
     SETTINGS_SWITCH_MARKING_SAMPLING_START_DIALOG_MESSAGE: `准备开始采样第<step>步，请使按钮行程保持在<distance>mm，并按下[step]按钮。`,
     SETTINGS_SWITCH_MARKING_SAMPLING_DIALOG_MESSAGE: `第<step>步正在采样中，请使按钮行程保持在<distance>mm，等待采样完成。`,
     SETTINGS_SWITCH_MARKING_SAVE_DIALOG_MESSAGE: "所有步进已采样完成，请按下[step]按钮保存磁轴标记。",
+    SETTINGS_SWITCH_MARKING_UNSAVED_CHANGES_WARNING_TITLE: "未完成磁轴标记",
+    SETTINGS_SWITCH_MARKING_UNSAVED_CHANGES_WARNING_MESSAGE: "您有未完成的磁轴标记。如果离开而不保存，磁轴标记数据将会丢失。",
 
     // Settings Layout
     SETTINGS_TAB_KEYS: "按键设置",

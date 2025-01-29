@@ -18,7 +18,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ errNo: error, data: {
             status: getMarkingStatus()
         } });
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { errNo: 1, errorMessage: 'Internal server error' },
             { status: 500 }
