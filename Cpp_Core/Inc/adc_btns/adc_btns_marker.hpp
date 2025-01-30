@@ -35,7 +35,7 @@ class ADCBtnsMarker {
         ADCBtnsError setup(const char* mapping_name);
         ADCBtnsError step();
         
-        void process();
+        void loop();
         void reset();
         uint32_t* getCurrentMarkingValues();
         

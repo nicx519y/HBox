@@ -96,12 +96,12 @@ int main(void)
   USART1_Init();
   
   // Simple UART test
-  printf("\r\n\r\n=== UART Test Start ===\r\n");
-  printf("System Clock: %lu Hz\r\n", HAL_RCC_GetSysClockFreq());
-  printf("HCLK: %lu Hz\r\n", HAL_RCC_GetHCLKFreq());
-  printf("PCLK1: %lu Hz\r\n", HAL_RCC_GetPCLK1Freq());
-  printf("PCLK2: %lu Hz\r\n", HAL_RCC_GetPCLK2Freq());
-  printf("=== UART Test End ===\r\n\r\n");
+  // printf("\r\n\r\n=== UART Test Start ===\r\n");
+  // printf("System Clock: %lu Hz\r\n", HAL_RCC_GetSysClockFreq());
+  // printf("HCLK: %lu Hz\r\n", HAL_RCC_GetHCLKFreq());
+  // printf("PCLK1: %lu Hz\r\n", HAL_RCC_GetPCLK1Freq());
+  // printf("PCLK2: %lu Hz\r\n", HAL_RCC_GetPCLK2Freq());
+  // printf("=== UART Test End ===\r\n\r\n");
 
   /* USER CODE BEGIN Init */
 

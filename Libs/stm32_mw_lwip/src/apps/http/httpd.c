@@ -1461,8 +1461,8 @@ http_send_data_ssi(struct altcp_pcb *pcb, struct http_state *hs)
       /* Remove leading whitespace between the tag leading and the first
        * tag name character. */
       if ((ssi->tag_index == 0) && ((*ssi->parsed == ' ') ||
-                                      (*ssi->parsed == '\t') || (*ssi->parsed == '\n') ||
-                                      (*ssi->parsed == '\r')))
+                                    (*ssi->parsed == '\t') || (*ssi->parsed == '\n') ||
+                                    (*ssi->parsed == '\r')))
       {
         /* Move on to the next character in the buffer */
         ssi->parse_left--;
@@ -1475,31 +1475,31 @@ http_send_data_ssi(struct altcp_pcb *pcb, struct http_state *hs)
       if ((*ssi->parsed == http_ssi_tag_desc[ssi->tag_type].lead_out[0]) ||
           (*ssi->parsed == ' ') || (*ssi->parsed == '\t') ||
           (*ssi->parsed == '\n') || (*ssi->parsed == '\r')))
-      {
+        {
 
-        if (ssi->tag_index == 0)
-        {
-          /* We read a zero length tag so ignore it. */
-          ssi->tag_state = TAG_NONE;
-        }
-        else
-        {
-          /* We read a non-empty tag so go ahead and look for the
-           * leadout string. */
-          ssi->tag_state = TAG_LEADOUT;
-          LWIP_ASSERT("ssi->tag_index <= 0xff", ssi->tag_index <= 0xff);
-          ssi->tag_name_len = (u8_t)ssi->tag_index;
-          ssi->tag_name[ssi->tag_index] = '\0';
-          if (*ssi->parsed == http_ssi_tag_desc[ssi->tag_type].lead_out[0])
+          if (ssi->tag_index == 0)
           {
-            ssi->tag_index = 1;
+            /* We read a zero length tag so ignore it. */
+            ssi->tag_state = TAG_NONE;
           }
           else
           {
-            ssi->tag_index = 0;
+            /* We read a non-empty tag so go ahead and look for the
+             * leadout string. */
+            ssi->tag_state = TAG_LEADOUT;
+            LWIP_ASSERT("ssi->tag_index <= 0xff", ssi->tag_index <= 0xff);
+            ssi->tag_name_len = (u8_t)ssi->tag_index;
+            ssi->tag_name[ssi->tag_index] = '\0';
+            if (*ssi->parsed == http_ssi_tag_desc[ssi->tag_type].lead_out[0])
+            {
+              ssi->tag_index = 1;
+            }
+            else
+            {
+              ssi->tag_index = 0;
+            }
           }
         }
-      }
       else
       {
         /* This character is part of the tag name so save it */
@@ -1525,8 +1525,8 @@ http_send_data_ssi(struct altcp_pcb *pcb, struct http_state *hs)
       /* Remove leading whitespace between the tag leading and the first
        * tag leadout character. */
       if ((ssi->tag_index == 0) && ((*ssi->parsed == ' ') ||
-                                      (*ssi->parsed == '\t') || (*ssi->parsed == '\n') ||
-                                      (*ssi->parsed == '\r')))
+                                    (*ssi->parsed == '\t') || (*ssi->parsed == '\n') ||
+                                    (*ssi->parsed == '\r')))
       {
         /* Move on to the next character in the buffer */
         ssi->parse_left--;
@@ -2199,7 +2199,7 @@ http_continue(void *connection)
 static err_t
 http_parse_request(struct pbuf *inp, struct http_state *hs, struct altcp_pcb *pcb)
 {
-  printf("================http_parse_request: inp=%p hs=%p pcb=%p ====================  \n", (void *)inp, (void *)hs, (void *)pcb);
+  // printf("================http_parse_request: inp=%p hs=%p pcb=%p ====================  \n", (void *)inp, (void *)hs, (void *)pcb);
   char *data;
   char *crlf;
   u16_t data_len;
@@ -2459,7 +2459,7 @@ http_uri_is_ssi(struct fs_file *file, const char *uri)
 static err_t
 http_find_file(struct http_state *hs, const char *uri, int is_09)
 {
-  printf("==================http_find_file: uri=%s =======================\n", uri);
+  // printf("==================http_find_file: uri=%s =======================\n", uri);
   size_t loop;
   struct fs_file *file = NULL;
   char *params = NULL;
@@ -2487,7 +2487,7 @@ http_find_file(struct http_state *hs, const char *uri, int is_09)
     }
 #else  /* LWIP_HTTPD_MAX_REQUEST_URI_LEN */
   if ((uri[0] == '/') && (uri[1] == 0)))
-  {
+    {
 #endif /* LWIP_HTTPD_MAX_REQUEST_URI_LEN */
     /* Try each of the configured default filenames until we find one
        that exists. */
@@ -2517,6 +2517,7 @@ http_find_file(struct http_state *hs, const char *uri, int is_09)
       if (err == ERR_OK)
       {
         uri = file_name;
+
         file = &hs->file_handle;
         LWIP_DEBUGF(HTTPD_DEBUG | LWIP_DBG_TRACE, ("Opened.\n"));
 #if LWIP_HTTPD_SSI
@@ -2592,7 +2593,10 @@ http_find_file(struct http_state *hs, const char *uri, int is_09)
     /* None of the default filenames exist so send back a 404 page */
     file = http_get_404_file(hs, &uri);
   }
-  return http_init_file(hs, file, is_09, uri, tag_check, params);
+  printf("http_find_file 3: file=%p\n", file);
+  err_t error = http_init_file(hs, file, is_09, uri, tag_check, params);
+  printf("http_find_file 4: error=%d\n", error);
+  return error;
 }
 
 /** Initialize a http connection with a file to send (if found).
@@ -2848,7 +2852,7 @@ http_poll(void *arg, struct altcp_pcb *pcb)
 static err_t
 http_recv(void *arg, struct altcp_pcb *pcb, struct pbuf *p, err_t err)
 {
-  printf("================http_recv: pcb=%p pbuf=%p err=%s ====================\n", (void *)pcb, (void *)p, lwip_strerr(err));
+  // printf("================http_recv: pcb=%p pbuf=%p err=%s ====================\n", (void *)pcb, (void *)p, lwip_strerr(err));
   struct http_state *hs = (struct http_state *)arg;
   LWIP_DEBUGF(HTTPD_DEBUG | LWIP_DBG_TRACE, ("http_recv: pcb=%p pbuf=%p err=%s\n", (void *)pcb,
                                              (void *)p, lwip_strerr(err)));

@@ -20,6 +20,7 @@ ADCBtnsMarker::ADCBtnsMarker() {
  * @brief 重置ADC值标记器
  */
 void ADCBtnsMarker::reset() {
+    printf("ADCBtnsMarker::reset start.\n");
     value_tmp = 0;
     num_value_tmp = 0;
 
@@ -30,6 +31,7 @@ void ADCBtnsMarker::reset() {
     }
     // 清空DMA缓存
     memset(ADC_Values, 0, sizeof(ADC_Values));
+    printf("ADCBtnsMarker::reset end.\n");
 }
 
 /**
@@ -40,14 +42,13 @@ ADCBtnsError ADCBtnsMarker::setup(const char* name) {
     if (!name) return ADCBtnsError::INVALID_PARAMS;
 
     reset();
-    ADC_VALUES_MAPPING.init(name);
 
     // 初始化步进信息
     strncpy(step_info.mapping_name, name, sizeof(step_info.mapping_name) - 1);
     step_info.mapping_name[sizeof(step_info.mapping_name) - 1] = '\0';
     step_info.index = 0;
-    step_info.length = ADC_VALUES_MAPPING.getLength();
-    step_info.step = ADC_VALUES_MAPPING.getStep();
+    step_info.length = ADC_VALUES_MAPPING.getLength(name);
+    step_info.step = ADC_VALUES_MAPPING.getStep(name);
     memset(step_info.values, 0, sizeof(step_info.values));
     step_info.is_marking = true;
     step_info.is_completed = false;
@@ -75,6 +76,7 @@ ADCBtnsError ADCBtnsMarker::setup(const char* name) {
  * 如果标记值已满，则将标记值保存到映射中，并重置标记器
  */
 ADCBtnsError ADCBtnsMarker::step() {
+    printf("ADCBtnsMarker::step start.\n");
     if(!step_info.is_marking) {
         return ADCBtnsError::NOT_MARKING;
     }
@@ -92,7 +94,7 @@ ADCBtnsError ADCBtnsMarker::step() {
     value_tmp = 0;
     num_value_tmp = 0;
     step_info.is_sampling = true;
-
+    printf("ADCBtnsMarker::step end.\n");
     return ADCBtnsError::SUCCESS;
 }
 
@@ -101,7 +103,7 @@ ADCBtnsError ADCBtnsMarker::step() {
  * 将DMA值累加到临时值中，并更新临时值
  * 如果临时值已满，则将临时值保存到标记值中，并重置临时值
  */
-void ADCBtnsMarker::process() {
+void ADCBtnsMarker::loop() {
     if(!step_info.is_sampling) {
         return;
     }
@@ -131,11 +133,10 @@ void ADCBtnsMarker::process() {
  */
 void ADCBtnsMarker::stepFinish() {
     step_info.is_sampling = false;
-    step_info.index = num_value_tmp;
     // 计算平均值，double_t精度更高，round四舍五入
     step_info.values[step_info.index] = static_cast<uint32_t>(round(static_cast<double_t>(value_tmp) / static_cast<double_t>(num_value_tmp)));
+    step_info.index ++;
 
-    MC.publish(MessageId::ADC_BTNS_MARKER_STEP_FINISH, &step_info);
 }
 
 /**
@@ -152,8 +153,7 @@ void ADCBtnsMarker::markingFinish() {
         printf("ADCValuesMarker: Failed to stop DMA\n");
     }
 
-    ADC_VALUES_MAPPING.mark(step_info.values, step_info.length);
-    MC.publish(MessageId::ADC_BTNS_MARKER_FINISH, &step_info);
+    ADC_VALUES_MAPPING.mark(step_info.mapping_name, step_info.values, step_info.length);
 }
 
 uint32_t* ADCBtnsMarker::getCurrentMarkingValues() {

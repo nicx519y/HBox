@@ -642,7 +642,7 @@ int8_t QSPI_W25Qxx_ChipErase (void)
  * @param pBuffer 			要写入的数据
  * @param WriteAddr 		要写入 W25Qxx 的地址
  * @param NumByteToWrite 	数据长度，最大只能256字节
- * @return int8_t  			QSPI_W25Qxx_OK 		     - 写数据成���
+ * @return int8_t  			QSPI_W25Qxx_OK 		     - 写数据成功
  *			    			W25Qxx_ERROR_WriteEnable - 写使能失败
  *				 			W25Qxx_ERROR_TRANSMIT	 - 传输失败
  *				 			W25Qxx_ERROR_AUTOPOLLING - 轮询等待无响应
@@ -694,7 +694,7 @@ int8_t QSPI_W25Qxx_WritePage(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumB
  *	函数功能: 写入数据，最大不能超过flash芯片的大小，请务必完成擦除操作
  *	说    明: 	1.Flash的写入时间和擦除时间一样，是有限定的，并不是说QSPI驱动时钟133M就可以以这个速度进行写入
  *				2.按照 W25Q64JV 数据手册给出的 页 写入参考时间，典型值为 0.4ms，最大值为3ms
- *				3.实际的写入速度可能大于0.4ms，也可��小于0.4ms
+ *				3.实际的写入速度可能大于0.4ms，也可小于0.4ms
  *				4.Flash使用的时间越长，写入所需时间也会越长
  *				5.在数据写入之前，请务必完成擦除操作
  *				6.该函数移植于 stm32h743i_eval_qspi.c
@@ -718,6 +718,9 @@ int8_t QSPI_W25Qxx_WriteBuffer(uint8_t* pBuffer, uint32_t WriteAddr, uint32_t Nu
 	// 计算需要擦除的扇区范围
 	uint32_t start_sector = WriteAddr & ~(W25Qxx_SECTOR_SIZE - 1);
 	uint32_t end_sector = (WriteAddr + NumByteToWrite - 1) & ~(W25Qxx_SECTOR_SIZE - 1);
+
+	printf("start_sector: 0x%x\n, WriteAddr: 0x%x\n", start_sector, WriteAddr);
+	printf("end_sector: 0x%x\n", end_sector);
 	
 	// 擦除所需的扇区
 	for(uint32_t sector = start_sector; sector <= end_sector; sector += W25Qxx_SECTOR_SIZE) {
@@ -768,7 +771,7 @@ exit:
  * 说    明: 1.Flash的读取速度取决于QSPI的通信时钟，最大不能超过133M
  *			2.这里使用的是1-4-4模式下(1线指令4线地址4线数据)，快速读取指令 Fast Read Quad I/O
  *			3.使用快速读取指令是有空周期的，具体参考W25Q64JV的手册  Fast Read Quad I/O  （0xEB）指令
- *			4.实际使用中，是否使用DMA、编译器的优化等��以及数据存储区的位置(内部 TCM SRAM 或 AXI SRAM)都会影响读取的速度
+ *			4.实际使用中，是否使用DMA、编译器的优化等以及数据存储区的位置(内部 TCM SRAM 或 AXI SRAM)都会影响读取的速度
  *			5.在本例程中，使用的是库函数进行直接读写，keil版本5.30，编译器AC6.14，编译等级Oz image size，读取速度为 7M字节/S ，数据放在 TCM SRAM 或者 AXI SRAM 都是差不多的结果
  *		    6.因为CPU直接访问外设寄存器的效率很低，直接使用HAL库进行读写的话，速度很慢，使用MDMA进行读取，可以达到 58M字节/S
  *	        7. W25Q64JV 所允许的最高驱动频率为133MHz，750的QSPI最高驱动频率也是133MHz ，但是对于HAL库函数直接读取而言，驱动时钟超过15M已经不会对性能有提升，对速度要求高的场合可以用MDMA的方式
@@ -945,4 +948,92 @@ int8_t QSPI_W25Qxx_ReadString(char* buffer, uint32_t ReadAddr)
 	} else {
 		return QSPI_W25Qxx_OK;
 	}
+}
+
+/**
+ * @brief  擦除指定地址范围的数据
+ * @param  StartAddr 起始地址
+ * @param  Size 要擦除的大小
+ * @retval 0:正常
+ *         -1:错误
+ */
+int8_t QSPI_W25Qxx_BufferErase(uint32_t StartAddr, uint32_t Size)
+{
+    int8_t result;
+    uint32_t EndAddr;  // 结束地址
+    uint32_t CurrentAddr;  // 当前地址
+
+    // 计算结束地址
+    EndAddr = StartAddr + Size - 1;
+
+    // 检查地址范围
+    if(EndAddr >= W25Qxx_FlashSize) {
+        return W25Qxx_ERROR_TRANSMIT;
+    }
+
+    // 退出内存映射模式
+    result = QSPI_W25Qxx_ExitMemoryMappedMode();
+    if(result != QSPI_W25Qxx_OK) {
+        return result;
+    }
+
+    // 写使能
+    result = QSPI_W25Qxx_WriteEnable();
+    if(result != QSPI_W25Qxx_OK) {
+        return result;
+    }
+
+    CurrentAddr = StartAddr;
+    
+    // 按照64K块、32K块和4K扇区依次擦除
+    while(CurrentAddr <= EndAddr) {
+        uint32_t remainSize = EndAddr - CurrentAddr + 1;
+
+        // 如果剩余大小>=64K且地址对齐64K，使用64K块擦除
+        if(remainSize >= 64*1024 && (CurrentAddr & (64*1024-1)) == 0) {
+            result = QSPI_W25Qxx_BlockErase_64K(CurrentAddr);
+            if(result != QSPI_W25Qxx_OK) {
+                goto exit;
+            }
+            CurrentAddr += 64*1024;
+        }
+        // 如果剩余大小>=32K且地址对齐32K，使用32K块擦除
+        else if(remainSize >= 32*1024 && (CurrentAddr & (32*1024-1)) == 0) {
+            result = QSPI_W25Qxx_BlockErase_32K(CurrentAddr);
+            if(result != QSPI_W25Qxx_OK) {
+                goto exit;
+            }
+            CurrentAddr += 32*1024;
+        }
+        // 否则使用4K扇区擦除
+        else {
+            result = QSPI_W25Qxx_SectorErase(CurrentAddr);
+            if(result != QSPI_W25Qxx_OK) {
+                goto exit;
+            }
+            CurrentAddr += 4*1024;
+        }
+
+        // 等待擦除完成
+        result = QSPI_W25Qxx_AutoPollingMemReady();
+        if(result != QSPI_W25Qxx_OK) {
+            goto exit;
+        }
+
+        // 重新写使能
+        result = QSPI_W25Qxx_WriteEnable();
+        if(result != QSPI_W25Qxx_OK) {
+            goto exit;
+        }
+    }
+
+    result = QSPI_W25Qxx_OK;
+
+exit:
+    // 恢复内存映射模式
+    if(QSPI_W25Qxx_MemoryMappedMode() != QSPI_W25Qxx_OK) {
+        return W25Qxx_ERROR_MemoryMapped;
+    }
+
+    return result;
 }

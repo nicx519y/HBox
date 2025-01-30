@@ -84,7 +84,7 @@ ADCBtnsError ADCBtnsCalibrator::stop() {
     return ADCBtnsError::SUCCESS;
 }
 
-ADCBtnsError ADCBtnsCalibrator::process() {
+ADCBtnsError ADCBtnsCalibrator::loop() {
     if (!is_dma_started) return ADCBtnsError::DMA_NOT_STARTED;
 
     // 清除DMA缓存以确保读取到最新数据

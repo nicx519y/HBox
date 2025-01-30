@@ -31,7 +31,7 @@ void MainStateMachine::setup()
             
 
             while(1) {
-                state.process();
+                state.loop();
             }
 
             break;

@@ -141,7 +141,7 @@ bool ConfigUtils::save(Config& config)
  */
 bool ConfigUtils::reset(Config& config)
 {
-    int8_t result = QSPI_W25Qxx_BlockErase_32K(CONFIG_ADDR);
+    int8_t result = QSPI_W25Qxx_BufferErase(CONFIG_ADDR, 64*1024);
     if(result != QSPI_W25Qxx_OK) {
         printf("ConfigUtils::reset - block erase failure.\n");
         return false;

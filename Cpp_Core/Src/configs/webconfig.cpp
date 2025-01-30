@@ -104,7 +104,7 @@ int set_file_data_with_status_code(fs_file* file, const DataAndStatusCode& dataA
     returnData.append("\r\n\r\n");
     returnData.append(dataAndStatusCode.data);
 
-    printf("returnData: %s\n", returnData.c_str()); 
+    // printf("returnData: %s\n", returnData.c_str()); 
 
     file->data = returnData.c_str();
     file->len = returnData.size();
@@ -117,7 +117,6 @@ int set_file_data_with_status_code(fs_file* file, const DataAndStatusCode& dataA
 
 int set_file_data(fs_file *file, string&& data)
 {
-    printf("set_file_data %s\n", data.c_str());
     if (data.empty())
         return 0;
     return set_file_data_with_status_code(file, DataAndStatusCode(std::move(data), HttpStatusCode::_200));
@@ -128,7 +127,7 @@ cJSON* get_post_data()
     cJSON* postParams = cJSON_Parse(http_post_payload);   
     char* print_post_params = cJSON_PrintUnformatted(postParams);
     if(print_post_params) {
-        printf("postParams: %s\n", print_post_params);
+        // printf("postParams: %s\n", print_post_params);
         free(print_post_params);
     }
     return postParams;                                                                        
@@ -381,6 +380,7 @@ cJSON* buildProfileJSON(GamepadProfile* profile) {
         case LEDEffect::STATIC:
             cJSON_AddStringToObject(ledsConfigJSON, "ledsEffectStyle", "STATIC");
             break;
+
         case LEDEffect::BREATHING:
             cJSON_AddStringToObject(ledsConfigJSON, "ledsEffectStyle", "BREATHING");
             break;
@@ -581,7 +581,7 @@ std::string apiGetProfileList() {
  * }
  */
 std::string apiGetDefaultProfile() {
-    printf("apiGetDefaultProfile start.\n");
+    // printf("apiGetDefaultProfile start.\n");
 
     Config& config = Storage::getInstance().config;
     
@@ -594,7 +594,7 @@ std::string apiGetDefaultProfile() {
         }
     }
     
-    printf("apiGetDefaultProfile: defaultProfile: %s\n", defaultProfile->name);
+    // printf("apiGetDefaultProfile: defaultProfile: %s\n", defaultProfile->name);
 
     if(!defaultProfile) {
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Default profile not found");
@@ -614,7 +614,7 @@ std::string apiGetDefaultProfile() {
     // 生成返回字符串
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
 
-    printf("apiGetDefaultProfile response: %s\n", response.c_str());
+    // printf("apiGetDefaultProfile response: %s\n", response.c_str());
     return response;
 }
 
@@ -672,7 +672,7 @@ std::string apiGetProfile(const char* profileId) {
  * }
  */
 std::string apiGetHotkeysConfig() {
-    printf("apiGetHotkeysConfig start.\n");
+    // printf("apiGetHotkeysConfig start.\n");
     Config& config = Storage::getInstance().config;
     
     // 创建返回数据结构
@@ -688,7 +688,7 @@ std::string apiGetHotkeysConfig() {
     cJSON_AddItemToObject(dataJSON, "hotkeysConfig", hotkeysConfigJSON);
     
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    printf("apiGetHotkeysConfig response: %s\n", response.c_str());
+    // printf("apiGetHotkeysConfig response: %s\n", response.c_str());
     return response;
 }
 
@@ -750,7 +750,7 @@ std::string apiGetHotkeysConfig() {
  * }
  */
 std::string apiUpdateProfile() {
-    printf("apiUpdateProfile start.\n");
+    // printf("apiUpdateProfile start.\n");
     Config& config = Storage::getInstance().config;
     cJSON* params = get_post_data();
     
@@ -956,7 +956,7 @@ std::string apiUpdateProfile() {
     
     cJSON_Delete(params);
     
-    printf("apiUpdateProfile response: %s\n", response.c_str());
+    // printf("apiUpdateProfile response: %s\n", response.c_str());
     return response;
 }
 
@@ -984,7 +984,7 @@ std::string apiUpdateProfile() {
  * }
  */
 std::string apiCreateProfile() {
-    printf("apiCreateProfile start.\n");
+    // printf("apiCreateProfile start.\n");
     Config& config = Storage::getInstance().config;
     cJSON* params = get_post_data();
     
@@ -1053,7 +1053,7 @@ std::string apiCreateProfile() {
     
     cJSON_Delete(params);
     
-    printf("apiCreateProfile response: %s\n", response.c_str());
+    // printf("apiCreateProfile response: %s\n", response.c_str());
 
     return response;
 }
@@ -1082,7 +1082,7 @@ std::string apiCreateProfile() {
  * }
  */
 std::string apiDeleteProfile() {
-    printf("apiDeleteProfile start.\n");    
+    // printf("apiDeleteProfile start.\n");    
     Config& config = Storage::getInstance().config;
     cJSON* params = get_post_data();
     
@@ -1175,7 +1175,7 @@ std::string apiDeleteProfile() {
     
     cJSON_Delete(params);
     
-    printf("apiDeleteProfile response: %s\n", response.c_str());
+    // printf("apiDeleteProfile response: %s\n", response.c_str());
 
     return response;
 }
@@ -1204,7 +1204,7 @@ std::string apiDeleteProfile() {
  * }
  */
 std::string apiSwitchDefaultProfile() {
-    printf("apiSwitchDefaultProfile start.\n");
+    // printf("apiSwitchDefaultProfile start.\n");
     Config& config = Storage::getInstance().config;
     cJSON* params = get_post_data();
     
@@ -1263,7 +1263,7 @@ std::string apiSwitchDefaultProfile() {
     
     cJSON_Delete(params);
     
-    printf("apiSwitchDefaultProfile response: %s\n", response.c_str());
+    // printf("apiSwitchDefaultProfile response: %s\n", response.c_str());
 
     return response;
 }
@@ -1297,7 +1297,7 @@ std::string apiSwitchDefaultProfile() {
  * }
  */
 std::string apiUpdateHotkeysConfig() {
-    printf("apiUpdateHotkeysConfig start.\n");
+    // printf("apiUpdateHotkeysConfig start.\n");
     Config& config = Storage::getInstance().config;
     cJSON* params = get_post_data();
     
@@ -1391,7 +1391,7 @@ std::string apiUpdateHotkeysConfig() {
     
     cJSON_Delete(params);
     
-    printf("apiUpdateHotkeysConfig response: %s\n", response.c_str());
+    // printf("apiUpdateHotkeysConfig response: %s\n", response.c_str());
 
     return response;
 }
@@ -1408,7 +1408,7 @@ std::string apiUpdateHotkeysConfig() {
  * }
  */
 std::string apiReboot() {
-    printf("apiReboot start.\n");
+    // printf("apiReboot start.\n");
     // 创建响应数据
     cJSON* dataJSON = cJSON_CreateObject();
     cJSON_AddStringToObject(dataJSON, "message", "System is rebooting");
@@ -1419,7 +1419,7 @@ std::string apiReboot() {
     
     // 获取标准格式的响应
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    printf("apiReboot response: %s\n", response.c_str());
+    // printf("apiReboot response: %s\n", response.c_str());
     return response;
 }
 
@@ -1441,6 +1441,8 @@ std::string apiMSGetNameList() {
     // 获取轴体映射名称列表
     std::vector<std::string> mappingNames = ADC_VALUES_MAPPING.getMappingNameList();
 
+    // printf("mappingNames size: %d\n", mappingNames.size());
+
     uint8_t length = mappingNames.size();
     for(uint8_t i = 0; i < length; i++) {
         cJSON_AddItemToArray(nameListJSON, cJSON_CreateString(mappingNames[i].c_str()));
@@ -1451,8 +1453,6 @@ std::string apiMSGetNameList() {
     
     // 获取标准格式的响应
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-
-    cJSON_Delete(dataJSON);
 
     return response;
 }
@@ -1480,7 +1480,7 @@ std::string apiMSGetNameList() {
  * }
  */
 std::string apiMSGetMarkStatus() {
-    printf("apiMSGetMarkStatus start.\n");
+    // printf("apiMSGetMarkStatus start.\n");
     
     // 创建响应数据
     cJSON* dataJSON = cJSON_CreateObject();
@@ -1493,9 +1493,7 @@ std::string apiMSGetMarkStatus() {
     // 获取标准格式的响应
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
-    cJSON_Delete(dataJSON);
-
-    printf("apiMSGetMarkStatus response: %s\n", response.c_str());
+    // printf("apiMSGetMarkStatus response: %s\n", response.c_str());
     return response;
 }
 
@@ -1516,7 +1514,7 @@ std::string apiMSGetMarkStatus() {
  * }
  */
 std::string apiMSSetDefault() {
-    printf("apiMSSetDefault start.\n");
+    // printf("apiMSSetDefault start.\n");
     
     // 解析请求参数
     cJSON* params = cJSON_Parse(http_post_payload);
@@ -1550,7 +1548,7 @@ std::string apiMSSetDefault() {
     cJSON_Delete(dataJSON);
 
 
-    printf("apiMSSetDefault response: %s\n", response.c_str());
+    // printf("apiMSSetDefault response: %s\n", response.c_str());
     return response;
 }
 
@@ -1571,7 +1569,7 @@ std::string apiMSSetDefault() {
  * }
  */
 std::string apiMSGetDefault() {
-    printf("apiMSGetDefault start.\n");
+    // printf("apiMSGetDefault start.\n");
     
     // 创建响应数据
     cJSON* dataJSON = cJSON_CreateObject();
@@ -1579,18 +1577,15 @@ std::string apiMSGetDefault() {
     // 获取默认映射名称
     std::string defaultName = ADC_VALUES_MAPPING.getDefault();
     if(defaultName.empty()) {
-        return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to get default mapping name");
+        cJSON_AddStringToObject(dataJSON, "name", "");
+    } else {
+        cJSON_AddStringToObject(dataJSON, "name", defaultName.c_str());
     }
-    
-    // 添加默认映射到响应数据
-    cJSON_AddStringToObject(dataJSON, "name", defaultName.c_str());
     
     // 获取标准格式的响应
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
-    cJSON_Delete(dataJSON);
-
-    printf("apiMSGetDefault response: %s\n", response.c_str());
+    // printf("apiMSGetDefault response: %s\n", response.c_str());
     return response;
 }
 
@@ -1611,7 +1606,7 @@ std::string apiMSGetDefault() {
  * }
  */
 std::string apiMSCreateMapping() {
-    printf("apiMSCreateMapping start.\n");
+    // printf("apiMSCreateMapping start.\n");
     
     // 解析请求参数
     cJSON* params = cJSON_Parse(http_post_payload);
@@ -1646,6 +1641,9 @@ std::string apiMSCreateMapping() {
     
     // 创建映射
     ADCBtnsError error = ADC_VALUES_MAPPING.create(mappingName, length, step);
+
+    // printf("apiMSCreateMapping error: %d\n", error);
+
     if(error != ADCBtnsError::SUCCESS) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to create mapping");
@@ -1658,9 +1656,8 @@ std::string apiMSCreateMapping() {
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
     cJSON_Delete(params);
-    cJSON_Delete(dataJSON);
     
-    printf("apiMSCreateMapping response: %s\n", response.c_str());
+    // printf("apiMSCreateMapping response: %s\n", response.c_str());
     return response;
 }
 
@@ -1681,7 +1678,7 @@ std::string apiMSCreateMapping() {
  * }
  */
 std::string apiMSDeleteMapping() {
-    printf("apiMSDeleteMapping start.\n");
+    // printf("apiMSDeleteMapping start.\n");
     
     // 解析请求参数
     cJSON* params = cJSON_Parse(http_post_payload);
@@ -1712,9 +1709,8 @@ std::string apiMSDeleteMapping() {
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
     cJSON_Delete(params);
-    cJSON_Delete(dataJSON);
     
-    printf("apiMSDeleteMapping response: %s\n", response.c_str());
+    // printf("apiMSDeleteMapping response: %s\n", response.c_str());
     return response;
 }
 
@@ -1729,7 +1725,7 @@ std::string apiMSDeleteMapping() {
  * }
  */
 std::string apiMSMarkMappingStart() {
-    printf("apiMSMarkMappingStart start.\n");
+    // printf("apiMSMarkMappingStart start.\n");
     
     // 解析请求参数
     cJSON* params = cJSON_Parse(http_post_payload);
@@ -1762,9 +1758,8 @@ std::string apiMSMarkMappingStart() {
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
     cJSON_Delete(params);
-    cJSON_Delete(dataJSON);
     
-    printf("apiMSMarkMappingStart response: %s\n", response.c_str());
+    // printf("apiMSMarkMappingStart response: %s\n", response.c_str());
     return response;
 }
 
@@ -1779,7 +1774,7 @@ std::string apiMSMarkMappingStart() {
  * }
  */
 std::string apiMSMarkMappingStop() {
-    printf("apiMSMarkMappingStop start.\n");
+    // printf("apiMSMarkMappingStop start.\n");
     
     // 停止标记
     ADC_BTNS_MARKER.reset();
@@ -1792,9 +1787,7 @@ std::string apiMSMarkMappingStop() {
     // 获取标准格式的响应
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
-    cJSON_Delete(dataJSON);
-    
-    printf("apiMSMarkMappingStop response: %s\n", response.c_str());
+    // printf("apiMSMarkMappingStop response: %s\n", response.c_str());
     return response;
 }
 
@@ -1809,25 +1802,23 @@ std::string apiMSMarkMappingStop() {
  * }
  */
 std::string apiMSMarkMappingStep() {
-    printf("apiMSMarkMappingStep start.\n");
+    // printf("apiMSMarkMappingStep start.\n");
     
     // 执行标记步进
     ADCBtnsError error = ADC_BTNS_MARKER.step();
+    // printf("apiMSMarkMappingStep error: %d\n", error);
     if(error != ADCBtnsError::SUCCESS) {
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to perform marking step");
     }
-    
+    // printf("apiMSMarkMappingStep success.\n");
     // 创建响应数据
     cJSON* dataJSON = cJSON_CreateObject();
     cJSON* statusJSON = ADC_BTNS_MARKER.getStepInfoJSON();
     cJSON_AddItemToObject(dataJSON, "status", statusJSON);
-    
+    // printf("apiMSMarkMappingStep status:\n");
     // 获取标准格式的响应
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    
-    cJSON_Delete(dataJSON);
-    
-    printf("apiMSMarkMappingStep response: %s\n", response.c_str());
+    // printf("apiMSMarkMappingStep response: %s\n", response.c_str());
     return response;
 }
 
@@ -1847,20 +1838,38 @@ std::string apiMSGetMapping() {
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Missing or invalid mapping name");
     }
 
-    cJSON* mappingJSON = ADC_VALUES_MAPPING.getMappingJSON(nameJSON->valuestring);
-    if (!mappingJSON) {
+    ADCValuesMapping* resultMapping = ADC_VALUES_MAPPING.getMapping(nameJSON->valuestring);
+    if (!resultMapping) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to get mapping");
     }
 
+    cJSON_Delete(params);
+
+    cJSON* mappingJSON = cJSON_CreateObject();
+    cJSON_AddItemToObject(mappingJSON, "name", cJSON_CreateString(resultMapping->name));
+    cJSON_AddItemToObject(mappingJSON, "length", cJSON_CreateNumber(resultMapping->length));
+    cJSON_AddItemToObject(mappingJSON, "step", cJSON_CreateNumber(resultMapping->step));
+
+    cJSON* originalValuesJSON = cJSON_CreateArray();
+    for(size_t i = 0; i < resultMapping->length; i++) {
+        cJSON_AddItemToArray(originalValuesJSON, cJSON_CreateNumber(resultMapping->originalValues[i]));
+    }
+    cJSON_AddItemToObject(mappingJSON, "originalValues", originalValuesJSON);
+
+    cJSON* calibratedValuesJSON = cJSON_CreateArray();
+    for(size_t i = 0; i < resultMapping->length; i++) {
+        cJSON_AddItemToArray(calibratedValuesJSON, cJSON_CreateNumber(resultMapping->calibratedValues[i]));
+    }
+    cJSON_AddItemToObject(mappingJSON, "calibratedValues", calibratedValuesJSON);
+    
     cJSON* dataJSON = cJSON_CreateObject();
     cJSON_AddItemToObject(dataJSON, "mapping", mappingJSON);
 
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
-    cJSON_Delete(params);
-    cJSON_Delete(dataJSON);
 
-    printf("apiMSGetMapping response: %s\n", response.c_str());
+    // printf("apiMSGetMapping response: %s\n", response.c_str());
+
     return response;
 }
 
@@ -1903,14 +1912,14 @@ static const std::pair<const char*, HandlerFuncStatusCodePtr> handlerFuncsWithSt
 
 int fs_open_custom(struct fs_file *file, const char *name)
 {
-    printf("fs_open_custom: %s\n", name);
+    // printf("fs_open_custom: %s\n", name);
 
     // 处理API请求
     for (const auto& handlerFunc : handlerFuncs)
     {
         if (strcmp(handlerFunc.first, name) == 0)
         {
-            printf("handlerFunc.first: %s  name: %s result: %d\n", handlerFunc.first, name, strcmp(handlerFunc.first, name));
+            // printf("handlerFunc.first: %s  name: %s result: %d\n", handlerFunc.first, name, strcmp(handlerFunc.first, name));
             return set_file_data(file, handlerFunc.second());
         }
     }

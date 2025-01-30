@@ -4,45 +4,50 @@
 /*
  * QSPI Flash 内存布局 (从 ADC_VALUES_MAPPING_ADDR 开始):
  * 
+ * ADCValuesMappingStore 结构体:
  * +------------------------+ 0x00
- * | 映射数量 (1 byte)     |      // 当前存储的映射数量
- * +------------------------+ 0x01
- * | 默认映射名称 (16 bytes)|      // 默认映射名称
- * +------------------------+ 0x11
- * | 映射数据              |      // 所有映射的数据
- * | - ADCValuesMapping[0] |      // 第一个映射数据
- * | - ADCValuesMapping[1] |      // 第二个映射数据
+ * | 版本号 (4 bytes)      |
+ * +------------------------+ 0x04
+ * | 映射数量 (1 byte)     |
+ * +------------------------+ 0x05
+ * | 默认映射名称 (16 bytes)|
+ * +------------------------+ 0x15
+ * | 映射数据              |
+ * | - ADCValuesMapping[0] |
+ * | - ADCValuesMapping[1] |
  * | ...                   |
  * +------------------------+
- * 
- * 注意：
- * 1. 每个映射结构体大小固定
- * 2. calibratedValues 按按钮索引划分，每个按钮独立存储校准值
- * 3. 第n个映射的起始地址 = ADC_VALUES_MAPPING_ADDR + sizeof(uint8_t) + 16 + n*sizeof(ADCValuesMapping)
  */
 
-// 获取映射数据的起始地址
-static uint32_t getMappingDataAddr() {
-    return ADC_VALUES_MAPPING_ADDR + 1 + 16;  // 跳过映射数量和默认映射名称
+// 存储实例
+static ADCValuesMappingStore store;
+
+ADCValuesMappingUtils::ADCValuesMappingUtils() {
+    // 读取整个存储结构
+    QSPI_W25Qxx_ReadBuffer((uint8_t*)&store, ADC_VALUES_MAPPING_ADDR, sizeof(ADCValuesMappingStore));
+    
+    printf("ADCValuesMappingUtils version: 0x%x\n", store.version);
+    printf("ADC_MAPPING_VERSION == version: %d\n", ADC_MAPPING_VERSION == store.version);
+    
+    // 如果版本号不匹配，初始化整个存储
+    if(store.version != ADC_MAPPING_VERSION) {
+        // 擦除64K
+        QSPI_W25Qxx_BufferErase(ADC_VALUES_MAPPING_ADDR, 64*1024);
+        
+        // 初始化存储结构
+        memset(&store, 0, sizeof(ADCValuesMappingStore));
+        store.version = ADC_MAPPING_VERSION;
+        store.num = 0;
+        strcpy(store.defaultName, "");
+        
+        // 写入初始化后的存储结构
+        QSPI_W25Qxx_WriteBuffer((uint8_t*)&store, ADC_VALUES_MAPPING_ADDR, sizeof(ADCValuesMappingStore));
+    }
 }
 
-// 从存储中读取当前映射数量
-static uint8_t getCurrentNum() {
-    uint8_t num;
-    QSPI_W25Qxx_ReadBuffer((uint8_t*)&num, ADC_VALUES_MAPPING_ADDR, sizeof(uint8_t));
-    return num;
-}
-
-// 从存储中读取默认映射名称
-static std::string getDefaultMappingName() {
-    char name[17];
-    QSPI_W25Qxx_ReadBuffer((uint8_t*)name, ADC_VALUES_MAPPING_ADDR + 1, 16);
-    return std::string(name);
-}
-
-// 设置默认映射名称
-static void setDefaultMappingName(const char* name) {
-    QSPI_W25Qxx_WriteBuffer((uint8_t*)name, ADC_VALUES_MAPPING_ADDR + 1, 16);
+// 保存整个存储结构到Flash
+static int8_t saveStore() {
+    return QSPI_W25Qxx_WriteBuffer((uint8_t*)&store, ADC_VALUES_MAPPING_ADDR, sizeof(ADCValuesMappingStore));
 }
 
 /**
@@ -53,16 +58,9 @@ static void setDefaultMappingName(const char* name) {
 int8_t ADCValuesMappingUtils::findIndex(const char* name) {
     if (!name) return -1;
     
-    uint8_t num = getCurrentNum();
-    if(num == 0) return -1;
-    
-    ADCValuesMapping mapping;
-    uint32_t dataAddr = getMappingDataAddr();
-    
     // 遍历映射数据，检查名称
-    for(uint8_t i = 0; i < num; i++) {
-        QSPI_W25Qxx_ReadBuffer((uint8_t*)&mapping, dataAddr + i * sizeof(ADCValuesMapping), sizeof(ADCValuesMapping));
-        if(strcmp(mapping.name, name) == 0) {
+    for(uint8_t i = 0; i < store.num; i++) {
+        if(strcmp(store.mapping[i].name, name) == 0) {
             return i;
         }
     }
@@ -82,40 +80,23 @@ ADCBtnsError ADCValuesMappingUtils::remove(const char* name) {
     int8_t targetIdx = findIndex(name);
     if(targetIdx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
 
-    // 读取所有映射数据
-    uint8_t num = getCurrentNum();
-    ADCValuesMapping* dataBuffer = (ADCValuesMapping*)calloc(num * sizeof(ADCValuesMapping), 1);
-    if(!dataBuffer) {
-        return ADCBtnsError::MEMORY_ERROR;
-    }
-    
-    uint32_t dataAddr = getMappingDataAddr();
-    QSPI_W25Qxx_ReadBuffer((uint8_t*)dataBuffer, dataAddr, num * sizeof(ADCValuesMapping));
+    // 如果只有一个映射，则不能删除
+    if(store.num <= 1) return ADCBtnsError::MAPPING_DELETE_FAILED;
 
     // 移动数据
-    if(targetIdx < num - 1) {
-        memmove(&dataBuffer[targetIdx], 
-                &dataBuffer[targetIdx + 1], 
-                (num - targetIdx - 1) * sizeof(ADCValuesMapping));
+    if(targetIdx < store.num - 1) {
+        memmove(&store.mapping[targetIdx], 
+                &store.mapping[targetIdx + 1], 
+                (store.num - targetIdx - 1) * sizeof(ADCValuesMapping));
     }
     
-    num--;
+    store.num--;
     
-    // 原子性写入：先写数据，后写数量
-    if(num > 0) {
-        if(QSPI_W25Qxx_WriteBuffer((uint8_t*)dataBuffer, dataAddr, num * sizeof(ADCValuesMapping)) != QSPI_W25Qxx_OK) {
-            free(dataBuffer);
-            return ADCBtnsError::MAPPING_DELETE_FAILED;
-        }
-    }
-    
-    // 更新映射数量
-    if(QSPI_W25Qxx_WriteBuffer((uint8_t*)&num, ADC_VALUES_MAPPING_ADDR, sizeof(uint8_t)) != QSPI_W25Qxx_OK) {
-        free(dataBuffer);
+    // 保存更新后的存储结构
+    if(saveStore() != QSPI_W25Qxx_OK) {
         return ADCBtnsError::MAPPING_DELETE_FAILED;
     }
 
-    free(dataBuffer);
     return ADCBtnsError::SUCCESS;
 }
 
@@ -133,27 +114,23 @@ ADCBtnsError ADCValuesMappingUtils::create(const char* name, size_t length, floa
     if(findIndex(name) >= 0) return ADCBtnsError::MAPPING_ALREADY_EXISTS;
 
     // 检查映射数量是否已满
-    uint8_t num = getCurrentNum();
-    if(num >= NUM_ADC_VALUES_MAPPING) return ADCBtnsError::MAPPING_STORAGE_FULL;
+    if(store.num >= NUM_ADC_VALUES_MAPPING) return ADCBtnsError::MAPPING_STORAGE_FULL;
     
-    // 创建空映射数据
-    ADCValuesMapping emptyMapping = {0};
-    strncpy(emptyMapping.name, name, sizeof(emptyMapping.name) - 1);
-    emptyMapping.name[sizeof(emptyMapping.name) - 1] = '\0';
-    emptyMapping.length = length;
-    emptyMapping.step = step;
-    memset(emptyMapping.originalValues, 0, sizeof(emptyMapping.originalValues));
-    memset(emptyMapping.calibratedValues, 0, sizeof(emptyMapping.calibratedValues));
+    // 创建新映射
+    ADCValuesMapping& newMapping = store.mapping[store.num];
+    memset(&newMapping, 0, sizeof(ADCValuesMapping));
+    strncpy(newMapping.name, name, sizeof(newMapping.name) - 1);
+    newMapping.name[sizeof(newMapping.name) - 1] = '\0';
+    newMapping.length = length;
+    newMapping.step = step;
+    memset(newMapping.originalValues, 0, sizeof(newMapping.originalValues));
+    memset(newMapping.calibratedValues, 0, sizeof(newMapping.calibratedValues));
     
-    // 写入映射数据
-    uint32_t dataAddr = getMappingDataAddr();
-    if(QSPI_W25Qxx_WriteBuffer((uint8_t*)&emptyMapping, dataAddr + num * sizeof(ADCValuesMapping), sizeof(ADCValuesMapping)) != QSPI_W25Qxx_OK) {
-        return ADCBtnsError::MAPPING_CREATE_FAILED;
-    }
+    store.num++;
     
-    // 更新映射数量
-    num++;
-    if(QSPI_W25Qxx_WriteBuffer((uint8_t*)&num, ADC_VALUES_MAPPING_ADDR, sizeof(uint8_t)) != QSPI_W25Qxx_OK) {
+    // 保存更新后的存储结构
+    if(saveStore() != QSPI_W25Qxx_OK) {
+        store.num--;
         return ADCBtnsError::MAPPING_CREATE_FAILED;
     }
     
@@ -167,11 +144,11 @@ ADCBtnsError ADCValuesMappingUtils::update(const char* name, const ADCValuesMapp
     int idx = findIndex(name);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
     
-    // 复制整个映射数据
-    memcpy(&this->mapping, &mapping, sizeof(ADCValuesMapping));
+    // 更新映射数据
+    memcpy(&store.mapping[idx], &mapping, sizeof(ADCValuesMapping));
     
-    uint32_t dataAddr = getMappingDataAddr();
-    if(QSPI_W25Qxx_WriteBuffer((uint8_t*)&this->mapping, dataAddr + idx * sizeof(ADCValuesMapping), sizeof(ADCValuesMapping)) != QSPI_W25Qxx_OK) {
+    // 保存更新后的存储结构
+    if(saveStore() != QSPI_W25Qxx_OK) {
         return ADCBtnsError::MAPPING_UPDATE_FAILED;
     }
     
@@ -179,99 +156,111 @@ ADCBtnsError ADCValuesMappingUtils::update(const char* name, const ADCValuesMapp
 }
 
 /**
- * @brief 初始化ADC值映射
- * 如果映射不存在，则创建一个空的映射
+ * @brief 设置默认映射
  * @param name 映射名称
+ * @return 错误码
  */
-ADCBtnsError ADCValuesMappingUtils::init(const char* name) {
+ADCBtnsError ADCValuesMappingUtils::setDefault(const char* name) {
     if (!name) return ADCBtnsError::INVALID_PARAMS;
     
-    int idx = findIndex(name);
-    // 如果映射不存在，则创建一个空的映射
-    if(idx == -1) {
-        ADCValuesMapping emptyMapping = {0};
-        ADCBtnsError error = create(name, sizeof(emptyMapping), 0);
-        if(error != ADCBtnsError::SUCCESS) {
-            return error;
-        }
-    }
+    uint8_t idx = findIndex(name);
+    if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
     
-    // 读取映射数据
-    uint32_t dataAddr = getMappingDataAddr();
-    if(QSPI_W25Qxx_ReadBuffer((uint8_t*)&mapping, dataAddr + idx * sizeof(ADCValuesMapping), sizeof(ADCValuesMapping)) != QSPI_W25Qxx_OK) {
+    strncpy(store.defaultName, name, sizeof(store.defaultName) - 1);
+    store.defaultName[sizeof(store.defaultName) - 1] = '\0';
+    
+    // 保存更新后的存储结构
+    if(saveStore() != QSPI_W25Qxx_OK) {
         return ADCBtnsError::MAPPING_UPDATE_FAILED;
     }
-
+    
     return ADCBtnsError::SUCCESS;
 }
 
+/**
+ * @brief 获取映射名称列表
+ * @return 映射名称列表
+ */
+std::vector<std::string> ADCValuesMappingUtils::getMappingNameList() {
+    std::vector<std::string> nameList;
+    printf("getMappingNameList num: %d\n", store.num);
+    
+    for(uint8_t i = 0; i < store.num; i++) {
+        nameList.push_back(std::string(store.mapping[i].name));
+    }
+    
+    return nameList;
+}
 
 /**
- * @brief 查找ADC值映射，拟合查找
- * 要保证mapping.calibratedValues 的值是单调递增或者递减，查找范围是0-mapping.length
- * @param value 要查找的值
- * @param buttonIndex 按钮索引
- * @return 返回值对应的距离
+ * @brief 获取默认映射名称
+ * @return 默认映射名称
  */
-float_t ADCValuesMappingUtils::map(uint32_t value, uint8_t buttonIndex) {
-    if (mapping.length == 0) return 0;
-    
-    // 检查buttonIndex有效性
-    if (buttonIndex >= NUM_ADC_BUTTONS) return 0;
-    
-    uint8_t start = buttonIndex * MAX_ADC_VALUES_LENGTH;
-    if (start >= sizeof(mapping.calibratedValues)/sizeof(mapping.calibratedValues[0])) return 0;
-    
-    uint8_t end = start + mapping.length - 1;
-    if (end >= sizeof(mapping.calibratedValues)/sizeof(mapping.calibratedValues[0])) return 0;
-    
-    // 边界检查
-    if (value <= mapping.calibratedValues[start]) return 0;
-    if (value >= mapping.calibratedValues[end]) {
-        return (mapping.length - 1) * mapping.step;
-    }
+std::string ADCValuesMappingUtils::getDefault() {
+    return std::string(store.defaultName);
+}
 
-    // 使用静态变量缓存上次查找的位置
-    static uint8_t lastLeft[NUM_ADC_BUTTONS] = {0};
-    static uint8_t lastRight[NUM_ADC_BUTTONS] = {0};
+/**
+ * @brief 获取映射JSON
+ * @param name 映射名称
+ * @return 映射JSON
+ */
+ADCValuesMapping* ADCValuesMappingUtils::getMapping(const char* name) {
+    if (!name) return nullptr;
     
-    // 初始化查找范围
-    uint8_t left = lastLeft[buttonIndex];
-    uint8_t right = lastRight[buttonIndex];
+    // 查找映射
+    int idx = findIndex(name);
+    if(idx == -1) return nullptr;
     
-    // 检查缓存的位置是否有效
-    if (left < start || right > end || left >= right) {
-        left = start;
-        right = end;
-    }
-    
-    // 如果值不在缓存范围内,重置查找范围
-    if (value < mapping.calibratedValues[left] || value > mapping.calibratedValues[right]) {
-        left = start;
-        right = end;
-    }
-    
-    // 二分查找
-    while (left < right - 1) {
-        uint8_t mid = (left + right) / 2;
-        if (value >= mapping.calibratedValues[mid]) {
-            left = mid;
-        } else {
-            right = mid;
-        }
-    }
-    
-    // 更新缓存
-    lastLeft[buttonIndex] = left;
-    lastRight[buttonIndex] = right;
+    return &store.mapping[idx];
+}
 
-    // 线性插值
-    uint32_t value1 = mapping.calibratedValues[left];
-    uint32_t value2 = mapping.calibratedValues[right];
-    float_t distance1 = (left - start) * mapping.step;
-    float_t distance2 = (right - start) * mapping.step;
+/**
+ * @brief 判断映射是否是递增的
+ * @return 是否递增
+ */
+bool ADCValuesMappingUtils::isIncrement(const char* name) {
+    if (!name) return false;
     
-    return distance1 + (distance2 - distance1) * (value - value1) / (value2 - value1);
+    int idx = findIndex(name);
+    if(idx == -1) return false;
+    
+    return store.mapping[idx].originalValues[0] < store.mapping[idx].originalValues[store.mapping[idx].length - 1];
+}
+
+/**
+ * @brief 获取最大行程
+ * @return 最大行程
+ */
+float_t ADCValuesMappingUtils::getMaxDistance(const char* name) {
+    if (!name) return 0;
+    
+    int idx = findIndex(name);
+    if(idx == -1) return 0;
+    
+    return store.mapping[idx].step * (store.mapping[idx].length - 1);
+}
+
+/**
+ * @brief 获取步长
+ * @return 步长
+ */
+float_t ADCValuesMappingUtils::getStep(const char* name) {
+    if (!name) return 0;
+
+    int idx = findIndex(name);
+    if(idx == -1) return 0;
+    
+    return store.mapping[idx].step;
+}
+
+uint8_t ADCValuesMappingUtils::getLength(const char* name) {
+    if (!name) return 0;
+        
+    int idx = findIndex(name);
+    if(idx == -1) return 0;
+    
+    return store.mapping[idx].length;
 }
 
 /**
@@ -281,7 +270,14 @@ float_t ADCValuesMappingUtils::map(uint32_t value, uint8_t buttonIndex) {
  * @param firstValue 新的首值
  * @param lastValue 新的尾值
  */
-ADCBtnsError ADCValuesMappingUtils::calibration(uint8_t buttonIndex, float_t firstValue, float_t lastValue) {
+ADCBtnsError ADCValuesMappingUtils::calibration(const char* name, uint8_t buttonIndex, float_t firstValue, float_t lastValue) {
+    if (!name) return ADCBtnsError::INVALID_PARAMS;
+    
+    int idx = findIndex(name);
+    if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
+
+    ADCValuesMapping& mapping = store.mapping[idx];
+
     // 参数验证
     if (mapping.length < 2) return ADCBtnsError::INVALID_PARAMS;
     if (buttonIndex >= NUM_ADC_BUTTONS) return ADCBtnsError::INVALID_PARAMS;  // 检查buttonIndex范围
@@ -331,7 +327,14 @@ ADCBtnsError ADCValuesMappingUtils::calibration(uint8_t buttonIndex, float_t fir
  * @param firstValues 首值数组
  * @param lastValues 尾值数组
  */
-ADCBtnsError ADCValuesMappingUtils::calibrationAll(float_t* firstValues, float_t* lastValues) {
+ADCBtnsError ADCValuesMappingUtils::calibrationAll(const char* name, float_t* firstValues, float_t* lastValues) {
+    if (!name) return ADCBtnsError::INVALID_PARAMS;
+    
+    int idx = findIndex(name);
+    if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
+
+    ADCValuesMapping& mapping = store.mapping[idx];
+
     // 参数验证
     if (!firstValues || !lastValues) return ADCBtnsError::INVALID_PARAMS;  // 检查空指针
     if (mapping.length < 2) return ADCBtnsError::INVALID_PARAMS;  // 检查映射长度
@@ -394,15 +397,20 @@ ADCBtnsError ADCValuesMappingUtils::calibrationAll(float_t* firstValues, float_t
 }
 
 // 参数验证辅助函数
-bool validateMarkParams(uint32_t* values, uint8_t length) {
-    if (!values || length == 0 || length > MAX_ADC_VALUES_LENGTH) {
+bool validateMarkParams(const char* name, uint32_t* values, uint8_t length) {
+    if (!name || !values || length == 0 || length > MAX_ADC_VALUES_LENGTH) {
         return false;
     }
     return true;
 }
 
-ADCBtnsError ADCValuesMappingUtils::mark(uint32_t* values, uint8_t length) {
-    if (!validateMarkParams(values, length)) return ADCBtnsError::INVALID_PARAMS;
+ADCBtnsError ADCValuesMappingUtils::mark(const char* name, uint32_t* values, uint8_t length) {
+    if (!name || !values || length == 0 || length > MAX_ADC_VALUES_LENGTH) return ADCBtnsError::INVALID_PARAMS;
+    
+    int idx = findIndex(name);
+    if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
+
+    ADCValuesMapping& mapping = store.mapping[idx];
     
     // 保存原始状态用于回滚
     uint8_t oldLength = mapping.length;
@@ -425,153 +433,20 @@ ADCBtnsError ADCValuesMappingUtils::mark(uint32_t* values, uint8_t length) {
     memset(mapping.calibratedValues, 0, sizeof(mapping.calibratedValues));
     memcpy(mapping.originalValues, values, length * sizeof(uint32_t));
     memcpy(mapping.calibratedValues, values, length * sizeof(uint32_t));
-    
+
     // 如果更新失败，回滚所有更改
     if (update(mapping.name, mapping) != ADCBtnsError::SUCCESS) {
         mapping.length = oldLength;
         memcpy(mapping.originalValues, oldOriginValues, sizeof(mapping.originalValues));
         memcpy(mapping.calibratedValues, oldCalibratedValues, sizeof(mapping.calibratedValues));
+        free(oldOriginValues);
+        free(oldCalibratedValues);
         return ADCBtnsError::MAPPING_UPDATE_FAILED;
     }
     
     free(oldOriginValues);
     free(oldCalibratedValues);
     return ADCBtnsError::SUCCESS;
-}
-
-uint8_t ADCValuesMappingUtils::getLength() {
-    return mapping.length;
-}
-
-
-/**
- * @brief 判断映射是否是递增的
- * @return 是否递增
- */
-bool ADCValuesMappingUtils::isIncrement() {
-    return mapping.originalValues[0] < mapping.originalValues[mapping.length - 1];
-}
-
-/**
- * @brief 获取最大行程
- * @return 最大行程
- */
-float_t ADCValuesMappingUtils::getMaxDistance() {
-    maxDistance = mapping.step * (mapping.length - 1);
-    return maxDistance;
-}
-
-/**
- * @brief 获取步长
- * @return 步长
- */
-float_t ADCValuesMappingUtils::getStep() {
-    return mapping.step;
-}
-
-/**
- * @brief 设置默认映射
- * @param name 映射名称
- * @return 错误码
- */
-ADCBtnsError ADCValuesMappingUtils::setDefault(const char* name) {
-    if (!name) return ADCBtnsError::INVALID_PARAMS;
-    
-    uint8_t idx = findIndex(name);
-    if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
-    
-    if(QSPI_W25Qxx_WriteBuffer((uint8_t*)name, ADC_VALUES_MAPPING_ADDR + 1, 16) != QSPI_W25Qxx_OK) {
-        return ADCBtnsError::MAPPING_UPDATE_FAILED;
-    }
-    
-    return ADCBtnsError::SUCCESS;
-}
-
-/**
- * @brief 获取映射名称列表
- * @return 映射名称列表
- */
-std::vector<std::string> ADCValuesMappingUtils::getMappingNameList() {
-    std::vector<std::string> nameList;
-    uint8_t num = getCurrentNum();
-    if(num == 0) return nameList;
-    
-    // 一次性读取所有映射数据
-    uint32_t totalSize = num * sizeof(ADCValuesMapping);
-    uint8_t* buffer = (uint8_t*)malloc(totalSize);
-    if(!buffer) return nameList;
-    
-    uint32_t dataAddr = getMappingDataAddr();
-    QSPI_W25Qxx_ReadBuffer(buffer, dataAddr, totalSize);
-    
-    // 在内存中处理数据
-    ADCValuesMapping* mappings = (ADCValuesMapping*)buffer;
-    for(uint8_t i = 0; i < num; i++) {
-        nameList.push_back(std::string(mappings[i].name));
-    }
-    
-    free(buffer);
-    return nameList;
-}
-
-/**
- * @brief 获取默认映射名称
- * @return 默认映射名称
- */
-std::string ADCValuesMappingUtils::getDefault() {
-    std::string name = getDefaultMappingName();
-    return name;
-}
-
-/**
- * @brief 获取映射JSON
- * @param name 映射名称
- * @return 映射JSON
- */
-cJSON* ADCValuesMappingUtils::getMappingJSON(const char* name) {
-    if (!name) return nullptr;
-    
-    // 查找映射
-    int idx = findIndex(name);
-    if(idx == -1) return nullptr;
-    
-    // 读取映射数据
-    ADCValuesMapping mapping;
-    uint32_t dataAddr = getMappingDataAddr();
-    QSPI_W25Qxx_ReadBuffer((uint8_t*)&mapping, dataAddr + idx * sizeof(ADCValuesMapping), sizeof(ADCValuesMapping));
-    
-    // 创建映射JSON
-    cJSON* mappingJSON = cJSON_CreateObject();
-    if(!mappingJSON) return nullptr;
-    
-    // 添加基本信息
-    cJSON_AddStringToObject(mappingJSON, "name", mapping.name);
-    cJSON_AddNumberToObject(mappingJSON, "length", mapping.length);
-    cJSON_AddNumberToObject(mappingJSON, "step", mapping.step);
-    
-    // 添加原始值数组
-    cJSON* originalValuesJSON = cJSON_CreateArray();
-    if(!originalValuesJSON) {
-        cJSON_Delete(mappingJSON);
-        return nullptr;
-    }
-    for(size_t i = 0; i < mapping.length; i++) {
-        cJSON_AddItemToArray(originalValuesJSON, cJSON_CreateNumber(mapping.originalValues[i]));
-    }
-    cJSON_AddItemToObject(mappingJSON, "originalValues", originalValuesJSON);
-    
-    // 添加校准值数组
-    cJSON* calibratedValuesJSON = cJSON_CreateArray();
-    if(!calibratedValuesJSON) {
-        cJSON_Delete(mappingJSON);
-        return nullptr;
-    }
-    for(size_t i = 0; i < mapping.length; i++) {
-        cJSON_AddItemToArray(calibratedValuesJSON, cJSON_CreateNumber(mapping.calibratedValues[i]));
-    }
-    cJSON_AddItemToObject(mappingJSON, "calibratedValues", calibratedValuesJSON);
-    
-    return mappingJSON;
 }
 
 

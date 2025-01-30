@@ -1,4 +1,5 @@
 #include "states/webconfig_state.hpp"
+#include "adc_btns/adc_btns_marker.hpp"
 
 void WebConfigState::setup() {
     // TODO: 初始化Web配置状态
@@ -21,9 +22,10 @@ void WebConfigState::setup() {
     isRunning = true;
 }
 
-void WebConfigState::process() {
+void WebConfigState::loop() {
     if(isRunning) {
         CONFIG_MANAGER.loop();
+        ADC_BTNS_MARKER.loop();
     }
 }
 

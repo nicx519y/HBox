@@ -21,7 +21,7 @@ class WebConfigState : public BaseState {
 
         // 实现基类的虚函数
         void setup() override;
-        void process() override;
+        void loop() override;
         void reset() override;
 
     private:

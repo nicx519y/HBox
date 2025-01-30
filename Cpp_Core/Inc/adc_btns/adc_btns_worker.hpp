@@ -44,9 +44,9 @@ class ADCBtnsWorker {
             static ADCBtnsWorker instance;
             return instance;
         }
-        ADCBtnsError setup(const char* name);
+        ADCBtnsError setup();
         ADCBtnsError deinit();
-        void process();
+        void loop();
     private:
         ADCBtnsWorker();
         bool is_dma_started = false;

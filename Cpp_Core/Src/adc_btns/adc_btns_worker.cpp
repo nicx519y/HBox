@@ -13,12 +13,16 @@ ADCBtnsWorker::ADCBtnsWorker() {
     maxDistance = 0;
 }
 
-ADCBtnsError ADCBtnsWorker::setup(const char* name) {
+ADCBtnsError ADCBtnsWorker::setup() {
     if (is_dma_started) {
         return ADCBtnsError::DMA_ALREADY_STARTED;
     }
 
-    ADC_VALUES_MAPPING.init(name);
+    std::string mappingName = ADC_VALUES_MAPPING.getDefault();
+    if(mappingName.empty()) {
+        return ADCBtnsError::MAPPING_NOT_FOUND;
+    }
+
     GamepadProfile* profile = STORAGE_MANAGER.getGamepadProfile(STORAGE_MANAGER.config.defaultProfileId);
     ADCButton* adcButtons = STORAGE_MANAGER.config.ADCButtons;
 
@@ -27,7 +31,7 @@ ADCBtnsError ADCBtnsWorker::setup(const char* name) {
     }
     
     memset(ADC_Values, 0, sizeof(ADC_Values));
-    memset(lastTriggerDistance, ADC_VALUES_MAPPING.getMaxDistance(), sizeof(lastTriggerDistance));
+    memset(lastTriggerDistance, ADC_VALUES_MAPPING.getMaxDistance(mappingName.c_str()), sizeof(lastTriggerDistance));
     memset(lastTriggerState, false, sizeof(lastTriggerState));
     
     // 初始化按钮配置
@@ -81,13 +85,18 @@ ADCBtnsError ADCBtnsWorker::deinit() {
     return ADCBtnsError::SUCCESS;
 }
 
-void ADCBtnsWorker::process() {
+void ADCBtnsWorker::loop() {
     if (!is_dma_started) {
         return;
     }
 
     // 清除DMA缓存以确保读取到最新数据
     SCB_InvalidateDCache_by_Addr((uint32_t*)&ADC_Values[0], sizeof(ADC_Values));
+
+    std::string mappingName = ADC_VALUES_MAPPING.getDefault();
+    if(mappingName.empty()) {
+        return;
+    }
 
     bool isChanged = false;
     // 处理每个按钮
@@ -97,8 +106,8 @@ void ADCBtnsWorker::process() {
         }
 
         // 获取当前距离
-        float_t distance = ADC_VALUES_MAPPING.map(ADC_Values[i], i);
-        float_t maxDistance = ADC_VALUES_MAPPING.getMaxDistance();
+        float_t distance = ADC_VALUES_MAPPING.map(mappingName.c_str(), ADC_Values[i], i);
+        float_t maxDistance = ADC_VALUES_MAPPING.getMaxDistance(mappingName.c_str());
 
 
         // 处理触发状态

@@ -103,6 +103,7 @@ int8_t QSPI_W25Qxx_WriteString(char* string, uint32_t ReadAddr);
 int8_t QSPI_W25Qxx_ReadString(char* buffer, uint32_t ReadAddr);
 
 int8_t QSPI_W25Qxx_Test(uint32_t test_addr);  // 修改测试函数声明，添加地址参数
+int8_t QSPI_W25Qxx_BufferErase(uint32_t StartAddr, uint32_t Size);  // 添加缓冲区擦除函数声明
 
 #ifdef __cplusplus
 }

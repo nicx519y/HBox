@@ -64,7 +64,7 @@ err_t
 fs_open(struct fs_file *file, const char *name)
 {
   const struct fsdata_file *f;
-  printf("fs_open: name: %s\n", name);
+  // printf("fs_open: name: %s\n", name);
   if ((file == NULL) || (name == NULL)) {
      return ERR_ARG;
   }

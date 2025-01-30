@@ -7,15 +7,17 @@ extern "C" {
 
 #define FIRMWARE_VERSION                    (uint32_t)0x010000  //固件版本
 #define CONFIG_VERSION                      (uint32_t)0x000100  //配置版本 三位版本号 0x aa bb cc
+#define ADC_MAPPING_VERSION                 (uint32_t)0x000002  //ADC值映射表版本
 
 #define EX_ADDR                             0x90000000
 #define FSDATA_ADDR                         0x0               // flash起始地址 webconfig 网页数据地址
 #define ADC_VALUES_MAPPING_ADDR             0x00200000       //ADC值映射表地址
 #define CONFIG_ADDR                         0x00400000       //配置数据地址
 
-#define NUM_ADC_VALUES_MAPPING        8             // 最大8个映射 ADC按钮映射表用于值查找
-#define MAX_ADC_VALUES_LENGTH         50             // 每个映射最大50个值 ADC按钮映射表用于值查找
-#define MIN_DIFF_ADC_VALUES_FIRST_AND_LAST 10000          // 最小值和最大值的差值，用于判断是否正确校准
+#define NUM_ADC_VALUES_MAPPING              8             // 最大8个映射 ADC按钮映射表用于值查找
+#define MAX_ADC_VALUES_LENGTH               50             // 每个映射最大50个值 ADC按钮映射表用于值查找
+#define MAX_NUM_MARKING_VALUE               100            // 每个step最大采集值个数
+#define MIN_DIFF_ADC_VALUES_FIRST_AND_LAST  10000          // 最小值和最大值的差值，用于判断是否正确校准
 
 #define NUM_PROFILES                        16
 #define NUM_ADC1_BUTTONS                    9
@@ -40,15 +42,6 @@ extern "C" {
 #define LEDS_BRIGHTNESS_RADIO       0.3             //默认led 亮度系数
 #define LEDS_ANIMATION_CYCLE        6000            //LED 动画长度
 #define LEDS_ANIMATION_STEP         80             //LED 动画步长，影响性能和效果
-
-#define MAGNETIC_TICKNESS                   (float_t)10    // 磁芯长度 单位毫米
-#define MAGNETIC_RADIUS                     (float_t)2     // 磁芯半径 单位毫米
-#define MAGNETIC_DISTANCE                   (float_t)3.5   // 磁轴行程 单位毫米
-#define MAGNETIC_DEFAULT_PRESS_ACCURACY     (float_t)0.1   // 默认按下精度 单位毫米
-#define MAGNETIC_DEFAULT_RELEASE_ACCURACY   (float_t)0.1   // 默认回弹精度 单位毫米
-#define MAGNETIC_DEFAULT_TOP_DEADZONE       (float_t)0.1   // 默认顶部死区 单位毫米
-#define MAGNETIC_DEFAULT_BOTTOM_DEADZONE    (float_t)0.1   // 默认底部死区 单位毫米
-#define MAGNETIC_BASE_VALUE                 (float_t)0    // 磁芯归零值
 
 #define NUM_GAMEPAD_HOTKEYS                 (uint8_t)11   // 快捷键数量
 

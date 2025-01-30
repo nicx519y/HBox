@@ -24,7 +24,7 @@ class ADCBtnsCalibrator {
         ADCBtnsError setup(const char* mapping_name);
         ADCBtnsError start();
         ADCBtnsError stop();
-        ADCBtnsError process();
+        ADCBtnsError loop();
 
     private:
         ADCBtnsCalibrator();
