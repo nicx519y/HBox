@@ -5,6 +5,8 @@
 #include "fsdata.h"
 #include "led.h"
 #include "qspi-w25q64.h"
+#include "message_center.hpp"
+#include "adc.h"
 
 int cpp_main(void) 
 {   
@@ -15,6 +17,8 @@ int cpp_main(void)
     uint32_t fpscr = __get_FPSCR();
     printf("================== FPSCR = 0x%08lx =======================\r\n", fpscr);
      
+    // 注册ADC消息
+    MC.registerMessage(MessageId::DMA_ADC_CONV_CPLT);
 
     getFSRoot();
     printf("================== getFSRoot success. =======================\n");
@@ -55,3 +59,8 @@ int cpp_main(void)
 
     return 0;
 } 
+
+// ADC转换完成回调
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
+    MC.publish(MessageId::DMA_ADC_CONV_CPLT, hadc);
+}

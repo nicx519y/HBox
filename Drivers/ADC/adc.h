@@ -29,6 +29,7 @@ extern "C" {
 #include "main.h"
 #include "stm32h7xx_hal.h"
 
+
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */

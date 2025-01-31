@@ -128,6 +128,12 @@ ADCBtnsError ADCValuesMappingUtils::create(const char* name, size_t length, floa
     
     store.num++;
     
+    // 如果这是第一个映射，则设置为默认映射
+    if(store.num == 1) {
+        strncpy(store.defaultName, name, sizeof(store.defaultName) - 1);
+        store.defaultName[sizeof(store.defaultName) - 1] = '\0';
+    }
+
     // 保存更新后的存储结构
     if(saveStore() != QSPI_W25Qxx_OK) {
         store.num--;
@@ -197,6 +203,12 @@ std::vector<std::string> ADCValuesMappingUtils::getMappingNameList() {
  * @return 默认映射名称
  */
 std::string ADCValuesMappingUtils::getDefault() {
+    // 如果映射数量为0，则返回空字符串
+    if(store.num == 0) return "";
+    // 如果默认映射名称未设置，则返回第一个映射名称
+    if(store.defaultName[0] == '\0') {
+        return std::string(store.mapping[0].name);
+    };
     return std::string(store.defaultName);
 }
 

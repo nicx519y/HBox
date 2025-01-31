@@ -355,6 +355,7 @@ export function SwitchMarkingContent() {
                                 </MenuContent>
                             </MenuRoot>
                             <Button 
+                                display={ activeMappingName === "" ? "none" : "" }
                                 colorPalette={ markingStatus?.is_marking ? "red" : "green" } 
                                 size="xs" variant={ !markingStatus?.is_marking ? "solid" : "outline" } 
                                 onClick={() => {
@@ -367,6 +368,7 @@ export function SwitchMarkingContent() {
                                 { markingStatus?.is_marking ? "Stop Marking" : "Start Marking" }
                             </Button>
                             <Button 
+                                display={ activeMappingName === "" ? "none" : "" }
                                 colorPalette={"green"} size="xs" 
                                 variant={ markingStatus?.is_marking ? "solid" : "outline" } 
                                 disabled={!markingStatus?.is_marking || markingStatus?.is_sampling} 

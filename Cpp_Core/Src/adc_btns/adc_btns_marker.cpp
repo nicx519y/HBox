@@ -33,6 +33,13 @@ void ADCBtnsMarker::reset() {
     if(HAL_ADC_Stop_DMA(&hadc1) != HAL_OK) {
         printf("ADCValuesMarker: Failed to stop DMA\n");
     }
+
+    // 取消订阅ADC转换完成回调
+    if (messageHandler) {
+        MC.unsubscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
+        messageHandler = nullptr;
+    }
+
     // 清空DMA缓存
     memset(ADC_Values, 0, sizeof(ADC_Values));
     printf("ADCBtnsMarker::reset end.\n");
@@ -57,6 +64,14 @@ ADCBtnsError ADCBtnsMarker::setup(const char* name) {
     step_info.is_marking = true;
     step_info.is_completed = false;
     step_info.is_sampling = false;
+
+    // 注册ADC转换完成回调
+    messageHandler = [this](const void* data) {
+        if (data) {
+            this->process((ADC_HandleTypeDef*)data);
+        }
+    };
+    MC.subscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
 
     // 校准ADC1
     if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK) {
@@ -106,6 +121,15 @@ ADCBtnsError ADCBtnsMarker::step() {
  * 如果临时值已满，则将临时值保存到标记值中，并重置临时值
  */
 void ADCBtnsMarker::loop() {
+    //...
+}
+
+void ADCBtnsMarker::process(ADC_HandleTypeDef *hadc) {
+    // 检查hadc是否为ADC1
+    if(!hadc || hadc->Instance != ADC1) {
+        return;
+    }
+
     if(!step_info.is_sampling) {
         return;
     }
@@ -114,7 +138,6 @@ void ADCBtnsMarker::loop() {
     if(num_value_tmp >= MAX_NUM_TMP_MARKING) {
         stepFinish();
     } else { // 否则，累加临时值
-        HAL_Delay(2); // 延时3ms，等待ADC值稳定
         // printf("ADCBtnsMarker::loop value_tmp: %d, num_value_tmp: %d, ADC_Values[0]: %d\n", value_tmp, num_value_tmp, ADC_Values[0]);
         SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
         // 使用64位整数进行溢出检查

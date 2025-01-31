@@ -9,6 +9,7 @@
 #include "adc.h"
 #include "message_center.hpp"
 #include "adc_btns_error.hpp"
+#include <functional>
 
 #define MAX_NUM_TMP_MARKING 200
 
@@ -50,10 +51,10 @@ class ADCBtnsMarker {
         static __attribute__((section("._RAM_D1_Area"))) uint32_t value_tmp;
     private:
         ADCBtnsMarker();
-        
+        void process(ADC_HandleTypeDef *hadc);
         void stepFinish();
         void markingFinish();
-        
+        std::function<void(const void*)> messageHandler;
 };
 
 #define ADC_BTNS_MARKER ADCBtnsMarker::getInstance()
