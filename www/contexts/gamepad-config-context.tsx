@@ -517,7 +517,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
         try {
             setIsLoading(true);
             const response = await fetch('/api/ms-mark-mapping-stop', {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -545,7 +545,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
         try {
             setIsLoading(true);
             const response = await fetch('/api/ms-mark-mapping-step', {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
