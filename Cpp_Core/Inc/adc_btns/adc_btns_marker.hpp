@@ -10,7 +10,7 @@
 #include "message_center.hpp"
 #include "adc_btns_error.hpp"
 
-#define MAX_NUM_TMP_MARKING 100
+#define MAX_NUM_TMP_MARKING 200
 
 // 步进信息结构体
 struct StepInfo {
@@ -45,14 +45,15 @@ class ADCBtnsMarker {
 
         // 将 ADC_Values 移到 public 部分并声明为 static
         static __attribute__((section("._RAM_D1_Area"))) uint32_t ADC_Values[NUM_ADC_BUTTONS];
-
+        static __attribute__((section("._RAM_D1_Area"))) StepInfo step_info;
+        static __attribute__((section("._RAM_D1_Area"))) uint8_t num_value_tmp;
+        static __attribute__((section("._RAM_D1_Area"))) uint32_t value_tmp;
     private:
         ADCBtnsMarker();
+        
         void stepFinish();
         void markingFinish();
-        uint32_t value_tmp;     // 临时值和
-        uint32_t num_value_tmp;  // 临时值个数 
-        StepInfo step_info;
+        
 };
 
 #define ADC_BTNS_MARKER ADCBtnsMarker::getInstance()

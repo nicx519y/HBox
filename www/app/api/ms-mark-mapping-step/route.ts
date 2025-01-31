@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getMarkingStatus, stepMarking } from '../data/adc_store';
 
-export async function POST() {
+export async function GET() {
     try {
         const error = stepMarking();
         return NextResponse.json({ errNo: error, data: {

@@ -2,6 +2,10 @@
 
 // 定义静态成员变量
 __attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsMarker::ADC_Values[NUM_ADC_BUTTONS];
+__attribute__((section("._RAM_D1_Area"))) StepInfo ADCBtnsMarker::step_info;
+__attribute__((section("._RAM_D1_Area"))) uint8_t ADCBtnsMarker::num_value_tmp;
+__attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsMarker::value_tmp;
+
 
 /**
  * @brief 构造函数
@@ -76,7 +80,6 @@ ADCBtnsError ADCBtnsMarker::setup(const char* name) {
  * 如果标记值已满，则将标记值保存到映射中，并重置标记器
  */
 ADCBtnsError ADCBtnsMarker::step() {
-    printf("ADCBtnsMarker::step start.\n");
     if(!step_info.is_marking) {
         return ADCBtnsError::NOT_MARKING;
     }
@@ -94,7 +97,6 @@ ADCBtnsError ADCBtnsMarker::step() {
     value_tmp = 0;
     num_value_tmp = 0;
     step_info.is_sampling = true;
-    printf("ADCBtnsMarker::step end.\n");
     return ADCBtnsError::SUCCESS;
 }
 
@@ -112,10 +114,12 @@ void ADCBtnsMarker::loop() {
     if(num_value_tmp >= MAX_NUM_TMP_MARKING) {
         stepFinish();
     } else { // 否则，累加临时值
+        HAL_Delay(2); // 延时3ms，等待ADC值稳定
+        // printf("ADCBtnsMarker::loop value_tmp: %d, num_value_tmp: %d, ADC_Values[0]: %d\n", value_tmp, num_value_tmp, ADC_Values[0]);
         SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
-        
         // 使用64位整数进行溢出检查
         uint64_t new_value = static_cast<uint64_t>(value_tmp) + ADC_Values[0];
+
         if(new_value <= UINT32_MAX) {
             value_tmp = static_cast<uint32_t>(new_value);
             num_value_tmp++;
@@ -135,6 +139,7 @@ void ADCBtnsMarker::stepFinish() {
     step_info.is_sampling = false;
     // 计算平均值，double_t精度更高，round四舍五入
     step_info.values[step_info.index] = static_cast<uint32_t>(round(static_cast<double_t>(value_tmp) / static_cast<double_t>(num_value_tmp)));
+    printf("ADCBtnsMarker::stepFinish value_tmp: %d, num_value_tmp: %d, step_info.index: %d, step_info.values[step_info.index]: %d\n", value_tmp, num_value_tmp, step_info.index, step_info.values[step_info.index]);
     step_info.index ++;
 
 }
@@ -182,3 +187,5 @@ cJSON* ADCBtnsMarker::getStepInfoJSON() {
 
     return json;
 }
+
+
