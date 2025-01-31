@@ -244,10 +244,10 @@ export function SwitchMarkingContent() {
                 label: t.SETTINGS_SWITCH_MARKING_STEP_LABEL,
                 placeholder: t.SETTINGS_SWITCH_MARKING_STEP_PLACEHOLDER,
                 type: "number",
-                defaultValue: "0.01",
-                min: 0.01,
+                defaultValue: "0.1",
+                min: 0.1,
                 max: 10,
-                step: 0.01,
+                step: 0.1,
                 validate: (value: string) => {
                     const num = parseFloat(value);
                     const [isValid, errorMessage] = validateSwitchMarkingStep(num);
