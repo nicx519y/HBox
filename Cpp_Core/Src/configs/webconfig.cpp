@@ -1545,7 +1545,6 @@ std::string apiMSSetDefault() {
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
     
     cJSON_Delete(params);
-    cJSON_Delete(dataJSON);
 
 
     // printf("apiMSSetDefault response: %s\n", response.c_str());

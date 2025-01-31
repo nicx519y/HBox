@@ -79,6 +79,17 @@
                 23158,
                 26040
             ]
+        },
+        {
+            "name": "New Mark",
+            "length": 1,
+            "step": 0.1,
+            "originalValues": [
+                0
+            ],
+            "calibratedValues": [
+                0
+            ]
         }
     ],
     "marking_status": {

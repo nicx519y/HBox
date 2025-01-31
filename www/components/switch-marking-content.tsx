@@ -1,11 +1,11 @@
 import { useLanguage } from "@/contexts/language-context";
-import { Box, Flex, Center, Stack, IconButton, Button, VStack, Badge } from "@chakra-ui/react";
+import { Box, Flex, Center, Stack, IconButton, Button, VStack, Badge, HStack } from "@chakra-ui/react";
 import { SegmentedControl } from "./ui/segmented-control";
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ChartData, ChartOptions } from 'chart.js';
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from "./ui/menu";
-import { LuTrash, LuPlus, LuMenu, LuStar } from "react-icons/lu";
+import { LuTrash, LuPlus, LuMenu, LuStar, LuCheck } from "react-icons/lu";
 import { openForm } from "./dialog-form";
 import { PROFILE_NAME_MAX_LENGTH } from "@/types/gamepad-config";
 import { openConfirm } from "./dialog-confirm";
@@ -54,6 +54,18 @@ export function SwitchMarkingContent() {
     const [ markingStatusToastMessage, setMarkingStatusToastMessage ] = useState<string>("");
     const nextActiveMappingNameRef = useRef<string>(activeMappingName);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const itemsConfig = useMemo(() => {
+        return mappingNameList.map((name) => ({
+            value: name,
+            label: (
+                <HStack direction={"row"} alignItems={"center"} gap={2} >
+                    { name === defaultMappingName && <LuCheck /> }
+                    <span>{name}</span>
+                </HStack>
+            )
+        }));
+    }, [mappingNameList, defaultMappingName]);
 
     useEffect(() => {
         fetchMappingNameList();
@@ -335,8 +347,8 @@ export function SwitchMarkingContent() {
                 <VStack width={"100%"} >
                     <Center width={"100%"} >
                         <Stack direction="row" gap={2} alignItems="center">
-                            <SegmentedControl value={activeMappingName} items={mappingNameList} onValueChange={(detail) => activeMappingChange(detail.value)} />
-                            <MenuRoot>
+                            <SegmentedControl size="sm" value={activeMappingName} items={itemsConfig} onValueChange={(detail) => activeMappingChange(detail.value)} />
+                            <MenuRoot size="md">
                                 <MenuTrigger asChild>
                                     <IconButton
                                         aria-label="Menu"
