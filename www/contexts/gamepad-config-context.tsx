@@ -5,7 +5,7 @@ import { GameProfile,
         LedsEffectStyle, 
         Platform, GameSocdMode, 
         GameControllerButton, Hotkey, RapidTriggerConfig, GameProfileList } from '@/types/gamepad-config';
-import { ADCBtnsError, StepInfo, ADCValuesMapping } from '@/types/adc';
+import { StepInfo, ADCValuesMapping } from '@/types/adc';
 
 interface GamepadConfigContextType {
     contextJsReady: boolean;
@@ -27,20 +27,21 @@ interface GamepadConfigContextType {
     setError: (error: string | null) => void;
     rebootSystem: () => Promise<void>;
     // ADC Mapping 相关
-    defaultMappingName: string;
+    defaultMappingId: string;
     markingStatus: StepInfo;
-    mappingNameList: string[];
+    mappingList: { id: string, name: string }[];
     activeMapping: ADCValuesMapping | null;
-    fetchMappingNameList: () => Promise<void>;
+    fetchMappingList: () => Promise<void>;
     fetchDefaultMapping: () => Promise<void>;
-    fetchActiveMapping: (name: string) => Promise<void>;
+    fetchActiveMapping: (id: string) => Promise<void>;
     createMapping: (name: string, length: number, step: number) => Promise<void>;
-    deleteMapping: (name: string) => Promise<void>;
-    updateDefaultMapping: (name: string) => Promise<void>;
-    startMarking: (name: string) => Promise<void>;
+    deleteMapping: (id: string) => Promise<void>;
+    updateDefaultMapping: (id: string) => Promise<void>;
+    startMarking: (id: string) => Promise<void>;
     stopMarking: () => Promise<void>;
     stepMarking: () => Promise<void>;
     fetchMarkingStatus: () => Promise<void>;
+    renameMapping: (id: string, name: string) => Promise<void>;
 }
 
 const GamepadConfigContext = createContext<GamepadConfigContextType | undefined>(undefined);
@@ -103,9 +104,10 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
     const [error, setError] = useState<string | null>(null);
     const [hotkeysConfig, setHotkeysConfig] = useState<Hotkey[]>([]);
     const [jsReady, setJsReady] = useState(false);
-    const [defaultMappingName, setDefaultMappingName] = useState<string>("");
-    const [mappingNameList, setMappingNameList] = useState<string[]>([]);
+    const [defaultMappingId, setDefaultMappingId] = useState<string>("");
+    const [mappingList, setMappingList] = useState<{ id: string, name: string }[]>([]);
     const [markingStatus, setMarkingStatus] = useState<StepInfo>({
+        id: "",
         mapping_name: "",
         step: 0,
         length: 0,
@@ -364,10 +366,10 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
         }
     };
 
-    const fetchMappingNameList = async (): Promise<void> => {
+    const fetchMappingList = async (): Promise<void> => {
         try {
             setIsLoading(true);
-            const response = await fetch('/api/ms-get-name-list', {
+            const response = await fetch('/api/ms-get-list', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -375,14 +377,15 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             });
             const data = await processResponse(response, setError);
             if (!data) {
-                return Promise.reject(new Error("Failed to fetch mapping name list"));
+                return Promise.reject(new Error("Failed to fetch mapping list"));
             }
-            setMappingNameList(data.nameList);
+            setMappingList(data.mappingList);
+            setDefaultMappingId(data.defaultMappingId);
             setError(null);
             return Promise.resolve();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
-            return Promise.reject(new Error("Failed to fetch mapping name list"));
+            return Promise.reject(new Error("Failed to fetch mapping list"));
         } finally {
             setIsLoading(false);
         }
@@ -401,8 +404,8 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             if (!data) {
                 return Promise.reject(new Error("Failed to fetch default mapping"));
             }
-            setDefaultMappingName(data.name ?? "");
-            return Promise.resolve(data.name);
+            setDefaultMappingId(data.id ?? "");
+            return Promise.resolve(data.id);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
             return Promise.reject(new Error("Failed to fetch default mapping"));
@@ -435,7 +438,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
         }
     };
 
-    const deleteMapping = async (name: string): Promise<void> => {
+    const deleteMapping = async (id: string): Promise<void> => {
         try {
             setIsLoading(true);
             const response = await fetch('/api/ms-delete-mapping', {
@@ -443,7 +446,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ id }),
             });
             const data = await processResponse(response, setError);
             if (!data) {
@@ -459,7 +462,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
         }
     };
 
-    const updateDefaultMapping = async (name: string): Promise<void> => {
+    const updateDefaultMapping = async (id: string): Promise<void> => {
         try {
             setIsLoading(true);
             const response = await fetch('/api/ms-set-default', {
@@ -467,13 +470,13 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ id }),
             });
             const data = await processResponse(response, setError);
             if (!data) {
                 return Promise.reject(new Error("Failed to set default mapping"));
             }
-            setDefaultMappingName(name);
+            setDefaultMappingId(data.id);
             setError(null);
             return Promise.resolve();
         } catch (err) {
@@ -484,7 +487,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
         }
     };
 
-    const startMarking = async (name: string): Promise<void> => {
+    const startMarking = async (id: string): Promise<void> => {
         try {
             setIsLoading(true);
             const response = await fetch('/api/ms-mark-mapping-start', {
@@ -492,7 +495,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ id }),
             });
             const data = await processResponse(response, setError);
             if (!data) {
@@ -594,7 +597,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
         }
     };
 
-    const fetchActiveMapping = async (name: string): Promise<void> => {
+    const fetchActiveMapping = async (id: string): Promise<void> => {
         try {
             setIsLoading(true);
             const response = await fetch('/api/ms-get-mapping', {
@@ -602,7 +605,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ id }),
             });
 
             const data = await processResponse(response, setError);
@@ -619,6 +622,29 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             return Promise.reject(new Error("Failed to fetch mapping"));
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const renameMapping = async (id: string, name: string): Promise<void> => {
+        try {
+            const response = await fetch('/api/ms-rename-mapping', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id, name }),
+            });
+            const data = await processResponse(response, setError);
+            if (!data) {
+                return Promise.reject(new Error("Failed to rename mapping"));
+            }
+            setMappingList(data.mappingList);
+            setDefaultMappingId(data.defaultMappingId);
+            setError(null);
+            return Promise.resolve();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return Promise.reject(new Error("Failed to rename mapping"));
         }
     };
 
@@ -643,11 +669,11 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             setError,
             rebootSystem,
             // ADC Mapping 相关
-            defaultMappingName: defaultMappingName,
+            defaultMappingId: defaultMappingId,
             markingStatus,
-            mappingNameList,
+            mappingList,
             activeMapping,
-            fetchMappingNameList,
+            fetchMappingList,
             fetchMarkingStatus,
             updateDefaultMapping,
             fetchDefaultMapping,
@@ -657,6 +683,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             startMarking,
             stopMarking,
             stepMarking,
+            renameMapping,
         }}>
             {children}
         </GamepadConfigContext.Provider>

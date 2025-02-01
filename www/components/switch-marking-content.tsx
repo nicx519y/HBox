@@ -5,12 +5,13 @@ import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ChartData, ChartOptions } from 'chart.js';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from "./ui/menu";
-import { LuTrash, LuPlus, LuMenu, LuStar, LuCheck } from "react-icons/lu";
+import { LuTrash, LuPlus, LuMenu, LuStar, LuCheck, LuPencil } from "react-icons/lu";
 import { openForm } from "./dialog-form";
 import { PROFILE_NAME_MAX_LENGTH } from "@/types/gamepad-config";
 import { openConfirm } from "./dialog-confirm";
 import { useGamepadConfig } from "@/contexts/gamepad-config-context";
 import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
+
 
 // 注册Chart.js组件
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -44,32 +45,32 @@ export function SwitchMarkingContent() {
         datasets: []
     });
 
-    const { mappingNameList, fetchMappingNameList } = useGamepadConfig();
-    const { defaultMappingName, fetchDefaultMapping } = useGamepadConfig();
+    const { mappingList, fetchMappingList } = useGamepadConfig();
+    const { defaultMappingId } = useGamepadConfig();
     const { markingStatus, fetchMarkingStatus } = useGamepadConfig();
     const { startMarking, stopMarking, stepMarking } = useGamepadConfig();
-    const { createMapping, deleteMapping, updateDefaultMapping } = useGamepadConfig();
-    const [ activeMappingName, setActiveMappingName ] = useState<string>("");
+    const { createMapping, deleteMapping, updateDefaultMapping, renameMapping } = useGamepadConfig();
+    const [ activeMappingId, setActiveMappingId ] = useState<string>("");
     const { activeMapping, fetchActiveMapping } = useGamepadConfig();
     const [ markingStatusToastMessage, setMarkingStatusToastMessage ] = useState<string>("");
-    const nextActiveMappingNameRef = useRef<string>(activeMappingName);
+    const nextActiveMappingIdRef = useRef<string>(activeMappingId);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     const itemsConfig = useMemo(() => {
-        return mappingNameList.map((name) => ({
-            value: name,
+        return mappingList.map(({ id, name }) => ({
+            value: id,
             label: (
                 <HStack direction={"row"} alignItems={"center"} gap={2} >
-                    { name === defaultMappingName && <LuCheck /> }
+                    { id === defaultMappingId && <LuCheck /> }
                     <span>{name}</span>
                 </HStack>
             )
         }));
-    }, [mappingNameList, defaultMappingName]);
+    }, [mappingList, defaultMappingId]);
 
     useEffect(() => {
-        fetchMappingNameList();
-        fetchDefaultMapping();
+        fetchMappingList();
+        // fetchDefaultMapping();
         fetchMarkingStatus();
 
         return () => {
@@ -85,24 +86,24 @@ export function SwitchMarkingContent() {
 
     useEffect(() => {
 
-        if(nextActiveMappingNameRef.current && nextActiveMappingNameRef.current !== "" && nextActiveMappingNameRef.current !== activeMappingName) {
-            setActiveMappingName(nextActiveMappingNameRef.current);
-            nextActiveMappingNameRef.current = "";
+        if(nextActiveMappingIdRef.current && nextActiveMappingIdRef.current !== "" && nextActiveMappingIdRef.current !== activeMappingId) {
+            setActiveMappingId(nextActiveMappingIdRef.current);
+            nextActiveMappingIdRef.current = "";
             return;
         }
 
-        if(activeMappingName && activeMappingName !== "" && mappingNameList.includes(activeMappingName)) {
+        if(activeMappingId && activeMappingId !== "" && mappingList.find(m => m.id === activeMappingId)) {
             return;
         }
 
-        if(defaultMappingName && defaultMappingName !== "") {
-            setActiveMappingName(defaultMappingName);
-        } else if(mappingNameList.length > 0) {
-            setActiveMappingName(mappingNameList[0]);
+        if(defaultMappingId && defaultMappingId !== "") {
+            setActiveMappingId(defaultMappingId);
+        } else if(mappingList.length > 0) {
+            setActiveMappingId(mappingList[0].id);
         } else {
-            setActiveMappingName("");
+            setActiveMappingId("");
         }
-    }, [mappingNameList]);
+    }, [mappingList, defaultMappingId]);
 
     useEffect(() => {
         // 如果标记中，则设置为脏状态，跳转页面时弹出确认框
@@ -160,10 +161,10 @@ export function SwitchMarkingContent() {
     }, [activeMapping, markingStatus]);
 
     useEffect(() => {
-        if(activeMappingName && activeMappingName !== "" && mappingNameList.includes(activeMappingName)) {
-            fetchActiveMapping(activeMappingName);
+        if(activeMappingId && activeMappingId !== "" && mappingList.find(m => m.id === activeMappingId)) {
+            fetchActiveMapping(activeMappingId);
         }
-    }, [activeMappingName]);
+    }, [activeMappingId]);
 
     // 更新标记状态提示信息
     useEffect(() => {
@@ -208,7 +209,6 @@ export function SwitchMarkingContent() {
 
     const createMappingClick = async () => {
         const result = await openForm({
-            title: t.SETTINGS_SWITCH_MARKING_TITLE,
             fields: [{
                 name: "name",
                 label: t.SETTINGS_SWITCH_MARKING_NAME_LABEL,
@@ -261,8 +261,8 @@ export function SwitchMarkingContent() {
 
         if (result) {
             await createMapping(result.name, parseInt(result.length), parseFloat(result.step));
-            nextActiveMappingNameRef.current = result.name;
-            await fetchMappingNameList();
+            nextActiveMappingIdRef.current = result.id;
+            await fetchMappingList();
         }
     }
 
@@ -276,7 +276,7 @@ export function SwitchMarkingContent() {
             return [false, t.SETTINGS_SWITCH_MARKING_VALIDATION_LENGTH.replace("{0}", name.length.toString())];
         }
 
-        if (mappingNameList.find(p => p === name)) {
+        if (mappingList.find(p => p.name === name)) {
             return [false, t.SETTINGS_SWITCH_MARKING_VALIDATION_SAME_NAME];
         }
 
@@ -304,19 +304,45 @@ export function SwitchMarkingContent() {
         });
 
         if (confirmed) {
-            await deleteMapping(activeMapping?.name ?? '');
-            await fetchMappingNameList();
+            await deleteMapping(activeMapping?.id ?? '');
+            await fetchMappingList();
         }
     }
 
     const setDefaultMappingClick = async () => {
         if(activeMapping) {
-            await updateDefaultMapping(activeMapping.name);
+            await updateDefaultMapping(activeMapping.id);
         }
     }
 
-    const activeMappingChange = (name: string) => {
-        setActiveMappingName(name);
+    const renameMappingClick = async () => {
+        if(!activeMapping) {
+            return;
+        }
+        const result = await openForm({
+            fields: [{
+                name: "name",
+                label: t.SETTINGS_SWITCH_MARKING_NAME_LABEL,
+                placeholder: t.SETTINGS_SWITCH_MARKING_NAME_PLACEHOLDER,
+                type: "text",
+                defaultValue: activeMapping?.name ?? "",
+                validate: (value: string) => {
+                    const [isValid, errorMessage] = validateSwitchMarkingName(value);
+                    if (!isValid) {
+                        return errorMessage;
+                    }
+                    return undefined;
+                }
+            }]
+        });
+
+        if (result) {
+            await renameMapping(activeMapping?.id ?? '', result.name);
+        }
+    }
+
+    const activeMappingChange = (id: string) => {
+        setActiveMappingId(id);
     }
 
     const menuItems = [
@@ -333,11 +359,17 @@ export function SwitchMarkingContent() {
             onClick: deleteMappingClick
         },
         {
+            value: "rename",
+            label: "Rename",
+            icon: <LuPencil />,
+            onClick: renameMappingClick,
+        },
+        {
             value: "set_default",
             label: "Set Default",
             icon: <LuStar />,
             onClick: setDefaultMappingClick,
-            disabled: activeMappingName === defaultMappingName,
+            disabled: activeMappingId === defaultMappingId,
         }
     ];
 
@@ -347,7 +379,7 @@ export function SwitchMarkingContent() {
                 <VStack width={"100%"} >
                     <Center width={"100%"} >
                         <Stack direction="row" gap={2} alignItems="center">
-                            <SegmentedControl size="sm" value={activeMappingName} items={itemsConfig} onValueChange={(detail) => activeMappingChange(detail.value)} />
+                            <SegmentedControl size="sm" value={activeMappingId} items={itemsConfig} onValueChange={(detail) => activeMappingChange(detail.value)} />
                             <MenuRoot size="md">
                                 <MenuTrigger asChild>
                                     <IconButton
@@ -367,20 +399,20 @@ export function SwitchMarkingContent() {
                                 </MenuContent>
                             </MenuRoot>
                             <Button 
-                                display={ activeMappingName === "" ? "none" : "" }
+                                display={ activeMappingId === "" ? "none" : "" }
                                 colorPalette={ markingStatus?.is_marking ? "red" : "green" } 
                                 size="xs" variant={ !markingStatus?.is_marking ? "solid" : "outline" } 
                                 onClick={() => {
                                 if(markingStatus?.is_marking) {
                                     stopMarking();
                                 } else {
-                                    startMarking(activeMappingName);
-                                }
+                                    startMarking(activeMappingId);
+                                }   
                             }}>
                                 { markingStatus?.is_marking ? "Stop Marking" : "Start Marking" }
                             </Button>
                             <Button 
-                                display={ activeMappingName === "" ? "none" : "" }
+                                display={ activeMappingId === "" ? "none" : "" }
                                 colorPalette={"green"} size="xs" 
                                 variant={ markingStatus?.is_marking ? "solid" : "outline" } 
                                 disabled={!markingStatus?.is_marking || markingStatus?.is_sampling} 

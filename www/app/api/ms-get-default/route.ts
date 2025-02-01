@@ -4,19 +4,19 @@ import { ADCBtnsError } from '@/types/adc';
 
 export async function GET() {
     try {
-        const name = getDefaultMapping();
-        if(!name) {
+        const id = getDefaultMapping();
+        if(!id) {
             return NextResponse.json({
-                errNo: ADCBtnsError.MAPPING_NOT_FOUND,
+                errNo: ADCBtnsError.SUCCESS,
                 data: { 
-                    name: null
+                    id: ""
                  }
             });
         } else {
             return NextResponse.json({
                 errNo: ADCBtnsError.SUCCESS,
                 data: { 
-                    name
+                    id
                 }
             });
         }

@@ -33,6 +33,7 @@ export enum ADCBtnsError {
 
 // 步进信息结构体
 export interface StepInfo {
+    id: string;
     mapping_name: string;
     step: number;
     length: number;
@@ -45,6 +46,7 @@ export interface StepInfo {
 
 // ADC值映射结构体
 export interface ADCValuesMapping {
+    id: string;
     name: string;
     length: number;
     step: number;

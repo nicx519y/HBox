@@ -4,17 +4,17 @@ import { deleteMapping } from '../data/adc_store';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name } = body;
+        const { id } = body;
 
         // 参数验证
-        if (!name) {
+        if (!id) {
             return NextResponse.json(
                 { errNo: 1, errorMessage: 'Invalid parameters' },
                 { status: 400 }
             );
         }
 
-        const errNo = deleteMapping(name);
+        const errNo = deleteMapping(id);
         return NextResponse.json({ errNo, data: {} });
     } catch {
         return NextResponse.json(

@@ -4,17 +4,17 @@ import { ADCBtnsError } from '@/types/adc';
 
 export async function POST(request: Request) {
     try {
-        // 从 URL 参数中获取 name
-        const { name } = await request.json();
+        // 从 URL 参数中获取 id
+        const { id } = await request.json();
 
-        if (!name) {
+        if (!id) {
             return NextResponse.json({
                 errNo: ADCBtnsError.INVALID_PARAMS,
                 data: { mapping: null }
             });
         }
 
-        const mapping = getMapping(name);
+        const mapping = getMapping(id);
         if (!mapping) {
             return NextResponse.json({
                 errNo: ADCBtnsError.MAPPING_NOT_FOUND,
