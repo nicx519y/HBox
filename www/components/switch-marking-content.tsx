@@ -122,7 +122,7 @@ export function SwitchMarkingContent() {
 
         if(activeMappingIsMarking) {
             const myData = {
-                labels: Array.from({ length: markingStatus?.length ?? 0 }, (_, i) => ((i + 1) * (markingStatus?.step ?? 0)).toFixed(2)),
+                labels: Array.from({ length: markingStatus?.length ?? 0 }, (_, i) => (i * (markingStatus?.step ?? 0)).toFixed(2)),
                 datasets: [
                     {
                         label: markingStatus.mapping_name,
@@ -141,7 +141,7 @@ export function SwitchMarkingContent() {
         } else {
 
             const myData = {
-                labels: Array.from({ length: activeMapping?.length ?? 0 }, (_, i) => ((i + 1) * (activeMapping?.step ?? 0)).toFixed(2)),
+                labels: Array.from({ length: activeMapping?.length ?? 0 }, (_, i) => (i * (activeMapping?.step ?? 0)).toFixed(2)),
                 datasets: [
                     {
                         label: activeMapping?.name ?? "",
@@ -303,6 +303,7 @@ export function SwitchMarkingContent() {
             message: t.SETTINGS_SWITCH_MARKING_DELETE_CONFIRM_MESSAGE
         });
 
+
         if (confirmed) {
             await deleteMapping(activeMapping?.id ?? '');
             await fetchMappingList();
@@ -345,6 +346,7 @@ export function SwitchMarkingContent() {
         setActiveMappingId(id);
     }
 
+    // 菜单项
     const menuItems = [
         {
             value: "create",
