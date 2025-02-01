@@ -10,7 +10,7 @@
  * +------------------------+ 0x04
  * | 映射数量 (1 byte)     |
  * +------------------------+ 0x05
- * | 默认映射名称 (16 bytes)|
+ * | 默认映射ID (16 bytes) |
  * +------------------------+ 0x15
  * | 映射数据              |
  * | - ADCValuesMapping[0] |
@@ -38,7 +38,7 @@ ADCValuesMappingUtils::ADCValuesMappingUtils() {
         memset(&store, 0, sizeof(ADCValuesMappingStore));
         store.version = ADC_MAPPING_VERSION;
         store.num = 0;
-        strcpy(store.defaultName, "");
+        strcpy(store.defaultId, "");
         
         // 写入初始化后的存储结构
         QSPI_W25Qxx_WriteBuffer((uint8_t*)&store, ADC_VALUES_MAPPING_ADDR, sizeof(ADCValuesMappingStore));
@@ -51,16 +51,16 @@ static int8_t saveStore() {
 }
 
 /**
- * @brief 查找映射名称的索引
- * @param name 映射名称
- * @return 映射名称的索引
+ * @brief 查找映射ID的索引
+ * @param id 映射ID
+ * @return 映射ID的索引
  */
-int8_t ADCValuesMappingUtils::findIndex(const char* name) {
-    if (!name) return -1;
+int8_t ADCValuesMappingUtils::findIndex(const char* id) {
+    if (!id) return -1;
     
     // 遍历映射数据，检查名称
     for(uint8_t i = 0; i < store.num; i++) {
-        if(strcmp(store.mapping[i].name, name) == 0) {
+        if(strcmp(store.mapping[i].id, id) == 0) {
             return i;
         }
     }
@@ -70,14 +70,14 @@ int8_t ADCValuesMappingUtils::findIndex(const char* name) {
 
 /**
  * @brief 删除映射
- * @param name 映射名称
+ * @param id 映射ID
  * @return 是否删除成功
  */
-ADCBtnsError ADCValuesMappingUtils::remove(const char* name) {
-    if (!name) return ADCBtnsError::INVALID_PARAMS;
+ADCBtnsError ADCValuesMappingUtils::remove(const char* id) {
+    if (!id) return ADCBtnsError::INVALID_PARAMS;
     
     // 查找要删除的映射索引
-    int8_t targetIdx = findIndex(name);
+    int8_t targetIdx = findIndex(id);
     if(targetIdx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
 
     // 如果只有一个映射，则不能删除
@@ -102,7 +102,7 @@ ADCBtnsError ADCValuesMappingUtils::remove(const char* name) {
 
 /**
  * @brief 创建映射
- * @param name 映射名称
+ * @param id射ID
  * @param length 映射长度
  * @param step 步长
  * @return 是否创建成功
@@ -111,14 +111,23 @@ ADCBtnsError ADCValuesMappingUtils::create(const char* name, size_t length, floa
     if (!name) return ADCBtnsError::INVALID_PARAMS;
     
     // 检查映射名称是否已存在
-    if(findIndex(name) >= 0) return ADCBtnsError::MAPPING_ALREADY_EXISTS;
+    for(uint8_t i = 0; i < store.num; i++) {
+        if(strcmp(store.mapping[i].name, name) == 0) {
+            return ADCBtnsError::MAPPING_ALREADY_EXISTS;
+        }
+    }
 
     // 检查映射数量是否已满
     if(store.num >= NUM_ADC_VALUES_MAPPING) return ADCBtnsError::MAPPING_STORAGE_FULL;
     
+    char id[16];
+    sprintf(id, "ADCMapping-%d", HAL_GetTick());
+
     // 创建新映射
     ADCValuesMapping& newMapping = store.mapping[store.num];
     memset(&newMapping, 0, sizeof(ADCValuesMapping));
+    strncpy(newMapping.id, id, sizeof(newMapping.id) - 1);
+    newMapping.id[sizeof(newMapping.id) - 1] = '\0';
     strncpy(newMapping.name, name, sizeof(newMapping.name) - 1);
     newMapping.name[sizeof(newMapping.name) - 1] = '\0';
     newMapping.length = length;
@@ -130,8 +139,8 @@ ADCBtnsError ADCValuesMappingUtils::create(const char* name, size_t length, floa
     
     // 如果这是第一个映射，则设置为默认映射
     if(store.num == 1) {
-        strncpy(store.defaultName, name, sizeof(store.defaultName) - 1);
-        store.defaultName[sizeof(store.defaultName) - 1] = '\0';
+        strncpy(store.defaultId, id, sizeof(store.defaultId) - 1);
+        store.defaultId[sizeof(store.defaultId) - 1] = '\0';
     }
 
     // 保存更新后的存储结构
@@ -143,11 +152,28 @@ ADCBtnsError ADCValuesMappingUtils::create(const char* name, size_t length, floa
     return ADCBtnsError::SUCCESS;
 }
 
-ADCBtnsError ADCValuesMappingUtils::update(const char* name, const ADCValuesMapping& mapping) {
-    if (!name) return ADCBtnsError::INVALID_PARAMS;
+ADCBtnsError ADCValuesMappingUtils::rename(const char* id, const char* name) {
+    if (!id || !name) return ADCBtnsError::INVALID_PARAMS;
+    
+    int idx = findIndex(id);
+    if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
+    
+    strncpy(store.mapping[idx].name, name, sizeof(store.mapping[idx].name) - 1);
+    store.mapping[idx].name[sizeof(store.mapping[idx].name) - 1] = '\0';
+    
+    // 保存更新后的存储结构
+    if(saveStore() != QSPI_W25Qxx_OK) {
+        return ADCBtnsError::MAPPING_UPDATE_FAILED;
+    }
+
+    return ADCBtnsError::SUCCESS;
+}
+
+ADCBtnsError ADCValuesMappingUtils::update(const char* id, const ADCValuesMapping& mapping) {
+    if (!id) return ADCBtnsError::INVALID_PARAMS;
     if (mapping.length == 0 || mapping.length > MAX_ADC_VALUES_LENGTH) return ADCBtnsError::INVALID_PARAMS;
     
-    int idx = findIndex(name);
+    int idx = findIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
     
     // 更新映射数据
@@ -163,17 +189,17 @@ ADCBtnsError ADCValuesMappingUtils::update(const char* name, const ADCValuesMapp
 
 /**
  * @brief 设置默认映射
- * @param name 映射名称
+ * @param id 映射ID
  * @return 错误码
  */
-ADCBtnsError ADCValuesMappingUtils::setDefault(const char* name) {
-    if (!name) return ADCBtnsError::INVALID_PARAMS;
+ADCBtnsError ADCValuesMappingUtils::setDefault(const char* id) {
+    if (!id) return ADCBtnsError::INVALID_PARAMS;
     
-    uint8_t idx = findIndex(name);
+    uint8_t idx = findIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
     
-    strncpy(store.defaultName, name, sizeof(store.defaultName) - 1);
-    store.defaultName[sizeof(store.defaultName) - 1] = '\0';
+    strncpy(store.defaultId, id, sizeof(store.defaultId) - 1);
+    store.defaultId[sizeof(store.defaultId) - 1] = '\0';
     
     // 保存更新后的存储结构
     if(saveStore() != QSPI_W25Qxx_OK) {
@@ -184,18 +210,15 @@ ADCBtnsError ADCValuesMappingUtils::setDefault(const char* name) {
 }
 
 /**
- * @brief 获取映射名称列表
- * @return 映射名称列表
+ * @brief 获取映射列表
+ * @return 映射列表
  */
-std::vector<std::string> ADCValuesMappingUtils::getMappingNameList() {
-    std::vector<std::string> nameList;
-    printf("getMappingNameList num: %d\n", store.num);
-    
+ std::vector<ADCValuesMapping*> ADCValuesMappingUtils::getMappingList() {
+    std::vector<ADCValuesMapping*> mappingList;
     for(uint8_t i = 0; i < store.num; i++) {
-        nameList.push_back(std::string(store.mapping[i].name));
+        mappingList.push_back(&store.mapping[i]);
     }
-    
-    return nameList;
+    return mappingList;
 }
 
 /**
@@ -206,10 +229,10 @@ std::string ADCValuesMappingUtils::getDefault() {
     // 如果映射数量为0，则返回空字符串
     if(store.num == 0) return "";
     // 如果默认映射名称未设置，则返回第一个映射名称
-    if(store.defaultName[0] == '\0') {
-        return std::string(store.mapping[0].name);
+    if(store.defaultId[0] == '\0') {
+        return std::string(store.mapping[0].id);
     };
-    return std::string(store.defaultName);
+    return std::string(store.defaultId);
 }
 
 /**
@@ -217,11 +240,11 @@ std::string ADCValuesMappingUtils::getDefault() {
  * @param name 映射名称
  * @return 映射JSON
  */
-ADCValuesMapping* ADCValuesMappingUtils::getMapping(const char* name) {
-    if (!name) return nullptr;
-    
+ADCValuesMapping* ADCValuesMappingUtils::getMapping(const char* id) {
+    if (!id) return nullptr;
+
     // 查找映射
-    int idx = findIndex(name);
+    int idx = findIndex(id);
     if(idx == -1) return nullptr;
     
     return &store.mapping[idx];
@@ -231,10 +254,10 @@ ADCValuesMapping* ADCValuesMappingUtils::getMapping(const char* name) {
  * @brief 判断映射是否是递增的
  * @return 是否递增
  */
-bool ADCValuesMappingUtils::isIncrement(const char* name) {
-    if (!name) return false;
+bool ADCValuesMappingUtils::isIncrement(const char* id) {
+    if (!id) return false;
     
-    int idx = findIndex(name);
+    int idx = findIndex(id);
     if(idx == -1) return false;
     
     return store.mapping[idx].originalValues[0] < store.mapping[idx].originalValues[store.mapping[idx].length - 1];
@@ -244,10 +267,10 @@ bool ADCValuesMappingUtils::isIncrement(const char* name) {
  * @brief 获取最大行程
  * @return 最大行程
  */
-float_t ADCValuesMappingUtils::getMaxDistance(const char* name) {
-    if (!name) return 0;
+float_t ADCValuesMappingUtils::getMaxDistance(const char* id) {
+    if (!id) return 0;
     
-    int idx = findIndex(name);
+    int idx = findIndex(id);
     if(idx == -1) return 0;
     
     return store.mapping[idx].step * (store.mapping[idx].length - 1);
@@ -257,19 +280,19 @@ float_t ADCValuesMappingUtils::getMaxDistance(const char* name) {
  * @brief 获取步长
  * @return 步长
  */
-float_t ADCValuesMappingUtils::getStep(const char* name) {
-    if (!name) return 0;
+float_t ADCValuesMappingUtils::getStep(const char* id) {
+    if (!id) return 0;
 
-    int idx = findIndex(name);
+    int idx = findIndex(id);
     if(idx == -1) return 0;
     
     return store.mapping[idx].step;
 }
 
-uint8_t ADCValuesMappingUtils::getLength(const char* name) {
-    if (!name) return 0;
+uint8_t ADCValuesMappingUtils::getLength(const char* id) {
+    if (!id) return 0;
         
-    int idx = findIndex(name);
+    int idx = findIndex(id);
     if(idx == -1) return 0;
     
     return store.mapping[idx].length;
@@ -282,10 +305,10 @@ uint8_t ADCValuesMappingUtils::getLength(const char* name) {
  * @param firstValue 新的首值
  * @param lastValue 新的尾值
  */
-ADCBtnsError ADCValuesMappingUtils::calibration(const char* name, uint8_t buttonIndex, float_t firstValue, float_t lastValue) {
-    if (!name) return ADCBtnsError::INVALID_PARAMS;
-    
-    int idx = findIndex(name);
+ADCBtnsError ADCValuesMappingUtils::calibration(const char* id, uint8_t buttonIndex, float_t firstValue, float_t lastValue) {
+    if (!id) return ADCBtnsError::INVALID_PARAMS;
+
+    int idx = findIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
 
     ADCValuesMapping& mapping = store.mapping[idx];
@@ -339,10 +362,10 @@ ADCBtnsError ADCValuesMappingUtils::calibration(const char* name, uint8_t button
  * @param firstValues 首值数组
  * @param lastValues 尾值数组
  */
-ADCBtnsError ADCValuesMappingUtils::calibrationAll(const char* name, float_t* firstValues, float_t* lastValues) {
-    if (!name) return ADCBtnsError::INVALID_PARAMS;
+ADCBtnsError ADCValuesMappingUtils::calibrationAll(const char* id, float_t* firstValues, float_t* lastValues) {
+    if (!id) return ADCBtnsError::INVALID_PARAMS;
     
-    int idx = findIndex(name);
+    int idx = findIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
 
     ADCValuesMapping& mapping = store.mapping[idx];
@@ -409,17 +432,17 @@ ADCBtnsError ADCValuesMappingUtils::calibrationAll(const char* name, float_t* fi
 }
 
 // 参数验证辅助函数
-bool validateMarkParams(const char* name, uint32_t* values, uint8_t length) {
-    if (!name || !values || length == 0 || length > MAX_ADC_VALUES_LENGTH) {
+bool validateMarkParams(const char* id, uint32_t* values, uint8_t length) {
+    if (!id || !values || length == 0 || length > MAX_ADC_VALUES_LENGTH) {
         return false;
     }
     return true;
 }
 
-ADCBtnsError ADCValuesMappingUtils::mark(const char* name, uint32_t* values, uint8_t length) {
-    if (!name || !values || length == 0 || length > MAX_ADC_VALUES_LENGTH) return ADCBtnsError::INVALID_PARAMS;
+ADCBtnsError ADCValuesMappingUtils::mark(const char* id, uint32_t* values, uint8_t length) {
+    if (!id || !values || length == 0 || length > MAX_ADC_VALUES_LENGTH) return ADCBtnsError::INVALID_PARAMS;
     
-    int idx = findIndex(name);
+    int idx = findIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
 
     ADCValuesMapping& mapping = store.mapping[idx];

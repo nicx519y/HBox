@@ -7,7 +7,7 @@ extern "C" {
 
 #define FIRMWARE_VERSION                    (uint32_t)0x010000  //固件版本
 #define CONFIG_VERSION                      (uint32_t)0x000100  //配置版本 三位版本号 0x aa bb cc
-#define ADC_MAPPING_VERSION                 (uint32_t)0x000002  //ADC值映射表版本
+#define ADC_MAPPING_VERSION                 (uint32_t)0x000001  //ADC值映射表版本
 
 #define EX_ADDR                             0x90000000
 #define FSDATA_ADDR                         0x0               // flash起始地址 webconfig 网页数据地址

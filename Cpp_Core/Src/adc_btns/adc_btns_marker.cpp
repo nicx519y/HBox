@@ -194,6 +194,7 @@ uint32_t* ADCBtnsMarker::getCurrentMarkingValues() {
  */
 cJSON* ADCBtnsMarker::getStepInfoJSON() {
     cJSON* json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "id", step_info.id);
     cJSON_AddStringToObject(json, "mapping_name", step_info.mapping_name);
     cJSON_AddNumberToObject(json, "step", step_info.step);
     cJSON_AddNumberToObject(json, "length", step_info.length);

@@ -15,6 +15,7 @@
 
 // 步进信息结构体
 struct StepInfo {
+    char id[16];
     char mapping_name[16];
     float_t step;
     uint8_t length;
@@ -33,7 +34,7 @@ class ADCBtnsMarker {
             static ADCBtnsMarker instance;
             return instance;
         }
-        ADCBtnsError setup(const char* mapping_name);
+        ADCBtnsError setup(const char* id);
         ADCBtnsError step();
         
         void loop();

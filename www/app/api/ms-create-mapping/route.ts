@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createMapping } from '../data/adc_store';
+import { createMapping, getMappingList, getDefaultMapping  } from '../data/adc_store';
 
 export async function POST(request: Request) {
     try {
@@ -15,7 +15,9 @@ export async function POST(request: Request) {
         }
 
         const errNo = createMapping(name, length, step);
-        return NextResponse.json({ errNo, data: {} });
+        const mappingList = getMappingList();
+        const defaultMappingId = getDefaultMapping();
+        return NextResponse.json({ errNo, data: { mappingList, defaultMappingId } });
     } catch {
         return NextResponse.json(
             { errNo: 1, errorMessage: 'Internal server error' },

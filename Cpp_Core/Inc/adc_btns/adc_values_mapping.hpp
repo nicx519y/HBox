@@ -14,6 +14,7 @@
 #include "cJSON.h"
 
 struct ADCValuesMapping {
+    char id[16];               // 映射ID
     char name[16];              // 映射名称
     size_t length;            // 映射长度
     float_t step;               // 步长
@@ -24,7 +25,7 @@ struct ADCValuesMapping {
 struct ADCValuesMappingStore {
     uint32_t version;
     uint8_t num;
-    char defaultName[16];
+    char defaultId[16];
     ADCValuesMapping mapping[NUM_ADC_VALUES_MAPPING];
 };
 
@@ -40,26 +41,26 @@ class ADCValuesMappingUtils {
         }
 
         ADCBtnsError create(const char* name, size_t length, float_t step);
-        ADCBtnsError remove(const char* name);
-        ADCBtnsError update(const char* name, const ADCValuesMapping& mapping);
+        ADCBtnsError remove(const char* id);
+        ADCBtnsError rename(const char* id, const char* name);
+        ADCBtnsError update(const char* id, const ADCValuesMapping& mapping);
 
-        ADCBtnsError mark(const char* name, uint32_t* values, uint8_t length);
-        ADCBtnsError calibration(const char* name, uint8_t buttonIndex, float_t firstValue, float_t lastValue);
-        ADCBtnsError calibrationAll(const char* name, float_t* firstValues, float_t* lastValues);
-        ADCBtnsError setDefault(const char* name);
-        std::vector<std::string> getMappingNameList();
+        ADCBtnsError mark(const char* id, uint32_t* values, uint8_t length);
+        ADCBtnsError calibration(const char* id, uint8_t buttonIndex, float_t firstValue, float_t lastValue);
+        ADCBtnsError calibrationAll(const char* id, float_t* firstValues, float_t* lastValues);
+        ADCBtnsError setDefault(const char* id);
+        std::vector<ADCValuesMapping*> getMappingList();
         std::string getDefault();
-        float_t map(const char* name, uint32_t value, uint8_t buttonIndex);
-        float_t getMaxDistance(const char* name);
-        float_t getStep(const char* name);
-        uint8_t getLength(const char* name);
-        int8_t findIndex(const char* name);
+        float_t map(const char* id, uint32_t value, uint8_t buttonIndex);
+        float_t getMaxDistance(const char* id);
+        float_t getStep(const char* id);
+        uint8_t getLength(const char* id);
+        int8_t findIndex(const char* id);
 
+        char* getMappingDefaultId();
+        ADCValuesMapping* getMapping(const char* id);
 
-        char* getMappingDefaultName();
-        ADCValuesMapping* getMapping(const char* name);
-
-        bool isIncrement(const char* name);
+        bool isIncrement(const char* id);
         
     private:
         ADCValuesMappingUtils();
