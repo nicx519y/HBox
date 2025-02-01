@@ -24,7 +24,6 @@ ADCBtnsMarker::ADCBtnsMarker() {
  * @brief 重置ADC值标记器
  */
 void ADCBtnsMarker::reset() {
-    printf("ADCBtnsMarker::reset start.\n");
     value_tmp = 0;
     num_value_tmp = 0;
 
@@ -42,24 +41,29 @@ void ADCBtnsMarker::reset() {
 
     // 清空DMA缓存
     memset(ADC_Values, 0, sizeof(ADC_Values));
-    printf("ADCBtnsMarker::reset end.\n");
 }
 
 /**
  * @brief 初始化ADC值标记器
  * @param mapping_name 映射名称
  */
-ADCBtnsError ADCBtnsMarker::setup(const char* name) {
-    if (!name) return ADCBtnsError::INVALID_PARAMS;
+ADCBtnsError ADCBtnsMarker::setup(const char* id) {
+    if (!id) return ADCBtnsError::INVALID_PARAMS;
 
     reset();
 
+    ADCValuesMapping* mapping = ADC_VALUES_MAPPING.getMapping(id);
+
+    if (!mapping) return ADCBtnsError::MAPPING_NOT_FOUND;
+
     // 初始化步进信息
-    strncpy(step_info.mapping_name, name, sizeof(step_info.mapping_name) - 1);
+    strncpy(step_info.id, id, sizeof(step_info.id) - 1);
+    step_info.id[sizeof(step_info.id) - 1] = '\0';
+    strncpy(step_info.mapping_name, mapping->name, sizeof(step_info.mapping_name) - 1);
     step_info.mapping_name[sizeof(step_info.mapping_name) - 1] = '\0';
     step_info.index = 0;
-    step_info.length = ADC_VALUES_MAPPING.getLength(name);
-    step_info.step = ADC_VALUES_MAPPING.getStep(name);
+    step_info.length = mapping->length;
+    step_info.step = mapping->step;
     memset(step_info.values, 0, sizeof(step_info.values));
     step_info.is_marking = true;
     step_info.is_completed = false;
@@ -112,7 +116,7 @@ ADCBtnsError ADCBtnsMarker::step() {
     value_tmp = 0;
     num_value_tmp = 0;
     step_info.is_sampling = true;
-    return ADCBtnsError::SUCCESS;
+    return ADCBtnsError::SUCCESS;   
 }
 
 /**

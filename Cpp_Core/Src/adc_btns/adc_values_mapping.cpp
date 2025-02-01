@@ -121,7 +121,7 @@ ADCBtnsError ADCValuesMappingUtils::create(const char* name, size_t length, floa
     if(store.num >= NUM_ADC_VALUES_MAPPING) return ADCBtnsError::MAPPING_STORAGE_FULL;
     
     char id[16];
-    sprintf(id, "ADCMapping-%d", HAL_GetTick());
+    sprintf(id, "ADC-%d", HAL_GetTick());
 
     // 创建新映射
     ADCValuesMapping& newMapping = store.mapping[store.num];

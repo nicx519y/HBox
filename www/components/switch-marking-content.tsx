@@ -113,12 +113,11 @@ export function SwitchMarkingContent() {
             setIsDirty(false);
         }
 
+        const activeMappingIsMarking = (markingStatus?.id === activeMapping?.id);
         // 如果标记中，但标记的不是当前映射，则停止标记
-        if(markingStatus?.is_marking && markingStatus?.mapping_name !== activeMapping?.name) {
+        if(markingStatus?.is_marking && !activeMappingIsMarking) {
             stopMarking();
         }
-
-        const activeMappingIsMarking = (markingStatus?.mapping_name === activeMapping?.name);
 
         if(activeMappingIsMarking) {
             const myData = {
