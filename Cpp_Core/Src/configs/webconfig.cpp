@@ -1918,18 +1918,14 @@ std::string apiMSGetMapping() {
     cJSON_AddItemToObject(mappingJSON, "name", cJSON_CreateString(resultMapping->name));
     cJSON_AddItemToObject(mappingJSON, "length", cJSON_CreateNumber(resultMapping->length));
     cJSON_AddItemToObject(mappingJSON, "step", cJSON_CreateNumber(resultMapping->step));
+    cJSON_AddItemToObject(mappingJSON, "samplingFrequency", cJSON_CreateNumber(resultMapping->samplingFrequency));
+    cJSON_AddItemToObject(mappingJSON, "samplingNoise", cJSON_CreateNumber(resultMapping->samplingNoise));
 
     cJSON* originalValuesJSON = cJSON_CreateArray();
     for(size_t i = 0; i < resultMapping->length; i++) {
         cJSON_AddItemToArray(originalValuesJSON, cJSON_CreateNumber(resultMapping->originalValues[i]));
     }
     cJSON_AddItemToObject(mappingJSON, "originalValues", originalValuesJSON);
-
-    cJSON* calibratedValuesJSON = cJSON_CreateArray();
-    for(size_t i = 0; i < resultMapping->length; i++) {
-        cJSON_AddItemToArray(calibratedValuesJSON, cJSON_CreateNumber(resultMapping->calibratedValues[i]));
-    }
-    cJSON_AddItemToObject(mappingJSON, "calibratedValues", calibratedValuesJSON);
     
     cJSON* dataJSON = cJSON_CreateObject();
     cJSON_AddItemToObject(dataJSON, "mapping", mappingJSON);

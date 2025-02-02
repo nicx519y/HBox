@@ -7,7 +7,7 @@ extern "C" {
 
 #define FIRMWARE_VERSION                    (uint32_t)0x010000  //固件版本
 #define CONFIG_VERSION                      (uint32_t)0x000100  //配置版本 三位版本号 0x aa bb cc
-#define ADC_MAPPING_VERSION                 (uint32_t)0x000001  //ADC值映射表版本
+#define ADC_MAPPING_VERSION                 (uint32_t)0x000002  //ADC值映射表版本
 
 #define EX_ADDR                             0x90000000
 #define FSDATA_ADDR                         0x0               // flash起始地址 webconfig 网页数据地址
@@ -15,9 +15,10 @@ extern "C" {
 #define CONFIG_ADDR                         0x00400000       //配置数据地址
 
 #define NUM_ADC_VALUES_MAPPING              8             // 最大8个映射 ADC按钮映射表用于值查找
-#define MAX_ADC_VALUES_LENGTH               50             // 每个映射最大50个值 ADC按钮映射表用于值查找
+#define MAX_ADC_VALUES_LENGTH               40             // 每个映射最大40个值 ADC按钮映射表用于值查找
 #define MAX_NUM_MARKING_VALUE               100            // 每个step最大采集值个数
-#define MIN_DIFF_ADC_VALUES_FIRST_AND_LAST  10000          // 最小值和最大值的差值，用于判断是否正确校准
+#define TIME_ADC_INIT                       1000           // ADC初始化时间，时间越长初始化越准确
+#define NUM_WINDOW_SIZE                     8             // 校准滑动窗口大小
 
 #define NUM_PROFILES                        16
 #define NUM_ADC1_BUTTONS                    9

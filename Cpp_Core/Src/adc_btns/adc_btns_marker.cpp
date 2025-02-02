@@ -115,6 +115,11 @@ ADCBtnsError ADCBtnsMarker::step() {
     // 如果未采样，则准备采样
     value_tmp = 0;
     num_value_tmp = 0;
+    tmpValueMin = UINT32_MAX;
+    tmpValueMax = 0;
+    tmpSamplingNoise = 0;
+    tmpSamplingFrequency = 0;
+    t = HAL_GetTick();
     step_info.is_sampling = true;
     return ADCBtnsError::SUCCESS;   
 }
@@ -149,6 +154,8 @@ void ADCBtnsMarker::process(ADC_HandleTypeDef *hadc) {
 
         if(new_value <= UINT32_MAX) {
             value_tmp = static_cast<uint32_t>(new_value);
+            if(value_tmp < tmpValueMin) tmpValueMin = value_tmp;
+            if(value_tmp > tmpValueMax) tmpValueMax = value_tmp;
             num_value_tmp++;
         } else {
             // 溢出处理，将溢出值保存到标记值中，并开始下一个标记，提前结束步进
@@ -163,6 +170,10 @@ void ADCBtnsMarker::process(ADC_HandleTypeDef *hadc) {
  * 将临时值保存到标记值中，并重置标记器
  */
 void ADCBtnsMarker::stepFinish() {
+
+    tmpSamplingFrequency += num_value_tmp / (HAL_GetTick() - t); // 记录采样频率，单位Hz
+    tmpSamplingNoise += (tmpValueMax - tmpValueMin); // 记录采样噪声
+
     step_info.is_sampling = false;
     // 计算平均值，double_t精度更高，round四舍五入
     step_info.values[step_info.index] = static_cast<uint32_t>(round(static_cast<double_t>(value_tmp) / static_cast<double_t>(num_value_tmp)));
@@ -180,12 +191,14 @@ void ADCBtnsMarker::markingFinish() {
     step_info.is_sampling = false;
     step_info.is_marking = false;
     step_info.values[step_info.index] = value_tmp / num_value_tmp;
+    tmpSamplingFrequency /= step_info.length; // 记录平均采样频率，单位Hz
+    tmpSamplingNoise /= step_info.length; // 记录平均采样噪声，单位V
     
     if(HAL_ADC_Stop_DMA(&hadc1) != HAL_OK) {
         printf("ADCValuesMarker: Failed to stop DMA\n");
     }
 
-    ADC_VALUES_MAPPING.mark(step_info.mapping_name, step_info.values, step_info.length);
+    ADC_VALUES_MAPPING.mark(step_info.mapping_name, step_info.values, step_info.length, tmpSamplingFrequency, tmpSamplingNoise);
 }
 
 uint32_t* ADCBtnsMarker::getCurrentMarkingValues() {

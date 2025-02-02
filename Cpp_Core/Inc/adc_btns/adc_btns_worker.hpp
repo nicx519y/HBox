@@ -26,11 +26,32 @@ enum class ADCBtnsWorkerError {
 };
 
 typedef struct {
+    // 按钮配置
     uint32_t virtualPin;    // 虚拟引脚
     float_t pressAccuracy;   // 按下精度
     float_t releaseAccuracy; // 释放精度
     float_t topDeadzone;     // 顶部死区
     float_t bottomDeadzone;  // 底部死区
+    bool lastTriggerState;   // 上次触发状态
+    float lastTriggerDistance; // 上次触发行程
+
+    // 校准参数
+    int32_t firstValue;     // 第一个值
+    int32_t lastValue;      // 最后一个值
+    int32_t tmpValue;       // 临时值
+    uint32_t tmpNumSameDirection;     // 临时同方向采样计数
+    int8_t tmpDirection;     // 临时方向
+    uint32_t initTime;      // 初始化时间
+    bool initCompleted;     // 初始化完成
+
+    // 滑动窗口
+    int32_t firstValueWindow[NUM_WINDOW_SIZE];    // firstValue的滑动窗口
+    uint8_t firstValueWindowIndex;                // firstValueWindow的索引
+    int32_t lastValueWindow[NUM_WINDOW_SIZE];     // lastValue的滑动窗口
+    uint8_t lastValueWindowIndex;                 // lastValueWindow的索引
+
+    uint16_t valueMapping[MAX_ADC_VALUES_LENGTH]; // 值映射
+
 } ADCBtn;
 
 class ADCBtnsWorker {
@@ -46,17 +67,19 @@ class ADCBtnsWorker {
         }
         ADCBtnsError setup();
         ADCBtnsError deinit();
-        void loop();
     private:
-        ADCBtnsWorker();
+        ADCBtnsWorker() {}
+        void updateButtonMapping(uint16_t* mapping, uint16_t firstValue, uint16_t lastValue);
+        float_t searchButtonDistance(uint16_t* mapping, uint16_t value);
+        void buttonWorking(ADC_HandleTypeDef *hadc);
+        void calibADC(ADC_HandleTypeDef *hadc);
         bool is_dma_started = false;
         ADCBtn* buttonPtrs[NUM_ADC_BUTTONS];
-        
-        float_t lastTriggerDistance[NUM_ADC_BUTTONS];  // 上次触发距离
-        bool lastTriggerState[NUM_ADC_BUTTONS];  // 上次触发状态
-        bool triggerStatusInited = false;  // 触发状态是否已初始化
         uint32_t virtualPinMask = 0x0;  // 虚拟引脚掩码
-        float_t maxDistance;  // 最大行程
+        ADCValuesMapping* mapping;
+        int32_t valueDistance;          // lastValue - firstValue
+        int32_t samplingTimes;          // 校准用 一次方向运动至少的采样次数
+        int32_t samplingNoise;          // 校准用 噪声阈值
 };
 
 #define ADC_BTNS_WORKER ADCBtnsWorker::getInstance()

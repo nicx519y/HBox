@@ -56,6 +56,11 @@ class ADCBtnsMarker {
         void stepFinish();
         void markingFinish();
         std::function<void(const void*)> messageHandler;
+        uint32_t tmpValueMin;
+        uint32_t tmpValueMax;
+        uint32_t tmpSamplingNoise;
+        uint32_t tmpSamplingFrequency;
+        uint32_t t;
 };
 
 #define ADC_BTNS_MARKER ADCBtnsMarker::getInstance()

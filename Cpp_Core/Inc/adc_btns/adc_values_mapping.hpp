@@ -14,12 +14,13 @@
 #include "cJSON.h"
 
 struct ADCValuesMapping {
-    char id[16];               // 映射ID
-    char name[16];              // 映射名称
-    size_t length;            // 映射长度
-    float_t step;               // 步长
-    uint32_t originalValues[MAX_ADC_VALUES_LENGTH];
-    uint32_t calibratedValues[MAX_ADC_VALUES_LENGTH];
+    char id[16];                                            // 映射ID
+    char name[16];                                          // 映射名称
+    size_t length;                                          // 映射长度
+    float_t step;                                           // 步长
+    uint32_t samplingNoise;                                 // 噪声阈值
+    uint32_t samplingFrequency;                             // 采样频率
+    uint32_t originalValues[MAX_ADC_VALUES_LENGTH];         // 采集原始值
 };
 
 struct ADCValuesMappingStore {
@@ -45,23 +46,12 @@ class ADCValuesMappingUtils {
         ADCBtnsError rename(const char* id, const char* name);
         ADCBtnsError update(const char* id, const ADCValuesMapping& mapping);
 
-        ADCBtnsError mark(const char* id, uint32_t* values, uint8_t length);
-        ADCBtnsError calibration(const char* id, uint8_t buttonIndex, float_t firstValue, float_t lastValue);
-        ADCBtnsError calibrationAll(const char* id, float_t* firstValues, float_t* lastValues);
+        ADCBtnsError mark(const char* id, uint32_t* values, uint8_t length, uint32_t samplingNoise, uint32_t samplingFrequency);
         ADCBtnsError setDefault(const char* id);
-        std::vector<ADCValuesMapping*> getMappingList();
         std::string getDefault();
-        float_t map(const char* id, uint32_t value, uint8_t buttonIndex);
-        float_t getMaxDistance(const char* id);
-        float_t getStep(const char* id);
-        uint8_t getLength(const char* id);
+        std::vector<ADCValuesMapping*> getMappingList();
         int8_t findIndex(const char* id);
-
-        char* getMappingDefaultId();
         ADCValuesMapping* getMapping(const char* id);
-
-        bool isIncrement(const char* id);
-        
     private:
         ADCValuesMappingUtils();
 };
