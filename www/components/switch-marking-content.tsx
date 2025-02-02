@@ -19,21 +19,21 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 const options: ChartOptions<"line"> = {
     responsive: true,
     plugins: {
-        legend: {
+      legend: {
             position: 'top' as const,
             display: false,
-        },
-        title: {
+      },
+      title: {
             display: false,
-            text: 'Chart.js Line Chart',
-        },
+        text: 'Chart.js Line Chart',
+      },
     },
     animation: {
         duration: 500,
         easing: 'easeInOutCubic',
     }
-};
-
+  };
+  
 
 
 export function SwitchMarkingContent() {

@@ -51,6 +51,7 @@ typedef struct {
     uint8_t lastValueWindowIndex;                 // lastValueWindow的索引
 
     uint16_t valueMapping[MAX_ADC_VALUES_LENGTH]; // 值映射
+    size_t lastSearchIndex;                       // 上次查找的位置
 
 } ADCBtn;
 
@@ -70,7 +71,7 @@ class ADCBtnsWorker {
     private:
         ADCBtnsWorker() {}
         void updateButtonMapping(uint16_t* mapping, uint16_t firstValue, uint16_t lastValue);
-        float_t searchButtonDistance(uint16_t* mapping, uint16_t value);
+        float_t searchButtonDistance(ADCBtn* btn, uint16_t value);
         void buttonWorking(ADC_HandleTypeDef *hadc);
         void calibADC(ADC_HandleTypeDef *hadc);
         bool is_dma_started = false;

@@ -138,7 +138,7 @@ void ADCBtnsWorker::buttonWorking(ADC_HandleTypeDef *hadc) {
         }
 
         // 获取当前距离
-        float_t distance = searchButtonDistance(buttonPtrs[i]->valueMapping, ADC_Values[i]);
+        float_t distance = searchButtonDistance(buttonPtrs[i], ADC_Values[i]);
 
         // 处理触发状态
         if(buttonPtrs[i]->lastTriggerState == false) {
@@ -244,44 +244,60 @@ void ADCBtnsWorker::updateButtonMapping(uint16_t* mapping, uint16_t firstValue, 
 
 /**
  * 根据当前搜索按钮行程，线性插值
- * @param mapping uint16_t数组指针，用于存储映射值
+ * @param btn ADCBtn指针，包含映射数组和上次搜索位置
  * @param value 输入值
  * @return 返回距离
  */
-float_t ADCBtnsWorker::searchButtonDistance(uint16_t* mapping, uint16_t value) {
-    if (!mapping || !this->mapping) {
+float_t ADCBtnsWorker::searchButtonDistance(ADCBtn* btn, uint16_t value) {
+    if (!btn || !this->mapping) {
         return 0.0f;
     }
+
+    uint16_t* mapping = btn->valueMapping;
 
     // 处理边界情况
     if (value <= mapping[0]) {
+        btn->lastSearchIndex = 0;
         return 0.0f;
     }
     if (value >= mapping[this->mapping->length - 1]) {
+        btn->lastSearchIndex = this->mapping->length - 1;
         return this->mapping->step * (this->mapping->length - 1);
     }
 
-    // 二分查找找到最近的映射值
-    size_t left = 0;
-    size_t right = this->mapping->length - 1;
-    
-    while (left + 1 < right) {
-        size_t mid = (left + right) / 2;
-        if (mapping[mid] == value) {
-            return this->mapping->step * mid;
+    // 从上次查找位置开始搜索
+    size_t left = btn->lastSearchIndex;
+    size_t right = btn->lastSearchIndex + 1;
+
+    // 如果value小于当前位置的值，向左搜索
+    if (value < mapping[left]) {
+        right = left;
+        while (left > 0 && value < mapping[left - 1]) {
+            left--;
         }
-        if (mapping[mid] < value) {
-            left = mid;
-        } else {
-            right = mid;
+    }
+    // 如果value大于下一个位置的值，向右搜索
+    else if (right < this->mapping->length && value > mapping[right]) {
+        left = right;
+        right++;
+        while (right < this->mapping->length && value > mapping[right]) {
+            left = right;
+            right++;
         }
+    }
+
+    // 更新上次查找位置
+    btn->lastSearchIndex = left;
+
+    // 如果找到精确匹配
+    if (mapping[left] == value) {
+        return this->mapping->step * left;
     }
 
     // 线性插值计算精确距离
     float_t segment = (float_t)(value - mapping[left]) / (mapping[right] - mapping[left]);
     float_t position = left + segment;
     
-    // 使用step计算实际行程
     return this->mapping->step * position;
 }
 
