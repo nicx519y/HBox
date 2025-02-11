@@ -2593,9 +2593,9 @@ http_find_file(struct http_state *hs, const char *uri, int is_09)
     /* None of the default filenames exist so send back a 404 page */
     file = http_get_404_file(hs, &uri);
   }
-  printf("http_find_file 3: file=%p\n", file);
+  // printf("http_find_file 3: file=%p\n", file);
   err_t error = http_init_file(hs, file, is_09, uri, tag_check, params);
-  printf("http_find_file 4: error=%d\n", error);
+  // printf("http_find_file 4: error=%d\n", error);
   return error;
 }
 

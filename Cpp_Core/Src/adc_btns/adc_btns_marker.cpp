@@ -1,11 +1,13 @@
 #include "adc_btns/adc_btns_marker.hpp"
 
 // 定义静态成员变量
-__attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsMarker::ADC_Values[NUM_ADC_BUTTONS];
+// __attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsMarker::ADC_Values[NUM_ADC_BUTTONS];
 __attribute__((section("._RAM_D1_Area"))) StepInfo ADCBtnsMarker::step_info;
 __attribute__((section("._RAM_D1_Area"))) uint8_t ADCBtnsMarker::num_value_tmp;
 __attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsMarker::value_tmp;
 
+
+#define ADC_Values ADCValuesMappingUtils::ADC_Values
 
 /**
  * @brief 构造函数
@@ -29,9 +31,7 @@ void ADCBtnsMarker::reset() {
 
     memset(&step_info, 0, sizeof(step_info));
     
-    if(HAL_ADC_Stop_DMA(&hadc1) != HAL_OK) {
-        printf("ADCValuesMarker: Failed to stop DMA\n");
-    }
+    ADC_VALUES_MAPPING.stopADCSamping();
 
     // 取消订阅ADC转换完成回调
     if (messageHandler) {
@@ -48,11 +48,29 @@ void ADCBtnsMarker::reset() {
  * @param mapping_name 映射名称
  */
 ADCBtnsError ADCBtnsMarker::setup(const char* id) {
+
+
     if (!id) return ADCBtnsError::INVALID_PARAMS;
 
     reset();
+    /********************** test begin **********************/
+    // if(strcmp(id, "11") == 0) {
+
+    //     memset(ADC_Values, 0, sizeof(ADC_Values));
+    //     step_info.is_sampling = true;
+    //     messageHandler = [this](const void* data) {
+    //     if (data) {
+    //         this->process((ADC_HandleTypeDef*)data);
+    //     }
+    //     };
+    //     MC.subscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
+
+    //     ADC_VALUES_MAPPING.startADCSamping();
+    // }
+    /********************** test end **********************/
 
     ADCValuesMapping* mapping = ADC_VALUES_MAPPING.getMapping(id);
+
 
     if (!mapping) return ADCBtnsError::MAPPING_NOT_FOUND;
 
@@ -68,6 +86,8 @@ ADCBtnsError ADCBtnsMarker::setup(const char* id) {
     step_info.is_marking = true;
     step_info.is_completed = false;
     step_info.is_sampling = false;
+    step_info.sampling_noise = 0;
+    step_info.sampling_frequency = 0;
 
     // 注册ADC转换完成回调
     messageHandler = [this](const void* data) {
@@ -77,16 +97,7 @@ ADCBtnsError ADCBtnsMarker::setup(const char* id) {
     };
     MC.subscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
 
-    // 校准ADC1
-    if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK) {
-        return ADCBtnsError::ADC1_CALIB_FAILED;
-    }
-
-    // 启动DMA1
-    if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Values[0], NUM_ADC1_BUTTONS) != HAL_OK) {
-        return ADCBtnsError::DMA1_START_FAILED;
-    }
-
+    ADC_VALUES_MAPPING.startADCSamping();
 
     return ADCBtnsError::SUCCESS;
 }
@@ -117,20 +128,10 @@ ADCBtnsError ADCBtnsMarker::step() {
     num_value_tmp = 0;
     tmpValueMin = UINT32_MAX;
     tmpValueMax = 0;
-    tmpSamplingNoise = 0;
-    tmpSamplingFrequency = 0;
+
     t = HAL_GetTick();
     step_info.is_sampling = true;
     return ADCBtnsError::SUCCESS;   
-}
-
-/**
- * @brief 处理ADC值
- * 将DMA值累加到临时值中，并更新临时值
- * 如果临时值已满，则将临时值保存到标记值中，并重置临时值
- */
-void ADCBtnsMarker::loop() {
-    //...
 }
 
 void ADCBtnsMarker::process(ADC_HandleTypeDef *hadc) {
@@ -143,25 +144,25 @@ void ADCBtnsMarker::process(ADC_HandleTypeDef *hadc) {
         return;
     }
 
+    SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
+    uint32_t adcValue = ADC_Values[0];
+
+    // printf("%d\n", adcValue);
+
+    if(adcValue == 0 || adcValue > UINT16_MAX) {
+        return;
+    }
+
+
     // 如果临时值已满，则步进完成
+
     if(num_value_tmp >= MAX_NUM_TMP_MARKING) {
         stepFinish();
-    } else { // 否则，累加临时值
-        // printf("ADCBtnsMarker::loop value_tmp: %d, num_value_tmp: %d, ADC_Values[0]: %d\n", value_tmp, num_value_tmp, ADC_Values[0]);
-        SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
-        // 使用64位整数进行溢出检查
-        uint64_t new_value = static_cast<uint64_t>(value_tmp) + ADC_Values[0];
-
-        if(new_value <= UINT32_MAX) {
-            value_tmp = static_cast<uint32_t>(new_value);
-            if(value_tmp < tmpValueMin) tmpValueMin = value_tmp;
-            if(value_tmp > tmpValueMax) tmpValueMax = value_tmp;
-            num_value_tmp++;
-        } else {
-            // 溢出处理，将溢出值保存到标记值中，并开始下一个标记，提前结束步进
-            printf("ADCBtnsMarker: Value overflow detected\n");
-            stepFinish();
-        }
+    } else if(adcValue != 0) { // 否则，累加临时值
+        value_tmp += adcValue;
+        if(adcValue < tmpValueMin) tmpValueMin = adcValue;
+        if(adcValue > tmpValueMax) tmpValueMax = adcValue;
+        num_value_tmp++;
     }
 }
 
@@ -170,14 +171,13 @@ void ADCBtnsMarker::process(ADC_HandleTypeDef *hadc) {
  * 将临时值保存到标记值中，并重置标记器
  */
 void ADCBtnsMarker::stepFinish() {
-
-    tmpSamplingFrequency += num_value_tmp / (HAL_GetTick() - t); // 记录采样频率，单位Hz
-    tmpSamplingNoise += (tmpValueMax - tmpValueMin); // 记录采样噪声
-
     step_info.is_sampling = false;
     // 计算平均值，double_t精度更高，round四舍五入
     step_info.values[step_info.index] = static_cast<uint32_t>(round(static_cast<double_t>(value_tmp) / static_cast<double_t>(num_value_tmp)));
-    printf("ADCBtnsMarker::stepFinish value_tmp: %d, num_value_tmp: %d, step_info.index: %d, step_info.values[step_info.index]: %d\n", value_tmp, num_value_tmp, step_info.index, step_info.values[step_info.index]);
+    uint32_t tsf = static_cast<uint32_t>(static_cast<float_t>(num_value_tmp) / (static_cast<float_t>(HAL_GetTick() - t) / 1000.0f)); // 记录采样频率，单位Hz
+    // printf("ADCBtnsMarker: stepFinish - tsf: %d\n", tsf);
+    tmpSamplingFrequency += tsf; // 记录采样频率，单位Hz
+    tmpSamplingNoise += (tmpValueMax - tmpValueMin); // 记录采样噪声
     step_info.index ++;
 
 }
@@ -186,20 +186,32 @@ void ADCBtnsMarker::stepFinish() {
  * @brief 标记完成
  * 将标记值保存到映射中，并重置标记器
  */
+
 void ADCBtnsMarker::markingFinish() {
+    // printf("ADCBtnsMarker: markingFinish - begin mark save. tmpSamplingFrequency: %d, step_info.length: %d\n", tmpSamplingFrequency, step_info.length);
+    tmpSamplingFrequency /= step_info.length; // 记录平均采样频率，单位Hz
+    tmpSamplingNoise /= step_info.length; // 记录平均采样噪声，单位mV
+
+    ADC_VALUES_MAPPING.stopADCSamping();
+
+    ADCBtnsError err = ADC_VALUES_MAPPING.mark(step_info.id, step_info.values, tmpSamplingNoise, tmpSamplingFrequency);
+
+    step_info.sampling_frequency = tmpSamplingFrequency;
+    step_info.sampling_noise = tmpSamplingNoise;
     step_info.is_completed = true;
     step_info.is_sampling = false;
     step_info.is_marking = false;
-    step_info.values[step_info.index] = value_tmp / num_value_tmp;
-    tmpSamplingFrequency /= step_info.length; // 记录平均采样频率，单位Hz
-    tmpSamplingNoise /= step_info.length; // 记录平均采样噪声，单位V
-    
-    if(HAL_ADC_Stop_DMA(&hadc1) != HAL_OK) {
-        printf("ADCValuesMarker: Failed to stop DMA\n");
+
+    tmpSamplingFrequency = 0;
+    tmpSamplingNoise = 0;
+
+    if(err != ADCBtnsError::SUCCESS) {
+        printf("ADCBtnsMarker: markingFinish - mark save failed. err: %d\n", err);
+        return;
     }
 
-    ADC_VALUES_MAPPING.mark(step_info.mapping_name, step_info.values, step_info.length, tmpSamplingFrequency, tmpSamplingNoise);
 }
+
 
 uint32_t* ADCBtnsMarker::getCurrentMarkingValues() {
     return step_info.values;
@@ -219,6 +231,9 @@ cJSON* ADCBtnsMarker::getStepInfoJSON() {
     cJSON_AddBoolToObject(json, "is_marking", step_info.is_marking);
     cJSON_AddBoolToObject(json, "is_completed", step_info.is_completed);
     cJSON_AddBoolToObject(json, "is_sampling", step_info.is_sampling);
+    cJSON_AddNumberToObject(json, "sampling_noise", step_info.sampling_noise);
+    cJSON_AddNumberToObject(json, "sampling_frequency", step_info.sampling_frequency);
+
 
     cJSON* valuesJSON = cJSON_CreateArray();
     for(uint8_t i = 0; i < step_info.length; i++) {

@@ -10,7 +10,10 @@ enum class ADCBtnsError {
     NOT_INITIALIZED = -3,          // 未初始化
     ALREADY_INITIALIZED = -4,      // 已经初始化
     GAMEPAD_PROFILE_NOT_FOUND = -5,// 游戏手柄配置未找到
+    DMA1_STOP_FAILED = -6,         // DMA1停止失败
+    DMA2_STOP_FAILED = -7,         // DMA2停止失败
     
+
     // ADC/DMA 相关错误 (-10 ~ -19)
     ADC1_CALIB_FAILED = -10,       // ADC1校准失败
     ADC2_CALIB_FAILED = -11,       // ADC2校准失败

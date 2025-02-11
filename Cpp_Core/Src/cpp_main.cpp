@@ -16,9 +16,10 @@ int cpp_main(void)
     // Test FPU Status
     uint32_t fpscr = __get_FPSCR();
     printf("================== FPSCR = 0x%08lx =======================\r\n", fpscr);
-     
+
     // 注册ADC消息
     MC.registerMessage(MessageId::DMA_ADC_CONV_CPLT);
+    MC.registerMessage(MessageId::ADC_BTNS_STATE_CHANGED);
 
     getFSRoot();
     printf("================== getFSRoot success. =======================\n");

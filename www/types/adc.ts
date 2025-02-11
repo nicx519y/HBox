@@ -42,6 +42,8 @@ export interface StepInfo {
     is_marking: boolean;
     is_sampling: boolean;
     is_completed: boolean;
+    sampling_noise: number;
+    sampling_frequency: number;
 }
 
 // ADC值映射结构体
@@ -50,6 +52,8 @@ export interface ADCValuesMapping {
     name: string;
     length: number;
     step: number;
+    samplingFrequency: number;
+    samplingNoise: number;
     originalValues: number[];
     calibratedValues: number[];
 } 

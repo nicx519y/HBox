@@ -21,6 +21,8 @@
 
 // 存储实例
 static ADCValuesMappingStore store;
+__attribute__((section("._RAM_D1_Area"))) uint32_t ADCValuesMappingUtils::ADC_Values[NUM_ADC_BUTTONS];
+
 
 ADCValuesMappingUtils::ADCValuesMappingUtils() {
     // 读取整个存储结构
@@ -171,16 +173,21 @@ ADCBtnsError ADCValuesMappingUtils::rename(const char* id, const char* name) {
     return ADCBtnsError::SUCCESS;
 }
 
-ADCBtnsError ADCValuesMappingUtils::update(const char* id, const ADCValuesMapping& mapping) {
+ADCBtnsError ADCValuesMappingUtils::update(const char* id, const ADCValuesMapping& map) {
     if (!id) return ADCBtnsError::INVALID_PARAMS;
-    if (mapping.length == 0 || mapping.length > MAX_ADC_VALUES_LENGTH) return ADCBtnsError::INVALID_PARAMS;
+    if (map.length == 0 || map.length > MAX_ADC_VALUES_LENGTH) return ADCBtnsError::INVALID_PARAMS;
     
+
     int idx = findIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
-    
+
+    // printf("ADCValuesMappingUtils: update - begin update mapping.\n");
+    // printf("ADCValuesMappingUtils: update - mapping id: %s, name: %s, length: %d, step: %f, samplingNoise: %d, samplingFrequency: %d\n", 
+    //        map.id, map.name, map.length, map.step, map.samplingNoise, map.samplingFrequency);
+
     // 更新映射数据
-    memcpy(&store.mapping[idx], &mapping, sizeof(ADCValuesMapping));
-    
+    memcpy(&store.mapping[idx], &map, sizeof(ADCValuesMapping));
+
     // 保存更新后的存储结构
     if(saveStore() != QSPI_W25Qxx_OK) {
         return ADCBtnsError::MAPPING_UPDATE_FAILED;
@@ -262,8 +269,8 @@ bool validateMarkParams(const char* id, uint32_t* values, uint8_t length) {
     return true;
 }
 
-ADCBtnsError ADCValuesMappingUtils::mark(const char* id, uint32_t* values, uint8_t length, uint32_t samplingNoise, uint32_t samplingFrequency) {
-    if (!id || !values || length == 0 || length > MAX_ADC_VALUES_LENGTH) return ADCBtnsError::INVALID_PARAMS;
+ADCBtnsError ADCValuesMappingUtils::mark(const char* id, uint32_t* values, uint32_t samplingNoise, uint32_t samplingFrequency) {
+    if (!id || !values || samplingNoise == 0 || samplingFrequency == 0) return ADCBtnsError::INVALID_PARAMS;
     
     int idx = findIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
@@ -283,24 +290,67 @@ ADCBtnsError ADCValuesMappingUtils::mark(const char* id, uint32_t* values, uint8
     memcpy(oldOriginValues, mapping.originalValues, sizeof(mapping.originalValues));
     
     // 更新数据
-    mapping.length = length;
     mapping.samplingNoise = samplingNoise;
     mapping.samplingFrequency = samplingFrequency;
     memset(mapping.originalValues, 0, sizeof(mapping.originalValues));
-    memcpy(mapping.originalValues, values, length * sizeof(uint32_t));
+    memcpy(mapping.originalValues, values, mapping.length * sizeof(uint32_t));
 
+    // printf("ADCValuesMappingUtils: mark - begin update mapping.\n");
+    // printf("ADCValuesMappingUtils: mark - mapping id: %s, name: %s, length: %d, step: %f, samplingNoise: %d, samplingFrequency: %d\n", 
     // 如果更新失败，回滚所有更改
-    if (update(mapping.name, mapping) != ADCBtnsError::SUCCESS) {
-        mapping.length = oldLength;
+    
+    ADCBtnsError err = update(mapping.id, mapping);
+    if (err != ADCBtnsError::SUCCESS) {
         memcpy(mapping.originalValues, oldOriginValues, sizeof(mapping.originalValues));
         free(oldOriginValues);
-        return ADCBtnsError::MAPPING_UPDATE_FAILED;
+        printf("ADCValuesMappingUtils: mark - update mapping failed. err: %d\n", err);
+        return err;
     }
     
     free(oldOriginValues);
     return ADCBtnsError::SUCCESS;
 }
 
+
+ADCBtnsError ADCValuesMappingUtils::startADCSamping() {
+
+    this->stopADCSamping();
+
+    // 校准ADC1
+    if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK) {
+        return ADCBtnsError::ADC1_CALIB_FAILED;
+    }
+
+    // 启动DMA1
+    if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Values[0], NUM_ADC1_BUTTONS) != HAL_OK) {
+        return ADCBtnsError::DMA1_START_FAILED;
+    }
+
+
+    // 校准ADC2
+    if (HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK) {
+        return ADCBtnsError::ADC2_CALIB_FAILED;
+    }
+
+    // 启动DMA2
+    if (HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&ADC_Values[NUM_ADC1_BUTTONS], NUM_ADC2_BUTTONS) != HAL_OK) {
+        return ADCBtnsError::DMA2_START_FAILED;
+    }
+
+    return ADCBtnsError::SUCCESS;
+}
+
+ADCBtnsError ADCValuesMappingUtils::stopADCSamping() {
+    if(HAL_ADC_Stop_DMA(&hadc1) != HAL_OK) {
+        return ADCBtnsError::DMA1_STOP_FAILED;
+    }
+
+    if(HAL_ADC_Stop_DMA(&hadc2) != HAL_OK) {
+        return ADCBtnsError::DMA2_STOP_FAILED;
+    }
+
+    return ADCBtnsError::SUCCESS;
+}   
 
 
 

@@ -7,7 +7,7 @@ extern "C" {
 
 #define FIRMWARE_VERSION                    (uint32_t)0x010000  //固件版本
 #define CONFIG_VERSION                      (uint32_t)0x000100  //配置版本 三位版本号 0x aa bb cc
-#define ADC_MAPPING_VERSION                 (uint32_t)0x000002  //ADC值映射表版本
+#define ADC_MAPPING_VERSION                 (uint32_t)0x000001  //ADC值映射表版本
 
 #define EX_ADDR                             0x90000000
 #define FSDATA_ADDR                         0x0               // flash起始地址 webconfig 网页数据地址
@@ -38,7 +38,8 @@ extern "C" {
 
 #define HAS_LED                                    //是否有LED
 #define NUM_LED	                    (NUM_ADC_BUTTONS + NUM_GPIO_BUTTONS) //LED数量
-// #define NUM_LED                             21
+// #define NUM_LED                             1
+
 #define NUM_LEDs_PER_ADC_BUTTON     1              //每个按钮多少个LED
 #define LEDS_BRIGHTNESS_RADIO       0.3             //默认led 亮度系数
 #define LEDS_ANIMATION_CYCLE        6000            //LED 动画长度

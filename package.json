@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@chakra-ui/color-mode": "^2.2.0"
+  }
+}

@@ -11,33 +11,51 @@ import { PROFILE_NAME_MAX_LENGTH } from "@/types/gamepad-config";
 import { openConfirm } from "./dialog-confirm";
 import { useGamepadConfig } from "@/contexts/gamepad-config-context";
 import useUnsavedChangesWarning from "@/hooks/use-unsaved-changes-warning";
-
+import { useColorMode } from "./ui/color-mode";
 
 // 注册Chart.js组件
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const options: ChartOptions<"line"> = {
-    responsive: true,
-    plugins: {
-      legend: {
-            position: 'top' as const,
-            display: false,
-      },
-      title: {
-            display: false,
-        text: 'Chart.js Line Chart',
-      },
-    },
-    animation: {
-        duration: 500,
-        easing: 'easeInOutCubic',
-    }
-  };
-  
-
-
 export function SwitchMarkingContent() {
     const { t } = useLanguage();
+    const { colorMode } = useColorMode();
+
+    const [samplingNoise, setSamplingNoise] = useState<number>(0);
+    const [samplingFrequency, setSamplingFrequency] = useState<number>(0);
+
+    const gridColor = useMemo(() => {
+        return colorMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    }, [colorMode]); 
+    const options: ChartOptions<"line"> = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top' as const,
+                display: false,
+            },
+            title: {
+                display: false,
+                text: 'Chart.js Line Chart',
+            },
+        },
+        scales: {
+            x: {
+                grid: {
+                    color: gridColor,
+                },
+            },
+            y: {
+                grid: {
+                    color: gridColor,
+                },
+            }
+        },
+        animation: {
+            duration: 500,
+            easing: 'easeInOutCubic',
+        }
+    };
+
     const [_isDirty, setIsDirty] = useUnsavedChangesWarning(t.SETTINGS_SWITCH_MARKING_UNSAVED_CHANGES_WARNING_TITLE, t.SETTINGS_SWITCH_MARKING_UNSAVED_CHANGES_WARNING_MESSAGE);
 
     const [mappingData, setMappingData] = useState<ChartData<"line">>({
@@ -45,13 +63,12 @@ export function SwitchMarkingContent() {
         datasets: []
     });
 
-    const { mappingList, fetchMappingList } = useGamepadConfig();
-    const { defaultMappingId } = useGamepadConfig();
-    const { markingStatus, fetchMarkingStatus } = useGamepadConfig();
-    const { startMarking, stopMarking, stepMarking } = useGamepadConfig();
-    const { createMapping, deleteMapping, updateDefaultMapping, renameMapping } = useGamepadConfig();
+    const { 
+        mappingList, defaultMappingId, markingStatus, activeMapping,
+        fetchMappingList, fetchMarkingStatus, startMarking, stopMarking, stepMarking, 
+        createMapping, deleteMapping, updateDefaultMapping, renameMapping, fetchActiveMapping
+    } = useGamepadConfig();
     const [ activeMappingId, setActiveMappingId ] = useState<string>("");
-    const { activeMapping, fetchActiveMapping } = useGamepadConfig();
     const [ markingStatusToastMessage, setMarkingStatusToastMessage ] = useState<string>("");
     const nextActiveMappingIdRef = useRef<string>(activeMappingId);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -136,6 +153,8 @@ export function SwitchMarkingContent() {
             };  
 
             setMappingData(myData);
+            setSamplingNoise(markingStatus.sampling_noise);
+            setSamplingFrequency(markingStatus.sampling_frequency);
 
         } else {
 
@@ -155,6 +174,8 @@ export function SwitchMarkingContent() {
             };
 
             setMappingData(myData);
+            setSamplingNoise(activeMapping?.samplingNoise ?? 0);
+            setSamplingFrequency(activeMapping?.samplingFrequency ?? 0);
 
         }
     }, [activeMapping, markingStatus]);
@@ -427,8 +448,24 @@ export function SwitchMarkingContent() {
                     <Center width={"100%"} height={"2em"} paddingTop={"1em"} >
                         <Badge colorPalette={"green"} variant={"outline"} size="sm" >{ markingStatusToastMessage }</Badge>
                     </Center>
+                    
                 </VStack>
-                <Box width={"100%"} flexGrow={1} padding={"18px 0"} >
+                <Box width={"100%"} flexGrow={1} padding={"18px 0"} position="relative" >
+                    <HStack 
+                        position="absolute" 
+                        top="30px" 
+                        right="30px" 
+                        zIndex={1}
+                        padding="2"
+                        gap={2}
+                    >
+                        <Badge colorPalette={"blue"} variant={"outline"} size="sm" >
+                            Sampling Frequency: {samplingFrequency > 0 ? samplingFrequency?.toFixed(0) + ' Hz' : 'N/A'}
+                        </Badge>
+                        <Badge colorPalette={"red"} variant={"outline"} size="sm">
+                            Sampling Noise: { samplingNoise > 0 ? samplingNoise?.toFixed(0) : 'N/A'}
+                        </Badge>
+                    </HStack>
                     <Line data={mappingData} options={options} />
                 </Box>
             </Flex>

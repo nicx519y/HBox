@@ -1,5 +1,7 @@
 #include "states/webconfig_state.hpp"
 #include "adc_btns/adc_btns_marker.hpp"
+#include "adc_btns/adc_btns_worker.hpp"
+#include "pwm-ws2812b.h"
 
 void WebConfigState::setup() {
     // TODO: 初始化Web配置状态
@@ -14,10 +16,9 @@ void WebConfigState::setup() {
     DRIVER_MANAGER.setup(inputMode);      
     ConfigType configType = ConfigType::CONFIG_TYPE_WEB;
     CONFIG_MANAGER.setup(configType);
-
-
     tud_init(TUD_OPT_RHPORT); // 初始化TinyUSB
     inputDriver = DRIVER_MANAGER.getDriver();
+
 
     isRunning = true;
 }
@@ -25,7 +26,6 @@ void WebConfigState::setup() {
 void WebConfigState::loop() {
     if(isRunning) {
         CONFIG_MANAGER.loop();
-        ADC_BTNS_MARKER.loop();
     }
 }
 

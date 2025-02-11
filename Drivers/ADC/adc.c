@@ -18,10 +18,15 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+
 #include "adc.h"
 
-
 /* USER CODE BEGIN 0 */
+
+#define ADC_OVERSAMPLE_RATIO               32         //ADC过采样倍数
+#define ADC_OVERSAMPLE_RIGHT_BIT_SHIFT     ADC_RIGHTBITSHIFT_5 //ADC过采样右移位数
+#define ADC_SAMPLE_TIME                    ADC_SAMPLETIME_32CYCLES_5       //ADC采样时间
+
 void ADC_Clock_Init(void)
 {
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
@@ -47,8 +52,10 @@ void ADC_Clock_Init(void)
 
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
+ADC_HandleTypeDef hadc3;
 DMA_HandleTypeDef hdma_adc1;
 DMA_HandleTypeDef hdma_adc2;
+DMA_HandleTypeDef hdma_adc3;
 
 /* ADC1 init function */
 void MX_ADC1_Init(void)
@@ -79,8 +86,11 @@ void MX_ADC1_Init(void)
     hadc1.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DMA_CIRCULAR;
     hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
     hadc1.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
-    hadc1.Init.OversamplingMode = DISABLE;
-    hadc1.Init.Oversampling.Ratio = 1;
+    hadc1.Init.OversamplingMode = ENABLE;
+    hadc1.Init.Oversampling.Ratio = ADC_OVERSAMPLE_RATIO;
+    hadc1.Init.Oversampling.RightBitShift = ADC_OVERSAMPLE_RIGHT_BIT_SHIFT;
+    hadc1.Init.Oversampling.TriggeredMode = ADC_TRIGGEREDMODE_SINGLE_TRIGGER;
+    hadc1.Init.Oversampling.OversamplingStopReset = ADC_REGOVERSAMPLING_CONTINUED_MODE;
     // hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;  // 启用FIFO可以缓解数据抖动
     // hdma_adc1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
 
@@ -107,7 +117,7 @@ void MX_ADC1_Init(void)
      */
     sConfig.Channel = ADC_CHANNEL_0;
     sConfig.Rank = ADC_REGULAR_RANK_1;
-    sConfig.SamplingTime = ADC_SAMPLETIME_810CYCLES_5;
+    sConfig.SamplingTime = ADC_SAMPLETIME_32CYCLES_5;
     sConfig.SingleDiff = ADC_SINGLE_ENDED;
     sConfig.OffsetNumber = ADC_OFFSET_NONE;
     sConfig.Offset = 0;
@@ -220,8 +230,11 @@ void MX_ADC2_Init(void)
     hadc2.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DMA_CIRCULAR;
     hadc2.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
     hadc2.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
-    hadc2.Init.OversamplingMode = DISABLE;
-    hadc2.Init.Oversampling.Ratio = 1;
+    hadc2.Init.OversamplingMode = ENABLE;
+    hadc2.Init.Oversampling.Ratio = ADC_OVERSAMPLE_RATIO;
+    hadc2.Init.Oversampling.RightBitShift = ADC_OVERSAMPLE_RIGHT_BIT_SHIFT;
+    hadc2.Init.Oversampling.TriggeredMode = ADC_TRIGGEREDMODE_SINGLE_TRIGGER;
+    hadc2.Init.Oversampling.OversamplingStopReset = ADC_REGOVERSAMPLING_CONTINUED_MODE;
     // hdma_adc2.Init.FIFOMode = DMA_FIFOMODE_ENABLE;  // 启用FIFO可以缓解数据抖动
     // hdma_adc2.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
 
@@ -240,7 +253,7 @@ void MX_ADC2_Init(void)
      */
     sConfig.Channel = ADC_CHANNEL_9;
     sConfig.Rank = ADC_REGULAR_RANK_1;
-    sConfig.SamplingTime = ADC_SAMPLETIME_810CYCLES_5;
+    sConfig.SamplingTime = ADC_SAMPLETIME_32CYCLES_5;
     sConfig.SingleDiff = ADC_SINGLE_ENDED;
     sConfig.OffsetNumber = ADC_OFFSET_NONE;
     sConfig.Offset = 0;

@@ -1463,6 +1463,7 @@ std::string apiMSGetList() {
     cJSON* dataJSON = cJSON_CreateObject();
     // 添加映射列表到响应数据
     cJSON_AddItemToObject(dataJSON, "mappingList", buildMappingListJSON());
+    cJSON_AddItemToObject(dataJSON, "defaultMappingId", cJSON_CreateString(ADC_VALUES_MAPPING.getDefault().c_str()));
     
     // 获取标准格式的响应
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);

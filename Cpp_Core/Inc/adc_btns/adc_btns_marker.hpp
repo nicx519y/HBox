@@ -21,6 +21,8 @@ struct StepInfo {
     uint8_t length;
     uint8_t index;
     uint32_t values[MAX_ADC_VALUES_LENGTH];
+    uint16_t sampling_noise;
+    uint16_t sampling_frequency;
     bool is_marking;
     bool is_completed;
     bool is_sampling;
@@ -37,7 +39,6 @@ class ADCBtnsMarker {
         ADCBtnsError setup(const char* id);
         ADCBtnsError step();
         
-        void loop();
         void reset();
         uint32_t* getCurrentMarkingValues();
         
@@ -46,7 +47,7 @@ class ADCBtnsMarker {
         cJSON* getStepInfoJSON();
 
         // 将 ADC_Values 移到 public 部分并声明为 static
-        static __attribute__((section("._RAM_D1_Area"))) uint32_t ADC_Values[NUM_ADC_BUTTONS];
+        // static __attribute__((section("._RAM_D1_Area"))) uint32_t ADC_Values[NUM_ADC_BUTTONS];
         static __attribute__((section("._RAM_D1_Area"))) StepInfo step_info;
         static __attribute__((section("._RAM_D1_Area"))) uint8_t num_value_tmp;
         static __attribute__((section("._RAM_D1_Area"))) uint32_t value_tmp;
@@ -58,8 +59,8 @@ class ADCBtnsMarker {
         std::function<void(const void*)> messageHandler;
         uint32_t tmpValueMin;
         uint32_t tmpValueMax;
-        uint32_t tmpSamplingNoise;
-        uint32_t tmpSamplingFrequency;
+        uint16_t tmpSamplingNoise;
+        uint16_t tmpSamplingFrequency;
         uint32_t t;
 };
 

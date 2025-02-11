@@ -1,7 +1,4 @@
 #include "main_state_machine.hpp"
-#include "tim.h"
-#include "qspi-w25q64.h"
-#include "constant.hpp"
 
 static uint32_t usTick = 0;
 
@@ -10,6 +7,7 @@ MainStateMachine::MainStateMachine()
     , storage(Storage::getInstance())
     , state(WebConfigState::getInstance())
 {
+
 }
 
 void MainStateMachine::setup()
@@ -19,7 +17,8 @@ void MainStateMachine::setup()
     printf("Storage initConfig success.\n");
 
     // BootMode bootMode = Storage::getInstance().config.bootMode;
-    BootMode bootMode = BootMode::BOOT_MODE_WEB_CONFIG;
+    // BootMode bootMode = BootMode::BOOT_MODE_WEB_CONFIG;
+    BootMode bootMode = BootMode::BOOT_MODE_INPUT;
     printf("BootMode: %d\n", bootMode);
 
     switch(bootMode) {
@@ -28,27 +27,33 @@ void MainStateMachine::setup()
             state = WEB_CONFIG_STATE;
             state.setup();
 
-            
-
             while(1) {
                 state.loop();
             }
 
             break;
         case BootMode::BOOT_MODE_INPUT:
-            // driverManager.setup((InputMode)Storage::getInstance().getGamepadOptions().inputMode);
-            // driverManager.setup(inputMode);
-            // driver = driverManager.getDriver();
-            // gamepad.setup();
-            // tud_init(TUD_OPT_RHPORT);
-            // while(1) {
-            //     gamepad.loop();                 // 获取按键状态
-            //     driver->process(&gamepad);      // 把按键状态形成usb report
-            //     tud_task();                     // usb device task.  report
-            // }
+
+            /*** 初始化ADC按钮 & LED test begin ***/
+            
+
+            // WS2812B_Start();
+            // WS2812B_SetAllLEDColor(255, 255, 0);
+            // WS2812B_SetAllLEDBrightness(30);
+            
+            // struct RGBColor color1 = {0, 0, 255};
+            // struct RGBColor color2 = {255, 255, 0};
+
+            ADC_BTNS_WORKER.setup();
+
+            // MC.subscribe(MessageId::ADC_BTNS_STATE_CHANGED, [color1, color2](const void* data) {
+            //     // printBinary("ADC_BTNS_STATE_CHANGED: ", *(uint32_t*) data);
+            //     WS2812B_SetLEDColorByMask(color1, color2, *(uint32_t*) data);
+            // });
             break;
-        default:    // NONE
-            break;
+
+
+
     }
 }
 

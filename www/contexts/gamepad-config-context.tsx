@@ -113,6 +113,8 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
         length: 0,
         index: 0,
         values: [],
+        sampling_noise: 0,
+        sampling_frequency: 0,
         is_marking: false,
         is_sampling: false,
         is_completed: false
@@ -615,6 +617,7 @@ export function GamepadConfigProvider({ children }: { children: React.ReactNode 
             }
 
             setActiveMapping(data.mapping);
+
             setError(null);
             return Promise.resolve();
         } catch (err) {

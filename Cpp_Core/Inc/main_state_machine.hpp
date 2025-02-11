@@ -12,6 +12,11 @@
 #include "stm32h7xx.h"
 #include "states/base_state.hpp"
 #include "states/webconfig_state.hpp"
+#include "tim.h"
+#include "qspi-w25q64.h"
+#include "constant.hpp"
+#include "adc_btns/adc_btns_worker.hpp"
+#include "utils.h"
 
 class MainStateMachine {
     public:
