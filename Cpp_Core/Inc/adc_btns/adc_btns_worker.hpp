@@ -64,6 +64,7 @@ class ADCBtnsWorker {
             return instance;
         }
         ADCBtnsError setup();
+        ADCBtnsError test();
         ADCBtnsError deinit();
         ADCBtnsWorker();
         ~ADCBtnsWorker();

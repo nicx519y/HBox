@@ -201,13 +201,6 @@ SECTIONS
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
   /* RAM sections */
-  ._RAM_D2_Area :
-  {
-    . = ALIGN(32);
-    *(.RAM_D2_Area)         /* RAM_D2 area section */
-    *(.RAM_D2_Area*)        /* RAM_D2 area section */
-    . = ALIGN(32);
-  } >RAM_D2
 
   ._RAM_Area :
   {
@@ -222,6 +215,7 @@ SECTIONS
   } >RAM
 
   /* DMA buffer section. use to store DMA buffer data. ws2812b use this area. adc use this area. */
+  
   ._RAM_D1_Area :
   {
     . = ALIGN(32);
@@ -229,6 +223,22 @@ SECTIONS
     *(.RAM_D1_Area*)        /* RAM_D1 area section */
     . = ALIGN(32);
   } >RAM_D1
+
+ ._RAM_D2_Area :
+  {
+    . = ALIGN(32);
+    *(.RAM_D2_Area)         /* RAM_D2 area section */
+    *(.RAM_D2_Area*)        /* RAM_D2 area section */
+    . = ALIGN(32);
+  } >RAM_D2
+
+  ._RAM_D3_Area :
+  {
+    . = ALIGN(32);
+    *(.RAM_D3_Area)         /* RAM_D3 area section */
+    *(.RAM_D3_Area*)        /* RAM_D3 area section */
+    . = ALIGN(32);
+  } >RAM_D3
 
   ._DTCMRAM_Area :
   {

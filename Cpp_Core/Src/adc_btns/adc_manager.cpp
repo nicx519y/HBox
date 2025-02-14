@@ -1,4 +1,4 @@
-#include "adc_btns/adc_values_mapping.hpp"
+#include "adc_btns/adc_manager.hpp"
 
 // 内存图
 /*
@@ -21,10 +21,24 @@
 
 // 存储实例
 static ADCValuesMappingStore store;
-__attribute__((section("._RAM_D1_Area"))) uint32_t ADCValuesMappingUtils::ADC_Values[NUM_ADC_BUTTONS];
+// ADC1 和 ADC2 DMA 不能访问 DTCMRAM 区域
+__attribute__((section("._RAM_D1_Area"))) uint32_t ADCManager::ADC1_Values[NUM_ADC1_BUTTONS];
+__attribute__((section("._RAM_D1_Area"))) uint32_t ADCManager::ADC2_Values[NUM_ADC2_BUTTONS];
+// ADC3 BDMA 只能访问 _RAM_D3_Area 区域
+__attribute__((section("._RAM_D3_Area"))) uint32_t ADCManager::ADC3_Values[NUM_ADC3_BUTTONS];
+
+bool ADCManager::samplingRateEnabled = false;
+uint32_t ADCManager::samplingCountMax = 1000;
+
+ADCBufferInfo ADCManager::adcBufferInfo[] = {
+    {ADC1_Values, sizeof(ADC1_Values), ADC1_BUFFER_TO_KEY_INDEX, NUM_ADC1_BUTTONS},
+    {ADC2_Values, sizeof(ADC2_Values), ADC2_BUFFER_TO_KEY_INDEX, NUM_ADC2_BUTTONS},
+    {ADC3_Values, sizeof(ADC3_Values), ADC3_BUFFER_TO_KEY_INDEX, NUM_ADC3_BUTTONS}
+};
 
 
-ADCValuesMappingUtils::ADCValuesMappingUtils() {
+ADCManager::ADCManager() {
+    
     // 读取整个存储结构
     QSPI_W25Qxx_ReadBuffer((uint8_t*)&store, ADC_VALUES_MAPPING_ADDR, sizeof(ADCValuesMappingStore));
     
@@ -45,6 +59,9 @@ ADCValuesMappingUtils::ADCValuesMappingUtils() {
         // 写入初始化后的存储结构
         QSPI_W25Qxx_WriteBuffer((uint8_t*)&store, ADC_VALUES_MAPPING_ADDR, sizeof(ADCValuesMappingStore));
     }
+
+    // 注册消息
+    MC.registerMessage(MessageId::ADC_SAMPLING_STATS_COMPLETE);
 }
 
 // 保存整个存储结构到Flash
@@ -57,7 +74,7 @@ static int8_t saveStore() {
  * @param id 映射ID
  * @return 映射ID的索引
  */
-int8_t ADCValuesMappingUtils::findIndex(const char* id) {
+int8_t ADCManager::findMappingIndex(const char* id) {
     if (!id) return -1;
     
     // 遍历映射数据，检查名称
@@ -75,11 +92,11 @@ int8_t ADCValuesMappingUtils::findIndex(const char* id) {
  * @param id 映射ID
  * @return 是否删除成功
  */
-ADCBtnsError ADCValuesMappingUtils::remove(const char* id) {
+ADCBtnsError ADCManager::removeADCMapping(const char* id) {
     if (!id) return ADCBtnsError::INVALID_PARAMS;
     
     // 查找要删除的映射索引
-    int8_t targetIdx = findIndex(id);
+    int8_t targetIdx = findMappingIndex(id);
     if(targetIdx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
 
     // 如果只有一个映射，则不能删除
@@ -109,7 +126,7 @@ ADCBtnsError ADCValuesMappingUtils::remove(const char* id) {
  * @param step 步长
  * @return 是否创建成功
  */
-ADCBtnsError ADCValuesMappingUtils::create(const char* name, size_t length, float_t step) {
+ADCBtnsError ADCManager::createADCMapping(const char* name, size_t length, float_t step) {
     if (!name) return ADCBtnsError::INVALID_PARAMS;
     
     // 检查映射名称是否已存在
@@ -121,17 +138,11 @@ ADCBtnsError ADCValuesMappingUtils::create(const char* name, size_t length, floa
 
     // 检查映射数量是否已满
     if(store.num >= NUM_ADC_VALUES_MAPPING) return ADCBtnsError::MAPPING_STORAGE_FULL;
-    
-    char id[16];
-    sprintf(id, "ADC-%d", HAL_GetTick());
 
     // 创建新映射
     ADCValuesMapping& newMapping = store.mapping[store.num];
     memset(&newMapping, 0, sizeof(ADCValuesMapping));
-    strncpy(newMapping.id, id, sizeof(newMapping.id) - 1);
-    newMapping.id[sizeof(newMapping.id) - 1] = '\0';
-    strncpy(newMapping.name, name, sizeof(newMapping.name) - 1);
-    newMapping.name[sizeof(newMapping.name) - 1] = '\0';
+    snprintf(newMapping.id, sizeof(newMapping.id), "%s-%d", name, HAL_GetTick());
     newMapping.length = length;
     newMapping.step = step;
     newMapping.samplingNoise = 0;
@@ -142,8 +153,7 @@ ADCBtnsError ADCValuesMappingUtils::create(const char* name, size_t length, floa
     
     // 如果这是第一个映射，则设置为默认映射
     if(store.num == 1) {
-        strncpy(store.defaultId, id, sizeof(store.defaultId) - 1);
-        store.defaultId[sizeof(store.defaultId) - 1] = '\0';
+        snprintf(store.defaultId, sizeof(store.defaultId), "%s", newMapping.id);
     }
 
     // 保存更新后的存储结构
@@ -155,14 +165,13 @@ ADCBtnsError ADCValuesMappingUtils::create(const char* name, size_t length, floa
     return ADCBtnsError::SUCCESS;
 }
 
-ADCBtnsError ADCValuesMappingUtils::rename(const char* id, const char* name) {
+ADCBtnsError ADCManager::renameADCMapping(const char* id, const char* name) {
     if (!id || !name) return ADCBtnsError::INVALID_PARAMS;
     
-    int idx = findIndex(id);
+    int idx = findMappingIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
     
-    strncpy(store.mapping[idx].name, name, sizeof(store.mapping[idx].name) - 1);
-    store.mapping[idx].name[sizeof(store.mapping[idx].name) - 1] = '\0';
+    snprintf(store.mapping[idx].name, sizeof(store.mapping[idx].name), "%s", name);
     
     // 保存更新后的存储结构
 
@@ -173,12 +182,12 @@ ADCBtnsError ADCValuesMappingUtils::rename(const char* id, const char* name) {
     return ADCBtnsError::SUCCESS;
 }
 
-ADCBtnsError ADCValuesMappingUtils::update(const char* id, const ADCValuesMapping& map) {
+ADCBtnsError ADCManager::updateADCMapping(const char* id, const ADCValuesMapping& map) {
     if (!id) return ADCBtnsError::INVALID_PARAMS;
     if (map.length == 0 || map.length > MAX_ADC_VALUES_LENGTH) return ADCBtnsError::INVALID_PARAMS;
     
 
-    int idx = findIndex(id);
+    int idx = findMappingIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
 
     // printf("ADCValuesMappingUtils: update - begin update mapping.\n");
@@ -201,14 +210,13 @@ ADCBtnsError ADCValuesMappingUtils::update(const char* id, const ADCValuesMappin
  * @param id 映射ID
  * @return 错误码
  */
-ADCBtnsError ADCValuesMappingUtils::setDefault(const char* id) {
+ADCBtnsError ADCManager::setDefaultMapping(const char* id) {
     if (!id) return ADCBtnsError::INVALID_PARAMS;
     
-    uint8_t idx = findIndex(id);
+    uint8_t idx = findMappingIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
     
-    strncpy(store.defaultId, id, sizeof(store.defaultId) - 1);
-    store.defaultId[sizeof(store.defaultId) - 1] = '\0';
+    snprintf(store.defaultId, sizeof(store.defaultId), "%s", id);
     
     // 保存更新后的存储结构
     if(saveStore() != QSPI_W25Qxx_OK) {
@@ -222,7 +230,7 @@ ADCBtnsError ADCValuesMappingUtils::setDefault(const char* id) {
  * @brief 获取映射列表
  * @return 映射列表
  */
- std::vector<ADCValuesMapping*> ADCValuesMappingUtils::getMappingList() {
+ std::vector<ADCValuesMapping*> ADCManager::getMappingList() {
     std::vector<ADCValuesMapping*> mappingList;
     for(uint8_t i = 0; i < store.num; i++) {
         mappingList.push_back(&store.mapping[i]);
@@ -234,7 +242,7 @@ ADCBtnsError ADCValuesMappingUtils::setDefault(const char* id) {
  * @brief 获取默认映射名称
  * @return 默认映射名称
  */
-std::string ADCValuesMappingUtils::getDefault() {
+std::string ADCManager::getDefaultMapping() {
     // 如果映射数量为0，则返回空字符串
     if(store.num == 0) return "";
     // 如果默认映射名称未设置，则返回第一个映射名称
@@ -250,11 +258,11 @@ std::string ADCValuesMappingUtils::getDefault() {
  * @param name 映射名称
  * @return 映射JSON
  */
-ADCValuesMapping* ADCValuesMappingUtils::getMapping(const char* id) {
+ADCValuesMapping* ADCManager::getMapping(const char* id) {
     if (!id) return nullptr;
 
     // 查找映射
-    int idx = findIndex(id);
+    int idx = findMappingIndex(id);
     if(idx == -1) return nullptr;
     
     return &store.mapping[idx];
@@ -269,10 +277,10 @@ bool validateMarkParams(const char* id, uint32_t* values, uint8_t length) {
     return true;
 }
 
-ADCBtnsError ADCValuesMappingUtils::mark(const char* id, uint32_t* values, uint32_t samplingNoise, uint32_t samplingFrequency) {
+ADCBtnsError ADCManager::markMapping(const char* id, uint32_t* values, uint32_t samplingNoise, uint32_t samplingFrequency) {
     if (!id || !values || samplingNoise == 0 || samplingFrequency == 0) return ADCBtnsError::INVALID_PARAMS;
     
-    int idx = findIndex(id);
+    int idx = findMappingIndex(id);
     if(idx == -1) return ADCBtnsError::MAPPING_NOT_FOUND;
 
     ADCValuesMapping& mapping = store.mapping[idx];
@@ -298,8 +306,7 @@ ADCBtnsError ADCValuesMappingUtils::mark(const char* id, uint32_t* values, uint3
     // printf("ADCValuesMappingUtils: mark - begin update mapping.\n");
     // printf("ADCValuesMappingUtils: mark - mapping id: %s, name: %s, length: %d, step: %f, samplingNoise: %d, samplingFrequency: %d\n", 
     // 如果更新失败，回滚所有更改
-    
-    ADCBtnsError err = update(mapping.id, mapping);
+    ADCBtnsError err = updateADCMapping(mapping.id, mapping);
     if (err != ADCBtnsError::SUCCESS) {
         memcpy(mapping.originalValues, oldOriginValues, sizeof(mapping.originalValues));
         free(oldOriginValues);
@@ -312,35 +319,101 @@ ADCBtnsError ADCValuesMappingUtils::mark(const char* id, uint32_t* values, uint3
 }
 
 
-ADCBtnsError ADCValuesMappingUtils::startADCSamping() {
+/**
+ * @brief 开始ADC采样
+ * @param enableSamplingRate 是否启用采样率统计
+ * @param buttonIndex 采样按钮索引 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+ * @param updateInterval 采样间隔
+ * @return 错误码
+ */
+ADCBtnsError ADCManager::startADCSamping(bool enableSamplingRate, uint8_t buttonIndex, uint32_t samplingCountMax) {
+    // 停止所有 ADC
+    ADCBtnsError err = this->stopADCSamping();
+    
+    if(err != ADCBtnsError::SUCCESS) {
+        ADC_DEBUG_PRINT("Failed to stop ADC sampling\n");
+        return err;
+    }
 
-    this->stopADCSamping();
-
-    // 校准ADC1
+    // 校准 ADC1
     if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK) {
+        ADC_DEBUG_PRINT("ADC1 calibration failed\n");
         return ADCBtnsError::ADC1_CALIB_FAILED;
     }
 
-    // 启动DMA1
-    if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Values[0], NUM_ADC1_BUTTONS) != HAL_OK) {
-        return ADCBtnsError::DMA1_START_FAILED;
-    }
-
-
-    // 校准ADC2
+    // 校准 ADC2
     if (HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK) {
+        ADC_DEBUG_PRINT("ADC2 calibration failed\n");
         return ADCBtnsError::ADC2_CALIB_FAILED;
     }
 
-    // 启动DMA2
-    if (HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&ADC_Values[NUM_ADC1_BUTTONS], NUM_ADC2_BUTTONS) != HAL_OK) {
+    // 校准 ADC3
+    if (HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK) {
+        ADC_DEBUG_PRINT("ADC3 calibration failed\n");
+        return ADCBtnsError::ADC3_CALIB_FAILED;
+    }
+
+    // 启动 ADC1
+    if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC1_Values[0], NUM_ADC1_BUTTONS) != HAL_OK) {
+        ADC_DEBUG_PRINT("ADC1 DMA start failed\n");
+        return ADCBtnsError::DMA1_START_FAILED;
+    }
+
+    // 启动 ADC2
+    if (HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&ADC2_Values[0], NUM_ADC2_BUTTONS) != HAL_OK) {
+        ADC_DEBUG_PRINT("ADC2 DMA start failed\n");
+        HAL_ADC_Stop_DMA(&hadc1);  // 清理已启动的 ADC1
         return ADCBtnsError::DMA2_START_FAILED;
     }
 
+    // 启动 ADC3
+    if (HAL_ADC_Start_DMA(&hadc3, (uint32_t*)&ADC3_Values[0], NUM_ADC3_BUTTONS) != HAL_OK) {
+        ADC_DEBUG_PRINT("ADC3 DMA start failed\n");
+        HAL_ADC_Stop_DMA(&hadc1);  // 清理已启动的 ADC
+        HAL_ADC_Stop_DMA(&hadc2);
+        return ADCBtnsError::DMA3_START_FAILED;
+    }
+
+    // 如果启用采样率统计，则注册回调
+    if(enableSamplingRate && buttonIndex < NUM_ADC_BUTTONS) {
+        // 设置采样率统计状态
+        samplingRateEnabled = enableSamplingRate;
+        if(samplingCountMax > 0) {
+            this->samplingCountMax = samplingCountMax;
+        }
+        samplingADCIndex = findADCIndex(buttonIndex);
+
+        if(samplingADCIndex.first == -1) {
+            ADC_DEBUG_PRINT("Invalid button index\n");
+            return ADCBtnsError::INVALID_PARAMS;
+        }
+
+        // 初始化ADCButtonStats
+        ADCButtonStats = {
+            .adcIndex = samplingADCIndex.first,
+            .samplingFreq = 0,
+            .averageValue = 0,
+            .count = 0,
+            .minValue = UINT32_MAX,
+            .maxValue = 0,
+            .startTime = HAL_GetTick(),
+            .endTime = 0
+        };
+
+        // 注册ADC转换完成回调
+        messageHandler = [this](const void* data) {
+            if (data) {
+                this->handleADCStats((ADC_HandleTypeDef*)data);
+            }
+        };
+        MC.subscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
+    }
+
+    ADC_DEBUG_PRINT("All ADCs started successfully\n");
     return ADCBtnsError::SUCCESS;
 }
 
-ADCBtnsError ADCValuesMappingUtils::stopADCSamping() {
+ADCBtnsError ADCManager::stopADCSamping() {
     if(HAL_ADC_Stop_DMA(&hadc1) != HAL_OK) {
         return ADCBtnsError::DMA1_STOP_FAILED;
     }
@@ -349,8 +422,87 @@ ADCBtnsError ADCValuesMappingUtils::stopADCSamping() {
         return ADCBtnsError::DMA2_STOP_FAILED;
     }
 
+    if(HAL_ADC_Stop_DMA(&hadc3) != HAL_OK) {
+        return ADCBtnsError::DMA3_STOP_FAILED;
+    }
+
+    if(messageHandler) {
+        MC.unsubscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
+        messageHandler = nullptr;
+    }
+
     return ADCBtnsError::SUCCESS;
 }   
+
+/**
+ * @brief 处理ADC转换完成中断
+ * 在每次采样完成后，会调用此函数，用于更新采样统计信息
+ * 更新ADCButtonValues的值
+ * 如果采样率统计开启，则更新采样统计信息，包括每个通道的平均值、最小值、最大值
+ * @param hadc ADC句柄
+ */
+void ADCManager::handleADCStats(ADC_HandleTypeDef *hadc) {
+    uint32_t adcIndex = (hadc->Instance == ADC1) ? 0 : 
+                        (hadc->Instance == ADC2) ? 1 : 
+                        (hadc->Instance == ADC3) ? 2 : 3;
+    
+    // 如果采样ADC索引不匹配，则返回，此处只处理采样ADC索引对应的ADC
+    if(!samplingRateEnabled || adcIndex != samplingADCIndex.first) return;
+    
+    // 处理数据...
+    const auto& info = adcBufferInfo[adcIndex];
+    SCB_CleanInvalidateDCache_by_Addr(info.buffer, info.size);
+    
+    uint32_t value = info.buffer[samplingADCIndex.second];
+
+    if(value == 0) return;
+
+    ADCButtonStats.count++;
+    ADCButtonStats.averageValue += value;
+    ADCButtonStats.minValue = std::min(ADCButtonStats.minValue, value);
+    ADCButtonStats.maxValue = std::max(ADCButtonStats.maxValue, value);
+
+    if(ADCButtonStats.count >= samplingCountMax) {
+        ADCButtonStats.averageValue /= ADCButtonStats.count;
+        uint32_t t = HAL_GetTick();
+        uint32_t duration = t - ADCButtonStats.startTime;
+        ADCButtonStats.samplingFreq = (uint32_t)(ADCButtonStats.count * 1000 / duration);
+        ADCButtonStats.endTime = t;
+
+        MC.publish(MessageId::ADC_SAMPLING_STATS_COMPLETE, &ADCButtonStats);
+    }
+}
+
+// 根据按钮索引查找对应的ADC索引
+std::pair<uint8_t, uint8_t> ADCManager::findADCIndex(uint8_t buttonIndex) {
+
+    if(buttonIndex >= NUM_ADC_BUTTONS) return {-1, -1};
+
+    // 检查 ADC1
+    for(uint8_t i = 0; i < NUM_ADC1_BUTTONS; i++) {
+        if(ADC1_BUFFER_TO_KEY_INDEX[i] == buttonIndex) {
+            return {0, i};  // 返回 ADC1 的索引
+        }
+    }
+
+    // 检查 ADC2
+    for(uint8_t i = 0; i < NUM_ADC2_BUTTONS; i++) {
+        if(ADC2_BUFFER_TO_KEY_INDEX[i] == buttonIndex) {
+            return {1, i};  // 返回 ADC2 的索引
+        }
+    }
+    
+    // 检查 ADC3
+    for(uint8_t i = 0; i < NUM_ADC3_BUTTONS; i++) {
+        if(ADC3_BUFFER_TO_KEY_INDEX[i] == buttonIndex) {
+            return {2, i};  // 返回 ADC3 的索引
+        }
+    }
+    
+    return {-1, -1};  // 如果没找到，默认返回 ADC1
+}
+
+
 
 
 

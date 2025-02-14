@@ -7,6 +7,7 @@
 #include "usb.h"
 #include "adc.h"
 #include "dma.h"
+#include "bdma.h"
 #include "pwm-ws2812b.h"
 #include "constant.hpp"
 #include "utils.h"
@@ -72,14 +73,21 @@ void board_init(void) {
 
   printf("================== MX_DMA_Init success. =======================\n");
 
-  MX_ADC1_Init();
+  MX_BDMA_Init();
 
+  printf("================== MX_BDMA_Init success. =======================\n");
+
+  MX_ADC1_Init();
 
   printf("================== MX_ADC1_Init success. =======================\n");
 
   MX_ADC2_Init();
 
   printf("================== MX_ADC2_Init success. =======================\n");
+
+  MX_ADC3_Init();
+
+  printf("================== MX_ADC3_Init success. =======================\n");
 
   #ifdef HAS_LED
   WS2812B_Init();

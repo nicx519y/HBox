@@ -65,3 +65,16 @@ int cpp_main(void)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
     MC.publish(MessageId::DMA_ADC_CONV_CPLT, hadc);
 }
+
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
+{
+    uint32_t error = HAL_ADC_GetError(hadc);
+    printf("ADC Error: Instance=0x%p\n", (void*)hadc->Instance);
+    printf("State=0x%x\n", HAL_ADC_GetState(hadc));
+    printf("Error flags: 0x%lx\n", error);
+    
+    if (error & HAL_ADC_ERROR_INTERNAL) printf("- Internal error\n");
+    if (error & HAL_ADC_ERROR_OVR) printf("- Overrun error\n");
+    if (error & HAL_ADC_ERROR_DMA) printf("- DMA transfer error\n");
+}
+

@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "stm32h7xx.h"
 #include "constant.hpp"
-#include "adc_values_mapping.hpp"
+#include "adc_manager.hpp"
 #include "storagemanager.hpp"
 #include "adc.h"
 #include "message_center.hpp"
@@ -40,28 +40,23 @@ class ADCBtnsMarker {
         ADCBtnsError step();
         
         void reset();
-        uint32_t* getCurrentMarkingValues();
+        void loop();
+        const uint32_t* getCurrentMarkingValues();
         
         // 添加新的公共访问方法
         StepInfo& getStepInfo() { return step_info; }
         cJSON* getStepInfoJSON();
 
-        // 将 ADC_Values 移到 public 部分并声明为 static
-        // static __attribute__((section("._RAM_D1_Area"))) uint32_t ADC_Values[NUM_ADC_BUTTONS];
-        static __attribute__((section("._RAM_D1_Area"))) StepInfo step_info;
-        static __attribute__((section("._RAM_D1_Area"))) uint8_t num_value_tmp;
-        static __attribute__((section("._RAM_D1_Area"))) uint32_t value_tmp;
     private:
         ADCBtnsMarker();
-        void process(ADC_HandleTypeDef *hadc);
-        void stepFinish();
+
+        StepInfo step_info;
+
+        void stepFinish(ADCChannelStats* stats);
         void markingFinish();
         std::function<void(const void*)> messageHandler;
-        uint32_t tmpValueMin;
-        uint32_t tmpValueMax;
         uint16_t tmpSamplingNoise;
         uint16_t tmpSamplingFrequency;
-        uint32_t t;
 };
 
 #define ADC_BTNS_MARKER ADCBtnsMarker::getInstance()

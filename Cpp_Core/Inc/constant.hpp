@@ -21,9 +21,17 @@ extern "C" {
 #define NUM_WINDOW_SIZE                     8             // 校准滑动窗口大小
 
 #define NUM_PROFILES                        16
-#define NUM_ADC1_BUTTONS                    9
-#define NUM_ADC2_BUTTONS                    8
-#define NUM_ADC_BUTTONS                     (NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS)
+#define NUM_ADC                             3             // 3个ADC
+#define NUM_ADC1_BUTTONS                    6
+#define NUM_ADC2_BUTTONS                    6
+#define NUM_ADC3_BUTTONS                    5
+#define NUM_ADC_BUTTONS                     (NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS + NUM_ADC3_BUTTONS)
+
+// 将ADC缓冲区索引映射到按钮索引
+static constexpr uint8_t ADC1_BUFFER_TO_KEY_INDEX[NUM_ADC1_BUTTONS] = {1, 8, 9, 6, 0, 5};
+static constexpr uint8_t ADC2_BUFFER_TO_KEY_INDEX[NUM_ADC2_BUTTONS] = {2, 3, 7, 4, 14, 11};
+static constexpr uint8_t ADC3_BUFFER_TO_KEY_INDEX[NUM_ADC3_BUTTONS] = {13, 15, 16, 10, 12};
+
 #define TIMES_ADC_CALIBRATION               100             // 单个按钮校准时的循环次数，必须100次连续稳定的值用于校准
 #define DELAY_ADC_CALIBRATION               10              // 校准时间 TIMES_ADC_CALIBRATION * DELAY_ADC_CALIBRATION
 #define ADC_VOLATILITY                      300             // ADC的浮动允许最大值
@@ -47,10 +55,14 @@ extern "C" {
 
 #define NUM_GAMEPAD_HOTKEYS                 (uint8_t)11   // 快捷键数量
 
-#define __RAM_Area__                __attribute__((section("._RAM_Area")))
-#define __DTCMRAM_Area__            __attribute__((section("._DTCMRAM_Area")))
-#define __RAM_D1_Area__             __attribute__((section("._RAM_D1_Area")))
-#define __RAM_D2_Area__             __attribute__((section("._RAM_D2_Area")))
+// 调试开关
+#define DEBUG_ADC 1
+
+#ifdef DEBUG_ADC
+    #define ADC_DEBUG_PRINT(...) printf(__VA_ARGS__)
+#else
+    #define ADC_DEBUG_PRINT(...)
+#endif
 
 #ifdef __cplusplus
 }

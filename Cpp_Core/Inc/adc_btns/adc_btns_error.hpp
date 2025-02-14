@@ -12,15 +12,17 @@ enum class ADCBtnsError {
     GAMEPAD_PROFILE_NOT_FOUND = -5,// 游戏手柄配置未找到
     DMA1_STOP_FAILED = -6,         // DMA1停止失败
     DMA2_STOP_FAILED = -7,         // DMA2停止失败
-    
+    DMA3_STOP_FAILED = -8,         // DMA3停止失败
 
     // ADC/DMA 相关错误 (-10 ~ -19)
     ADC1_CALIB_FAILED = -10,       // ADC1校准失败
     ADC2_CALIB_FAILED = -11,       // ADC2校准失败
-    DMA1_START_FAILED = -12,       // DMA1启动失败
-    DMA2_START_FAILED = -13,       // DMA2启动失败
-    DMA_ALREADY_STARTED = -14,     // DMA已经启动
-    DMA_NOT_STARTED = -15,         // DMA未启动
+    ADC3_CALIB_FAILED = -12,       // ADC3校准失败
+    DMA1_START_FAILED = -13,       // DMA1启动失败
+    DMA2_START_FAILED = -14,       // DMA2启动失败
+    DMA3_START_FAILED = -15,       // DMA3启动失败
+    DMA_ALREADY_STARTED = -16,     // DMA已经启动
+    DMA_NOT_STARTED = -17,         // DMA未启动
     
     // 映射相关错误 (-20 ~ -29)
     MAPPING_NOT_FOUND = -20,       // 映射未找到

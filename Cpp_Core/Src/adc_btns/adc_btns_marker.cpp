@@ -1,13 +1,5 @@
 #include "adc_btns/adc_btns_marker.hpp"
 
-// 定义静态成员变量
-// __attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsMarker::ADC_Values[NUM_ADC_BUTTONS];
-__attribute__((section("._RAM_D1_Area"))) StepInfo ADCBtnsMarker::step_info;
-__attribute__((section("._RAM_D1_Area"))) uint8_t ADCBtnsMarker::num_value_tmp;
-__attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsMarker::value_tmp;
-
-
-#define ADC_Values ADCValuesMappingUtils::ADC_Values
 
 /**
  * @brief 构造函数
@@ -16,31 +8,26 @@ __attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsMarker::value_tmp;
  */
 
 ADCBtnsMarker::ADCBtnsMarker() {
-    memset(ADC_Values, 0, sizeof(ADC_Values));
     memset(&step_info, 0, sizeof(step_info));
-    value_tmp = 0;
-    num_value_tmp = 0;
+    tmpSamplingFrequency = 0;
+    tmpSamplingNoise = 0;
 }
 
 /**
  * @brief 重置ADC值标记器
  */
 void ADCBtnsMarker::reset() {
-    value_tmp = 0;
-    num_value_tmp = 0;
 
     memset(&step_info, 0, sizeof(step_info));
     
-    ADC_VALUES_MAPPING.stopADCSamping();
+    ADC_MANAGER.stopADCSamping();
 
     // 取消订阅ADC转换完成回调
     if (messageHandler) {
-        MC.unsubscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
+        MC.unsubscribe(MessageId::ADC_SAMPLING_STATS_COMPLETE, messageHandler);
         messageHandler = nullptr;
     }
 
-    // 清空DMA缓存
-    memset(ADC_Values, 0, sizeof(ADC_Values));
 }
 
 /**
@@ -49,36 +36,18 @@ void ADCBtnsMarker::reset() {
  */
 ADCBtnsError ADCBtnsMarker::setup(const char* id) {
 
-
     if (!id) return ADCBtnsError::INVALID_PARAMS;
 
     reset();
-    /********************** test begin **********************/
-    // if(strcmp(id, "11") == 0) {
 
-    //     memset(ADC_Values, 0, sizeof(ADC_Values));
-    //     step_info.is_sampling = true;
-    //     messageHandler = [this](const void* data) {
-    //     if (data) {
-    //         this->process((ADC_HandleTypeDef*)data);
-    //     }
-    //     };
-    //     MC.subscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
-
-    //     ADC_VALUES_MAPPING.startADCSamping();
-    // }
-    /********************** test end **********************/
-
-    ADCValuesMapping* mapping = ADC_VALUES_MAPPING.getMapping(id);
+    ADCValuesMapping* mapping = ADC_MANAGER.getMapping(id);
 
 
     if (!mapping) return ADCBtnsError::MAPPING_NOT_FOUND;
 
     // 初始化步进信息
-    strncpy(step_info.id, id, sizeof(step_info.id) - 1);
-    step_info.id[sizeof(step_info.id) - 1] = '\0';
-    strncpy(step_info.mapping_name, mapping->name, sizeof(step_info.mapping_name) - 1);
-    step_info.mapping_name[sizeof(step_info.mapping_name) - 1] = '\0';
+    snprintf(step_info.id, sizeof(step_info.id), "%s", id);
+    snprintf(step_info.mapping_name, sizeof(step_info.mapping_name), "%s", mapping->name);
     step_info.index = 0;
     step_info.length = mapping->length;
     step_info.step = mapping->step;
@@ -89,15 +58,17 @@ ADCBtnsError ADCBtnsMarker::setup(const char* id) {
     step_info.sampling_noise = 0;
     step_info.sampling_frequency = 0;
 
-    // 注册ADC转换完成回调
+    tmpSamplingFrequency = 0;
+    tmpSamplingNoise = 0;
+
+
+    // 订阅ADC转换完成回调
     messageHandler = [this](const void* data) {
         if (data) {
-            this->process((ADC_HandleTypeDef*)data);
+            this->stepFinish((ADCChannelStats*)data);
         }
     };
-    MC.subscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
-
-    ADC_VALUES_MAPPING.startADCSamping();
+    MC.subscribe(MessageId::ADC_SAMPLING_STATS_COMPLETE, messageHandler);
 
     return ADCBtnsError::SUCCESS;
 }
@@ -123,61 +94,25 @@ ADCBtnsError ADCBtnsMarker::step() {
         return ADCBtnsError::SUCCESS;
     }
 
-    // 如果未采样，则准备采样
-    value_tmp = 0;
-    num_value_tmp = 0;
-    tmpValueMin = UINT32_MAX;
-    tmpValueMax = 0;
-
-    t = HAL_GetTick();
     step_info.is_sampling = true;
+    ADC_MANAGER.startADCSamping(true, 0);
+
     return ADCBtnsError::SUCCESS;   
-}
-
-void ADCBtnsMarker::process(ADC_HandleTypeDef *hadc) {
-    // 检查hadc是否为ADC1
-    if(!hadc || hadc->Instance != ADC1) {
-        return;
-    }
-
-    if(!step_info.is_sampling) {
-        return;
-    }
-
-    SCB_CleanInvalidateDCache_by_Addr((uint32_t *)ADC_Values, sizeof(ADC_Values));
-    uint32_t adcValue = ADC_Values[0];
-
-    // printf("%d\n", adcValue);
-
-    if(adcValue == 0 || adcValue > UINT16_MAX) {
-        return;
-    }
-
-
-    // 如果临时值已满，则步进完成
-
-    if(num_value_tmp >= MAX_NUM_TMP_MARKING) {
-        stepFinish();
-    } else if(adcValue != 0) { // 否则，累加临时值
-        value_tmp += adcValue;
-        if(adcValue < tmpValueMin) tmpValueMin = adcValue;
-        if(adcValue > tmpValueMax) tmpValueMax = adcValue;
-        num_value_tmp++;
-    }
 }
 
 /**
  * @brief 步进完成
  * 将临时值保存到标记值中，并重置标记器
  */
-void ADCBtnsMarker::stepFinish() {
+void ADCBtnsMarker::stepFinish(ADCChannelStats* stats) {
+
+    ADC_MANAGER.stopADCSamping();
+
     step_info.is_sampling = false;
     // 计算平均值，double_t精度更高，round四舍五入
-    step_info.values[step_info.index] = static_cast<uint32_t>(round(static_cast<double_t>(value_tmp) / static_cast<double_t>(num_value_tmp)));
-    uint32_t tsf = static_cast<uint32_t>(static_cast<float_t>(num_value_tmp) / (static_cast<float_t>(HAL_GetTick() - t) / 1000.0f)); // 记录采样频率，单位Hz
-    // printf("ADCBtnsMarker: stepFinish - tsf: %d\n", tsf);
-    tmpSamplingFrequency += tsf; // 记录采样频率，单位Hz
-    tmpSamplingNoise += (tmpValueMax - tmpValueMin); // 记录采样噪声
+    step_info.values[step_info.index] = stats->averageValue;
+    tmpSamplingFrequency += stats->samplingFreq; // 记录采样频率，单位Hz
+    tmpSamplingNoise += (stats->maxValue - stats->minValue); // 记录采样噪声
     step_info.index ++;
 
 }
@@ -188,22 +123,16 @@ void ADCBtnsMarker::stepFinish() {
  */
 
 void ADCBtnsMarker::markingFinish() {
-    // printf("ADCBtnsMarker: markingFinish - begin mark save. tmpSamplingFrequency: %d, step_info.length: %d\n", tmpSamplingFrequency, step_info.length);
     tmpSamplingFrequency /= step_info.length; // 记录平均采样频率，单位Hz
     tmpSamplingNoise /= step_info.length; // 记录平均采样噪声，单位mV
 
-    ADC_VALUES_MAPPING.stopADCSamping();
-
-    ADCBtnsError err = ADC_VALUES_MAPPING.mark(step_info.id, step_info.values, tmpSamplingNoise, tmpSamplingFrequency);
+    ADCBtnsError err = ADC_MANAGER.markMapping(step_info.id, step_info.values, tmpSamplingNoise, tmpSamplingFrequency);
 
     step_info.sampling_frequency = tmpSamplingFrequency;
     step_info.sampling_noise = tmpSamplingNoise;
     step_info.is_completed = true;
     step_info.is_sampling = false;
     step_info.is_marking = false;
-
-    tmpSamplingFrequency = 0;
-    tmpSamplingNoise = 0;
 
     if(err != ADCBtnsError::SUCCESS) {
         printf("ADCBtnsMarker: markingFinish - mark save failed. err: %d\n", err);
@@ -213,7 +142,7 @@ void ADCBtnsMarker::markingFinish() {
 }
 
 
-uint32_t* ADCBtnsMarker::getCurrentMarkingValues() {
+const uint32_t* ADCBtnsMarker::getCurrentMarkingValues() {
     return step_info.values;
 }
 

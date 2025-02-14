@@ -24,7 +24,11 @@ enum class MessageId {
     ADC_BTNS_CALIBRATOR_START = 11,
     ADC_BTNS_CALIBRATOR_STOP_WITH_FINISH = 12,
     ADC_BTNS_CALIBRATOR_STOP_WITHOUT_FINISH = 13,
+
+    ADC_SAMPLING_STATS_COMPLETE = 14,  // 添加新的消息类型用于ADC采样统计更新
 };
+
+
 
 // 消息处理函数类型
 using MessageHandler = std::function<void(const void*)>;

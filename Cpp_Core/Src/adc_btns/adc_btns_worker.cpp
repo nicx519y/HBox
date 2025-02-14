@@ -2,7 +2,9 @@
 
 // // 定义静态成员变量
 // __attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsWorker::ADC_Values[NUM_ADC_BUTTONS];
-#define ADC_Values ADCValuesMappingUtils::ADC_Values
+#define ADC1_Values ADCValuesMappingUtils::ADC1_Values
+#define ADC2_Values ADCValuesMappingUtils::ADC2_Values
+#define ADC3_Values ADCValuesMappingUtils::ADC3_Values
 
 ADCBtnsWorker::ADCBtnsWorker() {
     // 初始化指针数组为 nullptr
@@ -20,28 +22,36 @@ ADCBtnsWorker::ADCBtnsWorker() {
  */
 void ADCBtnsWorker::handleADCConvComplete(ADC_HandleTypeDef* hadc) {
 
-    uint8_t start;
-    uint8_t length;
     if(hadc->Instance == ADC1) {
-        start = 0;
-        length = NUM_ADC1_BUTTONS;
+        SCB_InvalidateDCache_by_Addr((uint32_t*)&ADC1_Values[0], sizeof(ADC1_Values[0]) * NUM_ADC1_BUTTONS);
         // 清除DMA缓存以确保读取到最新数据
     } else if(hadc->Instance == ADC2) {
-        start = NUM_ADC1_BUTTONS;
-        length = NUM_ADC2_BUTTONS;
+        SCB_InvalidateDCache_by_Addr((uint32_t*)&ADC2_Values[0], sizeof(ADC2_Values[0]) * NUM_ADC2_BUTTONS);
+        // 清除DMA缓存以确保读取到最新数据
+    } else if(hadc->Instance == ADC3) {
+        SCB_InvalidateDCache_by_Addr((uint32_t*)&ADC3_Values[0], sizeof(ADC3_Values[0]) * NUM_ADC3_BUTTONS);
         // 清除DMA缓存以确保读取到最新数据
     } else {
         return;
     }
     
-    SCB_InvalidateDCache_by_Addr((uint32_t*)&ADC_Values[0], sizeof(ADC_Values[0]) * NUM_ADC_BUTTONS);
 
     if(hadc->Instance == ADC1) {
-        printf("ADC1:%d\n", ADC_Values[0]);
+        printf("ADC1:\n");
+        printf("ADC1:%d\n", ADC1_Values[0]);
+        printf("ADC1:%d\n", ADC1_Values[1]);
+    } else if(hadc->Instance == ADC2) {
+        printf("ADC2:\n");
+        printf("ADC2:%d\n", ADC2_Values[0]);
+        printf("ADC2:%d\n", ADC2_Values[1]);
+    } else if(hadc->Instance == ADC3) {
+        printf("ADC3:\n");
+        printf("ADC3:%d\n", ADC3_Values[0]);
+        printf("ADC3:%d\n", ADC3_Values[1]);   
     }
 
-    for(uint8_t i = start; i < start + length; i++) {
-        if(ADC_Values[i] == 0 || ADC_Values[i] > UINT16_MAX) {
+    for(uint8_t i = 0; i < NUM_ADC1_BUTTONS; i++) {
+        if(ADC1_Values[i] == 0 || ADC1_Values[i] > UINT16_MAX) {
             continue;
         }
 
@@ -79,9 +89,10 @@ ADCBtnsError ADCBtnsWorker::setup() {
 
     this->mapping = mapping;
 
-    // printf("mapping->noise: %d\n", mapping->samplingNoise);
     
-    memset(ADC_Values, 0, sizeof(ADC_Values)); // DMA缓存清零  
+    memset(ADC1_Values, 0, sizeof(ADC1_Values)); // DMA缓存清零  
+    memset(ADC2_Values, 0, sizeof(ADC2_Values)); // DMA缓存清零  
+    memset(ADC3_Values, 0, sizeof(ADC3_Values)); // DMA缓存清零  
     
     // 初始化按钮配置
     for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
@@ -114,6 +125,8 @@ ADCBtnsError ADCBtnsWorker::setup() {
     MC.subscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
 
     ADC_VALUES_MAPPING.startADCSamping();
+
+    printf("ADCBtnsWorker::setup success. startADCSamping\n");
 
     return ADCBtnsError::SUCCESS;
 }
@@ -257,26 +270,26 @@ uint8_t ADCBtnsWorker::searchIndexInMapping(uint8_t buttonIndex, uint16_t value)
  */
 void ADCBtnsWorker::dynamicCalibADC(uint8_t buttonIndex) {
     // 获取当前按钮的ADC值
-    uint16_t currentValue = ADC_Values[buttonIndex];
-    ADCBtn* btn = buttonPtrs[buttonIndex];
+    // uint16_t currentValue = ADC1_Values[buttonIndex];
+    // ADCBtn* btn = buttonPtrs[buttonIndex];
 
-    if(!buttonPtrs[buttonIndex]->initCompleted) {
-        buttonPtrs[buttonIndex]->initCompleted = true;
-        uint16_t noise = this->mapping->samplingNoise;
-        // 初始化按钮映射
-        uint16_t lastValue = currentValue + noise;
-        uint16_t firstValue = currentValue + this->mapping->originalValues[0] - this->mapping->originalValues[this->mapping->length - 1];
+    // if(!buttonPtrs[buttonIndex]->initCompleted) {
+    //     buttonPtrs[buttonIndex]->initCompleted = true;
+    //     uint16_t noise = this->mapping->samplingNoise;
+    //     // 初始化按钮映射
+    //     uint16_t lastValue = currentValue + noise;
+    //     uint16_t firstValue = currentValue + this->mapping->originalValues[0] - this->mapping->originalValues[this->mapping->length - 1];
 
-        this->updateButtonMapping(btn->valueMapping, firstValue, lastValue);
-    } else {
-        uint16_t noise = this->mapping->samplingNoise;
-        if(currentValue > btn->valueMapping[0]) {
-            this->updateButtonMapping(btn->valueMapping, currentValue, btn->valueMapping[this->mapping->length - 1]);
-        } else if(currentValue < btn->valueMapping[this->mapping->length - 1] - noise) {
-            this->updateButtonMapping(btn->valueMapping, btn->valueMapping[0], currentValue + noise);
-        }
+    //     this->updateButtonMapping(btn->valueMapping, firstValue, lastValue);
+    // } else {
+    //     uint16_t noise = this->mapping->samplingNoise;
+    //     if(currentValue > btn->valueMapping[0]) {
+    //         this->updateButtonMapping(btn->valueMapping, currentValue, btn->valueMapping[this->mapping->length - 1]);
+    //     } else if(currentValue < btn->valueMapping[this->mapping->length - 1] - noise) {
+    //         this->updateButtonMapping(btn->valueMapping, btn->valueMapping[0], currentValue + noise);
+    //     }
 
-    }
+    // }
 }
 
 /**
@@ -285,49 +298,73 @@ void ADCBtnsWorker::dynamicCalibADC(uint8_t buttonIndex) {
  */
 void ADCBtnsWorker::buttonWorking(uint8_t buttonIndex) {
 
-    if(!buttonPtrs[buttonIndex]->initCompleted) {
-        return;
-    }
+    // if(!buttonPtrs[buttonIndex]->initCompleted) {
+    //     return;
+    // }
 
-    // 获取当前按钮的ADC值
-    ADCBtn* btn = buttonPtrs[buttonIndex];
-    uint8_t searchIndex = this->searchIndexInMapping(buttonIndex, ADC_Values[buttonIndex]);
+    // // 获取当前按钮的ADC值
+    // ADCBtn* btn = buttonPtrs[buttonIndex];
+    // uint8_t searchIndex = this->searchIndexInMapping(buttonIndex, ADC_Values[buttonIndex]);
     
-    // if(buttonIndex == 0) {
-    //     printf("buttonIndex: %d, ADC_Values[buttonIndex]: %d, searchIndex: %d, firstValue: %d, lastValue: %d\n",     
-    //         buttonIndex, ADC_Values[buttonIndex], searchIndex, buttonPtrs[buttonIndex]->valueMapping[0], buttonPtrs[buttonIndex]->valueMapping[this->mapping->length - 1]);
+    // // if(buttonIndex == 0) {
+    // //     printf("buttonIndex: %d, ADC_Values[buttonIndex]: %d, searchIndex: %d, firstValue: %d, lastValue: %d\n",     
+    // //         buttonIndex, ADC_Values[buttonIndex], searchIndex, buttonPtrs[buttonIndex]->valueMapping[0], buttonPtrs[buttonIndex]->valueMapping[this->mapping->length - 1]);
+    // // }
+
+    // // if(buttonIndex == 0) {
+    // //     printf("btn->isPressed: %d, btn->lastTriggerIndex: %d, searchIndex: %d\n", btn->isPressed, btn->lastTriggerIndex, searchIndex);
+    // // }
+
+    // if(!btn->isPressed) {
+    //     if(searchIndex < btn->lastTriggerIndex){
+    //         btn->isPressed = true;
+    //         buttonTriggerStatusChanged = true;
+    //         this->virtualPinMask |= (1 << btn->virtualPin);
+    //         // if(buttonIndex == 0) {
+    //         //     printf("btn->isPressed: %d\n", btn->isPressed);
+    //         // }
+
+    //     }
+    // } else {
+    //     if(searchIndex > btn->lastTriggerIndex) {
+    //         btn->isPressed = false;
+    //         buttonTriggerStatusChanged = true;
+    //         this->virtualPinMask &= ~(1 << btn->virtualPin);
+    //         // if(buttonIndex == 0) {
+    //         //     printf("btn->isPressed: %d\n", btn->isPressed);
+    //         // }
+    //     }
     // }
 
-    // if(buttonIndex == 0) {
-    //     printf("btn->isPressed: %d, btn->lastTriggerIndex: %d, searchIndex: %d\n", btn->isPressed, btn->lastTriggerIndex, searchIndex);
-    // }
-
-    if(!btn->isPressed) {
-        if(searchIndex < btn->lastTriggerIndex){
-            btn->isPressed = true;
-            buttonTriggerStatusChanged = true;
-            this->virtualPinMask |= (1 << btn->virtualPin);
-            // if(buttonIndex == 0) {
-            //     printf("btn->isPressed: %d\n", btn->isPressed);
-            // }
-
-        }
-    } else {
-        if(searchIndex > btn->lastTriggerIndex) {
-            btn->isPressed = false;
-            buttonTriggerStatusChanged = true;
-            this->virtualPinMask &= ~(1 << btn->virtualPin);
-            // if(buttonIndex == 0) {
-            //     printf("btn->isPressed: %d\n", btn->isPressed);
-            // }
-        }
-    }
-
-    // if(buttonIndex == 0) {
-    //     printBinary("virtualPinMask: ", this->virtualPinMask);
-    // }
+    // // if(buttonIndex == 0) {
+    // //     printBinary("virtualPinMask: ", this->virtualPinMask);
+    // // }
     
-    btn->lastTriggerIndex = searchIndex;
+    // btn->lastTriggerIndex = searchIndex;
+}
+
+ADCBtnsError ADCBtnsWorker::test() {
+    
+    messageHandler = [this](const void* data) {
+        ADC_HandleTypeDef* hadc = (ADC_HandleTypeDef*)data;
+        // if(hadc->Instance == ADC1) {
+        //     SCB_InvalidateDCache_by_Addr((uint32_t*)&ADC1_Values[0], sizeof(ADC1_Values[0]) * NUM_ADC1_BUTTONS);
+        //     printf("ADC1_Values[0]: %d, ADC1_Values[1]: %d\n", ADC1_Values[0], ADC1_Values[1]);
+        // }  
+        // if(hadc->Instance == ADC2) {
+        //     SCB_InvalidateDCache_by_Addr((uint32_t*)&ADC2_Values[0], sizeof(ADC2_Values[0]) * NUM_ADC2_BUTTONS);
+        //     printf("ADC2_Values[0]: %d, ADC2_Values[1]: %d\n", ADC2_Values[0], ADC2_Values[1]);
+        // }
+        if(hadc->Instance == ADC3) {
+            SCB_InvalidateDCache_by_Addr((uint32_t*)&ADC3_Values[0], sizeof(ADC3_Values[0]) * NUM_ADC3_BUTTONS);
+            printf("ADC3_Values[0]: %d, ADC3_Values[1]: %d\n", ADC3_Values[0], ADC3_Values[1]);
+        }
+    };
+    MC.subscribe(MessageId::DMA_ADC_CONV_CPLT, messageHandler);
+
+    ADC_VALUES_MAPPING.startADCSamping();
+
+    return ADCBtnsError::SUCCESS;
 }
 
 ADCBtnsWorker::~ADCBtnsWorker() {

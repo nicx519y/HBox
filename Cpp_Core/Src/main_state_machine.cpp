@@ -37,14 +37,15 @@ void MainStateMachine::setup()
             /*** 初始化ADC按钮 & LED test begin ***/
             
 
-            // WS2812B_Start();
-            // WS2812B_SetAllLEDColor(255, 255, 0);
-            // WS2812B_SetAllLEDBrightness(30);
+            WS2812B_Start();
+            WS2812B_SetAllLEDColor(255, 255, 0);
+            WS2812B_SetAllLEDBrightness(30);
             
             // struct RGBColor color1 = {0, 0, 255};
             // struct RGBColor color2 = {255, 255, 0};
 
-            ADC_BTNS_WORKER.setup();
+            // ADC_BTNS_WORKER.setup();
+            // ADC_BTNS_WORKER.test();
 
             // MC.subscribe(MessageId::ADC_BTNS_STATE_CHANGED, [color1, color2](const void* data) {
             //     // printBinary("ADC_BTNS_STATE_CHANGED: ", *(uint32_t*) data);
