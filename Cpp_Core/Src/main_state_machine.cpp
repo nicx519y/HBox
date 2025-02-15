@@ -57,17 +57,3 @@ void MainStateMachine::setup()
 
     }
 }
-
-/**
- * @brief 8000Hz 定时器中断回调
- * 
- * @param htim 
- */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    // 50us计时器
-    if (htim->Instance == htim2.Instance)
-    {
-        usTick ++;  //计数增加
-    }
-}

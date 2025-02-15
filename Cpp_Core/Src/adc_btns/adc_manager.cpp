@@ -19,22 +19,13 @@
  * +------------------------+
  */
 
-// 存储实例
-static ADCValuesMappingStore store;
-// ADC1 和 ADC2 DMA 不能访问 DTCMRAM 区域
+
+
+// 定义静态 ADC DMA 缓冲区
 __attribute__((section("._RAM_D1_Area"))) uint32_t ADCManager::ADC1_Values[NUM_ADC1_BUTTONS];
 __attribute__((section("._RAM_D1_Area"))) uint32_t ADCManager::ADC2_Values[NUM_ADC2_BUTTONS];
 // ADC3 BDMA 只能访问 _RAM_D3_Area 区域
 __attribute__((section("._RAM_D3_Area"))) uint32_t ADCManager::ADC3_Values[NUM_ADC3_BUTTONS];
-
-bool ADCManager::samplingRateEnabled = false;
-uint32_t ADCManager::samplingCountMax = 1000;
-
-ADCBufferInfo ADCManager::adcBufferInfo[] = {
-    {ADC1_Values, sizeof(ADC1_Values), ADC1_BUFFER_TO_KEY_INDEX, NUM_ADC1_BUTTONS},
-    {ADC2_Values, sizeof(ADC2_Values), ADC2_BUFFER_TO_KEY_INDEX, NUM_ADC2_BUTTONS},
-    {ADC3_Values, sizeof(ADC3_Values), ADC3_BUFFER_TO_KEY_INDEX, NUM_ADC3_BUTTONS}
-};
 
 
 ADCManager::ADCManager() {
@@ -62,10 +53,18 @@ ADCManager::ADCManager() {
 
     // 注册消息
     MC.registerMessage(MessageId::ADC_SAMPLING_STATS_COMPLETE);
+
+    samplingCountMax = 1000;
+    samplingRateEnabled = false;
+    ADCButtonStats = {0};
+    samplingADCIndex = std::make_pair(0, 0);
+    adcBufferInfo[0] = {ADC1_Values, sizeof(ADC1_Values), ADC1_BUFFER_TO_KEY_INDEX, NUM_ADC1_BUTTONS};
+    adcBufferInfo[1] = {ADC2_Values, sizeof(ADC2_Values), ADC2_BUFFER_TO_KEY_INDEX, NUM_ADC2_BUTTONS};
+    adcBufferInfo[2] = {ADC3_Values, sizeof(ADC3_Values), ADC3_BUFFER_TO_KEY_INDEX, NUM_ADC3_BUTTONS};
 }
 
 // 保存整个存储结构到Flash
-static int8_t saveStore() {
+int8_t ADCManager::saveStore() {
     return QSPI_W25Qxx_WriteBuffer((uint8_t*)&store, ADC_VALUES_MAPPING_ADDR, sizeof(ADCValuesMappingStore));
 }
 
@@ -334,6 +333,11 @@ ADCBtnsError ADCManager::startADCSamping(bool enableSamplingRate, uint8_t button
         ADC_DEBUG_PRINT("Failed to stop ADC sampling\n");
         return err;
     }
+
+    // 初始化DMA缓存
+    memset(ADC1_Values, 0, sizeof(ADC1_Values)); // DMA缓存清零  
+    memset(ADC2_Values, 0, sizeof(ADC2_Values)); // DMA缓存清零  
+    memset(ADC3_Values, 0, sizeof(ADC3_Values)); // DMA缓存清零
 
     // 校准 ADC1
     if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK) {

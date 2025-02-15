@@ -1,20 +1,5 @@
 #include "configs/webconfig.hpp"
-#include "configmanager.hpp"
-#include <string>
-#include "rndis.h"
-#include "fs.h"
-#include "fscustom.h"
-#include "fsdata.h"
-#include "lwip/apps/httpd.h"
-#include "lwip/def.h"
-#include "lwip/mem.h"
-#include "constant.hpp"
-#include "config.hpp"
-#include "storagemanager.hpp"
-#include "cJSON.h"
-#include "cJSON_Utils.h"
-#include "adc_btns/adc_btns_marker.hpp"
-#include "main.h"  // 用于 HAL_GetTick
+
 
 extern "C" struct fsdata_file file__index_html[];
 
@@ -1431,7 +1416,7 @@ std::string apiReboot() {
 cJSON* buildMappingListJSON() {
 
     // 获取轴体映射名称列表
-    std::vector<ADCValuesMapping*> mappingList = ADC_VALUES_MAPPING.getMappingList();
+    std::vector<ADCValuesMapping*> mappingList = ADC_MANAGER.getMappingList();
 
     cJSON* listJSON = cJSON_CreateArray();
     for(ADCValuesMapping* mapping : mappingList) {
@@ -1463,7 +1448,7 @@ std::string apiMSGetList() {
     cJSON* dataJSON = cJSON_CreateObject();
     // 添加映射列表到响应数据
     cJSON_AddItemToObject(dataJSON, "mappingList", buildMappingListJSON());
-    cJSON_AddItemToObject(dataJSON, "defaultMappingId", cJSON_CreateString(ADC_VALUES_MAPPING.getDefault().c_str()));
+    cJSON_AddItemToObject(dataJSON, "defaultMappingId", cJSON_CreateString(ADC_MANAGER.getDefaultMapping().c_str()));
     
     // 获取标准格式的响应
     std::string response = get_response_temp(STORAGE_ERROR_NO::ACTION_SUCCESS, dataJSON);
@@ -1546,7 +1531,7 @@ std::string apiMSSetDefault() {
     const char* mappingId = idJSON->valuestring;
 
     // 设置默认映射
-    ADCBtnsError error = ADC_VALUES_MAPPING.setDefault(mappingId);
+    ADCBtnsError error = ADC_MANAGER.setDefaultMapping(mappingId);
     if(error != ADCBtnsError::SUCCESS) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to set default mapping");
@@ -1589,7 +1574,7 @@ std::string apiMSGetDefault() {
     cJSON* dataJSON = cJSON_CreateObject();
     
     // 获取默认映射名称
-    std::string defaultId = ADC_VALUES_MAPPING.getDefault();
+    std::string defaultId = ADC_MANAGER.getDefaultMapping();
     if(defaultId.empty()) {
         cJSON_AddStringToObject(dataJSON, "id", "");
     } else {
@@ -1654,7 +1639,7 @@ std::string apiMSCreateMapping() {
     float_t step = (float_t)stepJSON->valuedouble;
     
     // 创建映射
-    ADCBtnsError error = ADC_VALUES_MAPPING.create(mappingName, length, step);
+    ADCBtnsError error = ADC_MANAGER.createADCMapping(mappingName, length, step);
 
     // printf("apiMSCreateMapping error: %d\n", error);
 
@@ -1665,7 +1650,7 @@ std::string apiMSCreateMapping() {
     
     // 创建响应数据
     cJSON* dataJSON = cJSON_CreateObject();
-    cJSON_AddItemToObject(dataJSON, "defaultMappingId", cJSON_CreateString(ADC_VALUES_MAPPING.getDefault().c_str()));
+    cJSON_AddItemToObject(dataJSON, "defaultMappingId", cJSON_CreateString(ADC_MANAGER.getDefaultMapping().c_str()));
     cJSON_AddItemToObject(dataJSON, "mappingList", buildMappingListJSON());
     
     // 获取标准格式的响应
@@ -1712,7 +1697,7 @@ std::string apiMSDeleteMapping() {
     const char* mappingId = idJSON->valuestring;
     
     // 删除映射
-    ADCBtnsError error = ADC_VALUES_MAPPING.remove(mappingId);
+    ADCBtnsError error = ADC_MANAGER.removeADCMapping(mappingId);
     if(error != ADCBtnsError::SUCCESS) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to delete mapping");
@@ -1720,7 +1705,7 @@ std::string apiMSDeleteMapping() {
     
     // 创建响应数据
     cJSON* dataJSON = cJSON_CreateObject();
-    cJSON_AddItemToObject(dataJSON, "defaultMappingId", cJSON_CreateString(ADC_VALUES_MAPPING.getDefault().c_str()));
+    cJSON_AddItemToObject(dataJSON, "defaultMappingId", cJSON_CreateString(ADC_MANAGER.getDefaultMapping().c_str()));
     cJSON_AddItemToObject(dataJSON, "mappingList", buildMappingListJSON());
     
     // 获取标准格式的响应
@@ -1761,7 +1746,7 @@ std::string apiMSRenameMapping() {
     const char* mappingName = nameJSON->valuestring;
 
     // 重命名映射
-    ADCBtnsError error = ADC_VALUES_MAPPING.rename(mappingId, mappingName);
+    ADCBtnsError error = ADC_MANAGER.renameADCMapping(mappingId, mappingName);
     if(error != ADCBtnsError::SUCCESS) {   
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to rename mapping");
@@ -1769,7 +1754,7 @@ std::string apiMSRenameMapping() {
 
     // 创建响应数据
     cJSON* dataJSON = cJSON_CreateObject();
-    cJSON_AddItemToObject(dataJSON, "defaultMappingId", cJSON_CreateString(ADC_VALUES_MAPPING.getDefault().c_str()));
+    cJSON_AddItemToObject(dataJSON, "defaultMappingId", cJSON_CreateString(ADC_MANAGER.getDefaultMapping().c_str()));
     cJSON_AddItemToObject(dataJSON, "mappingList", buildMappingListJSON());
 
     // 获取标准格式的响应
@@ -1906,7 +1891,7 @@ std::string apiMSGetMapping() {
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Missing or invalid mapping id");
     }
 
-    ADCValuesMapping* resultMapping = ADC_VALUES_MAPPING.getMapping(idJSON->valuestring);
+    ADCValuesMapping* resultMapping = ADC_MANAGER.getMapping(idJSON->valuestring);
     if (!resultMapping) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to get mapping");

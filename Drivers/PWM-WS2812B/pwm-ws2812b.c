@@ -1,11 +1,5 @@
 #include "pwm-ws2812b.h"
-#include "tim.h"
-#include "utils.h"
-#include <stdbool.h>
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-#include "constant.hpp"
+
 
 /* WS2812B data protocol
 |-------------------------------------------|
@@ -34,7 +28,7 @@ static uint8_t LED_Colors[NUM_LED * 3];
 
 static uint8_t LED_Brightness[NUM_LED];
 
-__RAM_D1_Area__ static uint32_t DMA_LED_Buffer[DMA_BUFFER_LEN];
+static __attribute__((section("._RAM_D1_Area"))) uint32_t DMA_LED_Buffer[DMA_BUFFER_LEN];
 
 void clearDCache(void *addr, uint32_t size)
 {

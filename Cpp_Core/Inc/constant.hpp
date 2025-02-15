@@ -1,6 +1,8 @@
 #ifndef _CONSTANT_H_
 #define _CONSTANT_H_ 
 
+#include <stdint.h>  // 添加这行来使用 uint8_t, uint32_t 等类型
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,10 +29,13 @@ extern "C" {
 #define NUM_ADC3_BUTTONS                    5
 #define NUM_ADC_BUTTONS                     (NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS + NUM_ADC3_BUTTONS)
 
-// 将ADC缓冲区索引映射到按钮索引
-static constexpr uint8_t ADC1_BUFFER_TO_KEY_INDEX[NUM_ADC1_BUTTONS] = {1, 8, 9, 6, 0, 5};
-static constexpr uint8_t ADC2_BUFFER_TO_KEY_INDEX[NUM_ADC2_BUTTONS] = {2, 3, 7, 4, 14, 11};
-static constexpr uint8_t ADC3_BUFFER_TO_KEY_INDEX[NUM_ADC3_BUTTONS] = {13, 15, 16, 10, 12};
+#define ADC_BTNS_WORK_INTERVAL               50            // ADC按钮工作间隔 us
+
+// C 代码块，使用 const
+static const uint8_t ADC1_BUFFER_TO_KEY_INDEX[NUM_ADC1_BUTTONS] = {1, 8, 9, 6, 0, 5};
+static const uint8_t ADC2_BUFFER_TO_KEY_INDEX[NUM_ADC2_BUTTONS] = {2, 3, 7, 4, 14, 11};
+static const uint8_t ADC3_BUFFER_TO_KEY_INDEX[NUM_ADC3_BUTTONS] = {13, 15, 16, 10, 12};
+
 
 #define TIMES_ADC_CALIBRATION               100             // 单个按钮校准时的循环次数，必须100次连续稳定的值用于校准
 #define DELAY_ADC_CALIBRATION               10              // 校准时间 TIMES_ADC_CALIBRATION * DELAY_ADC_CALIBRATION

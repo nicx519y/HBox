@@ -1,12 +1,18 @@
-#ifndef __WS2812B_H__
-#define __WS2812B_H__
-
-#include "stm32h7xx_hal.h"
-#include "utils.h"
+#ifndef __PWM_WS2812B_H
+#define __PWM_WS2812B_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "tim.h"
+#include "utils.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <math.h>
+#include <string.h>
+#include "constant.hpp"
 
 /**
   * @brief  WS2812B Status structures definition
@@ -51,5 +57,5 @@ void WS2812B_Test();
 }
 #endif
 
-#endif /* __WS2812B_H__ */
+#endif /* __PWM_WS2812B_H */
 

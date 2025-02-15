@@ -100,13 +100,13 @@ class ADCManager {
         ADCBtnsError stopADCSamping();
 
         // 读取ADC值
-        static inline const std::array<uint32_t, NUM_ADC_BUTTONS> readADCValues() {
-            std::array<uint32_t, NUM_ADC_BUTTONS> values;
+        inline const std::array<uint16_t, NUM_ADC_BUTTONS> readADCValues() {
+            std::array<uint16_t, NUM_ADC_BUTTONS> values;
             auto info = adcBufferInfo;
             for(uint8_t i = 0; i < NUM_ADC; i++) {
                 SCB_CleanInvalidateDCache_by_Addr(info[i].buffer, info[i].size);
                 for(uint8_t j = 0; j < info[i].count; j++) {
-                    values[info[i].indexMap[j]] = info[i].buffer[j];
+                    values[info[i].indexMap[j]] = (uint16_t)info[i].buffer[j];
                 }
             }
             return values;
@@ -117,7 +117,7 @@ class ADCManager {
          * @param buttonIndex 按钮索引
          * @return 指定按钮的ADC值
          */
-        static inline const uint32_t readADCValue(uint8_t buttonIndex) {
+        inline const uint32_t readADCValue(uint8_t buttonIndex) {
             auto indexInfo = findADCIndex(buttonIndex);  // 现在可以直接调用静态函数
             if(indexInfo.first == -1) {
                 return 0;
@@ -131,28 +131,25 @@ class ADCManager {
     private:
         ADCManager();
 
-        
-        // 处理标志（使用原子操作）
-        static volatile uint32_t processingFlags;
 
-        // ADC DMA 缓冲区
+        // ADC DMA 缓冲区必须保持静态
         static __attribute__((section("._RAM_D1_Area"))) uint32_t ADC1_Values[NUM_ADC1_BUTTONS];
         static __attribute__((section("._RAM_D1_Area"))) uint32_t ADC2_Values[NUM_ADC2_BUTTONS];
         static __attribute__((section("._RAM_D3_Area"))) uint32_t ADC3_Values[NUM_ADC3_BUTTONS];
 
         MessageHandler messageHandler;
 
-        static ADCBufferInfo adcBufferInfo[NUM_ADC];
-        static ADCChannelStats ADCButtonStats;
-
-        // 以下是采样率统计相关成员
-        static bool samplingRateEnabled;      // 改为 samplingRateEnabled
-        static uint32_t samplingCountMax; // 默认值在cpp中初始化为1000
-        static std::pair<uint8_t, uint8_t> samplingADCIndex; // 采样ADC索引
-        
+        // 非静态成员变量
+        ADCValuesMappingStore store;
+        ADCBufferInfo adcBufferInfo[NUM_ADC];
+        ADCChannelStats ADCButtonStats;
+        bool samplingRateEnabled;
+        uint32_t samplingCountMax;
+        std::pair<uint8_t, uint8_t> samplingADCIndex;
 
         void handleADCStats(ADC_HandleTypeDef *hadc);
-        static std::pair<uint8_t, uint8_t> findADCIndex(uint8_t buttonIndex);
+        int8_t saveStore();
+        std::pair<uint8_t, uint8_t> findADCIndex(uint8_t buttonIndex);
 };
 
 #define ADC_MANAGER ADCManager::getInstance()

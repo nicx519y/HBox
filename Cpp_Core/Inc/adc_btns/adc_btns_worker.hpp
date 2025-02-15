@@ -4,13 +4,13 @@
 #include <stdio.h>
 #include "stm32h7xx.h"
 #include "constant.hpp"
-#include "adc_values_mapping.hpp"
 #include "storagemanager.hpp"
 #include "adc.h"
 #include "message_center.hpp"
 #include "adc_btns_error.hpp"
 #include "ring_buffer_sliding_window.hpp"
 #include "utils.h"
+#include "adc_manager.hpp"
 
 #define NUM_FIRST_VALUE_WINDOW_SIZE 6
 #define NUM_LAST_VALUE_WINDOW_SIZE 6
@@ -64,6 +64,7 @@ class ADCBtnsWorker {
             return instance;
         }
         ADCBtnsError setup();
+        void loop();
         ADCBtnsError test();
         ADCBtnsError deinit();
         ADCBtnsWorker();
@@ -72,7 +73,6 @@ class ADCBtnsWorker {
     private:
         void updateButtonMapping(uint16_t* mapping, uint16_t firstValue, uint16_t lastValue);
         uint8_t searchIndexInMapping(uint8_t buttonIndex, uint16_t value);
-        void buttonWorking(uint8_t buttonIndex);
         void dynamicCalibADC(uint8_t buttonIndex);
         
         
@@ -83,10 +83,6 @@ class ADCBtnsWorker {
             return 0;
         }
 
-        // 处理ADC转换完成消息
-        void handleADCConvComplete(ADC_HandleTypeDef* hadc);
-
-        std::function<void(const void*)> messageHandler;
         ADCBtn* buttonPtrs[NUM_ADC_BUTTONS];
         uint32_t virtualPinMask = 0x0;  // 虚拟引脚掩码
         ADCValuesMapping* mapping;
