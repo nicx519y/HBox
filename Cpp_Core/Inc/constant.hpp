@@ -29,12 +29,14 @@ extern "C" {
 #define NUM_ADC3_BUTTONS                    5
 #define NUM_ADC_BUTTONS                     (NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS + NUM_ADC3_BUTTONS)
 
-#define ADC_BTNS_WORK_INTERVAL               50            // ADC按钮工作间隔 us
+#define ADC_BTNS_WORK_INTERVAL              50            // ADC按钮工作间隔 us
+#define ENABLED_DYNAMIC_CALIBRATION         1               //是否启用动态校准
+#define DYNAMIC_CALIBRATION_INTERVAL        (5 * 1000000)            // 动态校准间隔 5s
 
 // C 代码块，使用 const
-static const uint8_t ADC1_BUFFER_TO_KEY_INDEX[NUM_ADC1_BUTTONS] = {1, 8, 9, 6, 0, 5};
-static const uint8_t ADC2_BUFFER_TO_KEY_INDEX[NUM_ADC2_BUTTONS] = {2, 3, 7, 4, 14, 11};
-static const uint8_t ADC3_BUFFER_TO_KEY_INDEX[NUM_ADC3_BUTTONS] = {13, 15, 16, 10, 12};
+static __attribute__((section(".rodata"))) const uint8_t ADC1_BUFFER_TO_KEY_INDEX[NUM_ADC1_BUTTONS] = {1, 8, 9, 6, 0, 5};
+static __attribute__((section(".rodata"))) const uint8_t ADC2_BUFFER_TO_KEY_INDEX[NUM_ADC2_BUTTONS] = {2, 3, 7, 4, 14, 11};
+static __attribute__((section(".rodata"))) const uint8_t ADC3_BUFFER_TO_KEY_INDEX[NUM_ADC3_BUTTONS] = {13, 15, 16, 10, 12};
 
 
 #define TIMES_ADC_CALIBRATION               100             // 单个按钮校准时的循环次数，必须100次连续稳定的值用于校准

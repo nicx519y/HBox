@@ -57,17 +57,20 @@ class ADCManager {
     public:
         ADCManager(ADCManager const&) = delete;
         void operator=(ADCManager const&) = delete;
-        
         static ADCManager& getInstance() {
             static ADCManager instance;
-            return instance;    
+            return instance;
         }
 
+        ADCBtnsError setup();
+        void loop();
+        ADCBtnsError deinit();
+
         // 获取映射索引
-        int8_t findMappingIndex(const char* id);
+        int8_t findMappingIndex(const char* const id) const;
 
         // 获取映射
-        ADCValuesMapping* getMapping(const char* id);
+        const ADCValuesMapping* getMapping(const char* const id) const;
 
         // 获取映射列表
         std::vector<ADCValuesMapping*> getMappingList();
@@ -85,32 +88,27 @@ class ADCManager {
         ADCBtnsError updateADCMapping(const char* id, const ADCValuesMapping& mapping);
 
         // 标记映射
-        ADCBtnsError markMapping(const char* id, uint32_t* values, uint32_t samplingNoise, uint32_t samplingFrequency);
+        ADCBtnsError markMapping(const char* const id, 
+                               const uint32_t* const values,
+                               const uint16_t samplingNoise,
+                               const uint16_t samplingFrequency);
 
         // 设置默认映射
         ADCBtnsError setDefaultMapping(const char* id);
 
         // 获取默认映射
-        std::string getDefaultMapping();
+        const std::string& getDefaultMapping() const;
 
         // 开始采样
-        ADCBtnsError startADCSamping(bool enableSamplingRate = false, uint8_t buttonIndex = 0, uint32_t samplingCountMax = 0);
+        ADCBtnsError startADCSamping(bool enableSamplingRate = false, 
+                                   uint8_t buttonIndex = 0, 
+                                   uint32_t samplingCountMax = 0);
 
         // 停止采样
-        ADCBtnsError stopADCSamping();
+        void stopADCSamping();
 
         // 读取ADC值
-        inline const std::array<uint16_t, NUM_ADC_BUTTONS> readADCValues() {
-            std::array<uint16_t, NUM_ADC_BUTTONS> values;
-            auto info = adcBufferInfo;
-            for(uint8_t i = 0; i < NUM_ADC; i++) {
-                SCB_CleanInvalidateDCache_by_Addr(info[i].buffer, info[i].size);
-                for(uint8_t j = 0; j < info[i].count; j++) {
-                    values[info[i].indexMap[j]] = (uint16_t)info[i].buffer[j];
-                }
-            }
-            return values;
-        }
+        const std::array<uint16_t, NUM_ADC_BUTTONS>& readADCValues() const;
 
         /**
          * @brief 读取指定按钮的ADC值
@@ -130,7 +128,7 @@ class ADCManager {
 
     private:
         ADCManager();
-
+        ~ADCManager();
 
         // ADC DMA 缓冲区必须保持静态
         static __attribute__((section("._RAM_D1_Area"))) uint32_t ADC1_Values[NUM_ADC1_BUTTONS];
@@ -150,6 +148,20 @@ class ADCManager {
         void handleADCStats(ADC_HandleTypeDef *hadc);
         int8_t saveStore();
         std::pair<uint8_t, uint8_t> findADCIndex(uint8_t buttonIndex);
+
+        // 添加 const 修饰符
+        ADCBtnsError loadMapping(const char* const id) const;
+        void handleADCConvCplt(const ADC_HandleTypeDef* const hadc);
+        void handleADCStats(const ADCChannelStats* const stats) const;
+
+        // 成员变量
+        std::array<uint16_t, NUM_ADC_BUTTONS> adcValues;
+        std::string defaultMappingId;
+        ADCValuesMapping* currentMapping;
+        bool isStarted;
+        bool enableStats;
+        uint32_t statsInterval;
+        uint32_t lastStatsTime;
 };
 
 #define ADC_MANAGER ADCManager::getInstance()

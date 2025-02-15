@@ -1,7 +1,5 @@
 #include "main_state_machine.hpp"
 
-static uint32_t usTick = 0;
-
 MainStateMachine::MainStateMachine() 
     : gamepad(Gamepad::getInstance())
     , storage(Storage::getInstance())

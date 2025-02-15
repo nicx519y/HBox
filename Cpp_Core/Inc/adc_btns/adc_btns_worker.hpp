@@ -11,13 +11,8 @@
 #include "ring_buffer_sliding_window.hpp"
 #include "utils.h"
 #include "adc_manager.hpp"
-
-#define NUM_FIRST_VALUE_WINDOW_SIZE 6
-#define NUM_LAST_VALUE_WINDOW_SIZE 6
+#include "micro_timer.hpp"
 #define NUM_MAPPING_INDEX_WINDOW_SIZE 32
-#define DIRECTION_RELEASING -1  // 按钮释放方向（ADC值减小）
-#define DIRECTION_PRESSING 1    // 按钮按下方向（ADC值增大）
-
 // 错误码定义
 enum class ADCBtnsWorkerError {
     SUCCESS = 0,
@@ -33,22 +28,43 @@ enum class ADCBtnsWorkerError {
     BUTTON_CONFIG_ERROR = -10   // 按钮配置错误
 };
 
+// 按钮状态枚举
+enum class ButtonState {
+    RELEASED,       // 完全释放状态
+    RELEASING,      // 正在释放过程中
+    PRESSED,        // 完全按下状态
+    PRESSING,       // 正在按下过程中
+};
+
+// 按钮事件枚举
+enum class ButtonEvent {
+    NONE,
+    PRESS_START,    // 开始按下
+    PRESS_COMPLETE, // 按下完成
+    RELEASE_START,  // 开始释放
+    RELEASE_COMPLETE// 释放完成
+};
+
 typedef struct {
     // 按钮配置
     uint32_t virtualPin = 0;    // 虚拟引脚
-    float_t pressAccuracy = 0;   // 按下精度
-    float_t releaseAccuracy = 0; // 释放精度
-    float_t topDeadzone = 0;     // 顶部死区
-    float_t bottomDeadzone = 0;  // 底部死区
+    uint8_t pressAccuracyIndex = 0;   // 按下精度 转换成mapping索引数量
+    uint8_t releaseAccuracyIndex = 0; // 释放精度 转换成mapping索引数量
+    uint8_t topDeadzoneIndex = 0;     // 顶部死区 转换成mapping索引值
+    uint8_t bottomDeadzoneIndex = 0;  // 底部死区 转换成mapping索引值
 
     // 校准参数
     bool initCompleted = false;     // 初始化完成
-    int8_t movingDirection = 0;     // 记录运动趋势 (1: 增加, -1: 减少, 0: 初始/静止)
     uint8_t lastTriggerIndex = 0;  // 上一次触发索引
-    uint8_t lastSearchIndex = 0;        // 上一次索引
-    bool isPressed = false;           // 是否按下
 
     uint16_t valueMapping[MAX_ADC_VALUES_LENGTH] = {0};           // 值映射
+
+    ButtonState state = ButtonState::RELEASED;  // 当前状态
+    uint8_t lastStateIndex = 0;                // 进入当前状态时的索引值
+
+    #if ENABLED_DYNAMIC_CALIBRATION == 1
+    bool needCalibration = false;
+    #endif
 
 } ADCBtn;
 
@@ -65,37 +81,33 @@ class ADCBtnsWorker {
         }
         ADCBtnsError setup();
         void loop();
-        ADCBtnsError test();
         ADCBtnsError deinit();
         ADCBtnsWorker();
         ~ADCBtnsWorker();
 
     private:
+        // 获取按钮事件
+        ButtonEvent getButtonEvent(ADCBtn* btn, const uint8_t currentIndex, const uint16_t currentValue);
+        // 处理状态转换
+        void handleButtonState(ADCBtn* btn, const uint8_t currentIndex, const uint16_t currentValue, const ButtonEvent event);
+
         void updateButtonMapping(uint16_t* mapping, uint16_t firstValue, uint16_t lastValue);
-        uint8_t searchIndexInMapping(uint8_t buttonIndex, uint16_t value);
-        void dynamicCalibADC(uint8_t buttonIndex);
-        
-        
-        // 判断两个值的变化方向 (1: 增加, -1: 减少, 0: 不变)
-        int8_t getChangeDirection(uint16_t current, uint16_t previous) {
-            if (current > previous) return DIRECTION_PRESSING;
-            if (current < previous) return DIRECTION_RELEASING;
-            return 0;
-        }
+        uint8_t searchIndexInMapping(const uint8_t buttonIndex, const uint16_t value);
 
         ADCBtn* buttonPtrs[NUM_ADC_BUTTONS];
         uint32_t virtualPinMask = 0x0;  // 虚拟引脚掩码
-        ADCValuesMapping* mapping;
+        const ADCValuesMapping* mapping;
         bool buttonTriggerStatusChanged = false;
         
-        void resetButton(uint8_t buttonIndex) {
-            if (buttonPtrs[buttonIndex]) {
-                buttonPtrs[buttonIndex]->initCompleted = false;
-                buttonPtrs[buttonIndex]->movingDirection = DIRECTION_RELEASING;
-                buttonPtrs[buttonIndex]->isPressed = false;
-                // ... 其他重置操作
-            }
-        }
+        uint32_t lastWorkTime = 0;
+
+        #if ENABLED_DYNAMIC_CALIBRATION == 1    
+        uint32_t lastCalibrationTime = 0;
+        // 使用滑动窗口平滑更新
+        RingBufferSlidingWindow<uint16_t> firstValueWindow;  // 最小值滑动窗口
+        RingBufferSlidingWindow<uint16_t> lastValueWindow;   // 最大值滑动窗口
+        RingBufferSlidingWindow<uint16_t> travelValueWindow; // 过渡值滑动窗口
+        #endif
 
 };
 

@@ -34,13 +34,13 @@ void ADCBtnsMarker::reset() {
  * @brief 初始化ADC值标记器
  * @param mapping_name 映射名称
  */
-ADCBtnsError ADCBtnsMarker::setup(const char* id) {
+ADCBtnsError ADCBtnsMarker::setup(const char* const id) {
 
     if (!id) return ADCBtnsError::INVALID_PARAMS;
 
     reset();
 
-    ADCValuesMapping* mapping = ADC_MANAGER.getMapping(id);
+    const ADCValuesMapping* mapping = ADC_MANAGER.getMapping(id);
 
 
     if (!mapping) return ADCBtnsError::MAPPING_NOT_FOUND;
@@ -104,7 +104,7 @@ ADCBtnsError ADCBtnsMarker::step() {
  * @brief 步进完成
  * 将临时值保存到标记值中，并重置标记器
  */
-void ADCBtnsMarker::stepFinish(ADCChannelStats* stats) {
+void ADCBtnsMarker::stepFinish(const ADCChannelStats* const stats) {
 
     ADC_MANAGER.stopADCSamping();
 
@@ -142,7 +142,7 @@ void ADCBtnsMarker::markingFinish() {
 }
 
 
-const uint32_t* ADCBtnsMarker::getCurrentMarkingValues() {
+const uint32_t* ADCBtnsMarker::getCurrentMarkingValues() const {
     return step_info.values;
 }
 
@@ -150,7 +150,7 @@ const uint32_t* ADCBtnsMarker::getCurrentMarkingValues() {
  * @brief 获取步进信息JSON
  * @return cJSON* 
  */
-cJSON* ADCBtnsMarker::getStepInfoJSON() {
+cJSON* ADCBtnsMarker::getStepInfoJSON() const {
     cJSON* json = cJSON_CreateObject();
     cJSON_AddStringToObject(json, "id", step_info.id);
     cJSON_AddStringToObject(json, "mapping_name", step_info.mapping_name);
@@ -171,6 +171,13 @@ cJSON* ADCBtnsMarker::getStepInfoJSON() {
     cJSON_AddItemToObject(json, "values", valuesJSON);
 
     return json;
+}
+
+void ADCBtnsMarker::loop() {
+    // 局部变量添加 const
+    const std::array<uint16_t, NUM_ADC_BUTTONS>& adcValues = ADC_MANAGER.readADCValues();
+    
+    // ... 其他实现
 }
 
 

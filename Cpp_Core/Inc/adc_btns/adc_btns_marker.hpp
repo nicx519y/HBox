@@ -36,23 +36,22 @@ class ADCBtnsMarker {
             static ADCBtnsMarker instance;
             return instance;
         }
-        ADCBtnsError setup(const char* id);
+        ADCBtnsError setup(const char* const id);
         ADCBtnsError step();
         
         void reset();
         void loop();
-        const uint32_t* getCurrentMarkingValues();
+        const uint32_t* getCurrentMarkingValues() const;
         
-        // 添加新的公共访问方法
-        StepInfo& getStepInfo() { return step_info; }
-        cJSON* getStepInfoJSON();
+        const StepInfo& getStepInfo() const { return step_info; }
+        cJSON* getStepInfoJSON() const;
 
     private:
         ADCBtnsMarker();
 
         StepInfo step_info;
 
-        void stepFinish(ADCChannelStats* stats);
+        void stepFinish(const ADCChannelStats* const stats);
         void markingFinish();
         std::function<void(const void*)> messageHandler;
         uint16_t tmpSamplingNoise;

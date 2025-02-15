@@ -1891,7 +1891,7 @@ std::string apiMSGetMapping() {
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Missing or invalid mapping id");
     }
 
-    ADCValuesMapping* resultMapping = ADC_MANAGER.getMapping(idJSON->valuestring);
+    const ADCValuesMapping* resultMapping = ADC_MANAGER.getMapping(idJSON->valuestring);
     if (!resultMapping) {
         cJSON_Delete(params);
         return get_response_temp(STORAGE_ERROR_NO::ACTION_FAILURE, NULL, "Failed to get mapping");

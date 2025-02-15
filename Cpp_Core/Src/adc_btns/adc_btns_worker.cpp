@@ -1,12 +1,15 @@
 #include "adc_btns/adc_btns_worker.hpp"
 
-// // 定义静态成员变量
-// __attribute__((section("._RAM_D1_Area"))) uint32_t ADCBtnsWorker::ADC_Values[NUM_ADC_BUTTONS];
-#define ADC1_Values ADCValuesMappingUtils::ADC1_Values
-#define ADC2_Values ADCValuesMappingUtils::ADC2_Values
-#define ADC3_Values ADCValuesMappingUtils::ADC3_Values
 
-ADCBtnsWorker::ADCBtnsWorker() {
+ADCBtnsWorker::ADCBtnsWorker()
+    : firstValueWindow(NUM_MAPPING_INDEX_WINDOW_SIZE)
+    , lastValueWindow(NUM_MAPPING_INDEX_WINDOW_SIZE)
+    , travelValueWindow(NUM_MAPPING_INDEX_WINDOW_SIZE)
+    , lastWorkTime(0)
+    #if ENABLED_DYNAMIC_CALIBRATION == 1
+    , lastCalibrationTime(0)
+    #endif
+{
     // 初始化指针数组为 nullptr
     memset(buttonPtrs, 0, sizeof(buttonPtrs));
 
@@ -16,66 +19,18 @@ ADCBtnsWorker::ADCBtnsWorker() {
     }
 }
 
-/**
- * 处理ADC转换完成消息
- * @param data ADC句柄指针
- */
-void ADCBtnsWorker::loop() {
-    std::array<uint16_t, NUM_ADC_BUTTONS> adcValues = ADC_MANAGER.readADCValues();
-
-    for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
-        // 获取按钮对象
-        ADCBtn* btn = buttonPtrs[i];
-        if(!btn || !btn->initCompleted) {
-            continue;
+ADCBtnsWorker::~ADCBtnsWorker() {
+    // 释放动态分配的内存
+    for (uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
+        if (buttonPtrs[i] != nullptr) {
+            delete buttonPtrs[i];
+            buttonPtrs[i] = nullptr;
         }
-
-        // 获取当前ADC值和对应的行程索引
-        uint16_t adcValue = adcValues[i];
-        if(adcValue == 0 || adcValue > UINT16_MAX) {
-            continue;
-        }
-        
-        uint8_t currentIndex = this->searchIndexInMapping(i, adcValue);
-        
-        // 检测按钮状态变化
-        if(!btn->isPressed) {
-            // 当前未按下，检测是否需要标记为按下
-            // 当索引小于上次触发索引时，表示按钮被按下（因为0代表完全按下）
-            if(currentIndex < btn->lastTriggerIndex) {
-                btn->isPressed = true;
-                buttonTriggerStatusChanged = true;
-                this->virtualPinMask |= (1u << btn->virtualPin);
-                
-                ADC_DEBUG_PRINT("Button %d pressed, index: %d -> %d\n", 
-                    i, btn->lastTriggerIndex, currentIndex);
-            }
-        } else {
-            // 当前已按下，检测是否需要标记为释放
-            // 当索引大于上次触发索引时，表示按钮被释放
-            if(currentIndex > btn->lastTriggerIndex) {
-                btn->isPressed = false;
-                buttonTriggerStatusChanged = true;
-                this->virtualPinMask &= ~(1u << btn->virtualPin);
-                
-                ADC_DEBUG_PRINT("Button %d released, index: %d -> %d\n", 
-                    i, btn->lastTriggerIndex, currentIndex);
-            }
-        }
-        
-        // 更新上次触发索引
-        btn->lastTriggerIndex = currentIndex;
-    }
-
-    // 如果按钮状态有变化，发送消息通知
-    if(buttonTriggerStatusChanged) {
-        MC.publish(MessageId::ADC_BTNS_STATE_CHANGED, &this->virtualPinMask);
-        buttonTriggerStatusChanged = false;
     }
 }
 
-ADCBtnsError ADCBtnsWorker::setup() {
 
+ADCBtnsError ADCBtnsWorker::setup() {
     std::string id = ADC_MANAGER.getDefaultMapping();
     if(id.empty()) {
         return ADCBtnsError::MAPPING_NOT_FOUND;
@@ -83,7 +38,7 @@ ADCBtnsError ADCBtnsWorker::setup() {
 
     GamepadProfile* profile = STORAGE_MANAGER.getGamepadProfile(STORAGE_MANAGER.config.defaultProfileId);
     ADCButton* adcButtons = STORAGE_MANAGER.config.ADCButtons;
-    ADCValuesMapping* mapping = ADC_MANAGER.getMapping(id.c_str());
+    const ADCValuesMapping* mapping = ADC_MANAGER.getMapping(id.c_str());
 
     if(profile == nullptr) {
         return ADCBtnsError::GAMEPAD_PROFILE_NOT_FOUND;
@@ -101,18 +56,21 @@ ADCBtnsError ADCBtnsWorker::setup() {
         RapidTriggerProfile* triggerConfig = &profile->triggerConfigs.triggerConfigs[i];
         // 初始化按钮配置
         buttonPtrs[i]->virtualPin = adcButtons[i].virtualPin;
-        buttonPtrs[i]->pressAccuracy = triggerConfig->pressAccuracy;
-        buttonPtrs[i]->releaseAccuracy = triggerConfig->releaseAccuracy;
-        buttonPtrs[i]->topDeadzone = triggerConfig->topDeadzone;
-        buttonPtrs[i]->bottomDeadzone = triggerConfig->bottomDeadzone;
+        buttonPtrs[i]->pressAccuracyIndex = (uint8_t)(triggerConfig->pressAccuracy / this->mapping->step);
+        buttonPtrs[i]->releaseAccuracyIndex = (uint8_t)(triggerConfig->releaseAccuracy / this->mapping->step);
+        buttonPtrs[i]->topDeadzoneIndex = (uint8_t)(this->mapping->length - 1 - triggerConfig->topDeadzone / this->mapping->step);
+        buttonPtrs[i]->bottomDeadzoneIndex = (uint8_t)(triggerConfig->bottomDeadzone / this->mapping->step);
 
         // 校准参数
         buttonPtrs[i]->initCompleted = false;
         // 初始化状态
         buttonPtrs[i]->lastTriggerIndex = 0;
-        buttonPtrs[i]->lastSearchIndex = 0;
-        buttonPtrs[i]->isPressed = false;
-        buttonPtrs[i]->movingDirection = DIRECTION_RELEASING; // 初始化移动方向为弹起
+        buttonPtrs[i]->lastStateIndex = 0;
+
+        #if ENABLED_DYNAMIC_CALIBRATION == 1
+        buttonPtrs[i]->needCalibration = false;
+        #endif
+
         // 初始化按钮映射
         memcpy(buttonPtrs[i]->valueMapping, this->mapping->originalValues, this->mapping->length * sizeof(uint16_t));
 
@@ -128,6 +86,71 @@ ADCBtnsError ADCBtnsWorker::setup() {
 ADCBtnsError ADCBtnsWorker::deinit() {
     ADC_MANAGER.stopADCSamping();
     return ADCBtnsError::SUCCESS;
+}
+
+
+/**
+ * 处理ADC转换完成消息
+ * @param data ADC句柄指针
+ */
+void ADCBtnsWorker::loop() {
+    // 如果上次loop时间与当前时间差小于50us，则不进行工作
+    if(MICROS_TIMER.checkInterval(ADC_BTNS_WORK_INTERVAL, lastWorkTime)) {
+        // 使用引用避免拷贝
+        const std::array<uint16_t, NUM_ADC_BUTTONS>& adcValues = ADC_MANAGER.readADCValues();
+        
+        // 缓存频繁使用的值
+        const uint16_t noise = this->mapping->samplingNoise;
+        const uint8_t mappingLength = this->mapping->length;
+
+        for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
+            ADCBtn* const btn = buttonPtrs[i];  // 使用 const 指针
+            if(!btn || !btn->initCompleted) {
+                continue;
+            }
+
+            const uint16_t adcValue = adcValues[i];
+            if(adcValue == 0 || adcValue > UINT16_MAX) {
+                continue;
+            }
+            
+            const uint8_t currentIndex = this->searchIndexInMapping(i, adcValue);
+            
+            // 获取按钮事件
+            const ButtonEvent event = getButtonEvent(btn, currentIndex, adcValue);
+            
+            // 处理状态转换
+            if(event != ButtonEvent::NONE) {
+                handleButtonState(btn, currentIndex, adcValue, event);
+                
+                #ifdef DEBUG_ADC
+                ADC_DEBUG_PRINT("Button %d state: %d, event: %d, index: %d\n", 
+                    i, static_cast<int>(btn->state), 
+                    static_cast<int>(event), currentIndex);
+                #endif
+            }
+        }
+
+        if(buttonTriggerStatusChanged) {
+            MC.publish(MessageId::ADC_BTNS_STATE_CHANGED, &this->virtualPinMask);
+            buttonTriggerStatusChanged = false;
+        }
+    } 
+
+    #if ENABLED_DYNAMIC_CALIBRATION == 1
+    else if(MICROS_TIMER.checkInterval(DYNAMIC_CALIBRATION_INTERVAL, lastCalibrationTime)) {
+        const uint16_t firstValue = firstValueWindow.getAverageValue();
+        const uint16_t lastValue = lastValueWindow.getAverageValue();
+        
+        for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
+            ADCBtn* const btn = buttonPtrs[i];
+            if(btn && btn->needCalibration) {
+                updateButtonMapping(btn->valueMapping, firstValue, lastValue);
+                btn->needCalibration = false;
+            }
+        }
+    }
+    #endif
 }
 
 /**
@@ -174,7 +197,7 @@ void ADCBtnsWorker::updateButtonMapping(uint16_t* mapping, uint16_t firstValue, 
  * @param value ADC输入值
  * @return 返回在映射数组中的索引位置（最大值为 length-2）
  */
-uint8_t ADCBtnsWorker::searchIndexInMapping(uint8_t buttonIndex, uint16_t value) {
+uint8_t ADCBtnsWorker::searchIndexInMapping(const uint8_t buttonIndex, const uint16_t value) {
     ADCBtn* btn = buttonPtrs[buttonIndex];
     if(!btn || !mapping) {
         return 0;
@@ -220,48 +243,152 @@ uint8_t ADCBtnsWorker::searchIndexInMapping(uint8_t buttonIndex, uint16_t value)
     return left;
 }
 
-/**
- * 动态校准ADC
- * 初始化校准
- * 实时动态校准，在按钮出现反弹时，更新firstValueWindow 以及 lastValueWindow，并用滑动窗口的平均值更新valueMapping，减小误差
- * lastValue处于磁距远端，对噪音比较敏感，所以做了减去noise的处理
- * @param buttonIndex 按钮索引
- */
-void ADCBtnsWorker::dynamicCalibADC(uint8_t buttonIndex) {
-    // 获取当前按钮的ADC值
-    // uint16_t currentValue = ADC1_Values[buttonIndex];
-    // ADCBtn* btn = buttonPtrs[buttonIndex];
 
-    // if(!buttonPtrs[buttonIndex]->initCompleted) {
-    //     buttonPtrs[buttonIndex]->initCompleted = true;
-    //     uint16_t noise = this->mapping->samplingNoise;
-    //     // 初始化按钮映射
-    //     uint16_t lastValue = currentValue + noise;
-    //     uint16_t firstValue = currentValue + this->mapping->originalValues[0] - this->mapping->originalValues[this->mapping->length - 1];
 
-    //     this->updateButtonMapping(btn->valueMapping, firstValue, lastValue);
-    // } else {
-    //     uint16_t noise = this->mapping->samplingNoise;
-    //     if(currentValue > btn->valueMapping[0]) {
-    //         this->updateButtonMapping(btn->valueMapping, currentValue, btn->valueMapping[this->mapping->length - 1]);
-    //     } else if(currentValue < btn->valueMapping[this->mapping->length - 1] - noise) {
-    //         this->updateButtonMapping(btn->valueMapping, btn->valueMapping[0], currentValue + noise);
-    //     }
-
-    // }
-}
-
-ADCBtnsError ADCBtnsWorker::test() {
+// 状态转换处理函数
+ButtonEvent ADCBtnsWorker::getButtonEvent(ADCBtn* btn, const uint8_t currentIndex, const uint16_t currentValue) {
+    uint8_t indexDiff;
     
-    return ADCBtnsError::SUCCESS;
+    switch(btn->state) {
+        case ButtonState::RELEASED:
+            if(currentIndex < btn->lastStateIndex) {
+                indexDiff = btn->lastStateIndex - currentIndex;
+                if(indexDiff >= btn->pressAccuracyIndex) {
+                    return ButtonEvent::PRESS_START;
+                }
+            } else {
+                btn->lastStateIndex = currentIndex;  // 更新状态索引
+            }
+            break;
+
+        case ButtonState::PRESSING:
+            if(currentIndex < btn->lastTriggerIndex) {
+                indexDiff = btn->lastTriggerIndex - currentIndex;
+                if(indexDiff >= btn->pressAccuracyIndex) {
+                    return ButtonEvent::PRESS_COMPLETE;
+                }
+            } else if(currentIndex > btn->lastStateIndex) {
+                return ButtonEvent::RELEASE_START;
+            } else {
+                btn->lastStateIndex = currentIndex;  // 更新状态索引
+            }
+            break;
+
+        case ButtonState::PRESSED:
+            if(currentIndex > btn->lastStateIndex) {
+                return ButtonEvent::RELEASE_START;
+            } else {
+                btn->lastStateIndex = currentIndex;  // 更新状态索引
+            }
+            break;
+
+        case ButtonState::RELEASING:
+            if(currentIndex > btn->lastTriggerIndex) {
+                indexDiff = currentIndex - btn->lastTriggerIndex;
+                if(indexDiff >= btn->releaseAccuracyIndex) {
+                    return ButtonEvent::RELEASE_COMPLETE;
+                }
+            } else if(currentIndex < btn->lastStateIndex) {
+                return ButtonEvent::PRESS_START;
+            } else {
+                btn->lastStateIndex = currentIndex;  // 更新状态索引
+            }
+            break;
+    }
+    
+    return ButtonEvent::NONE;
 }
 
-ADCBtnsWorker::~ADCBtnsWorker() {
-    // 释放动态分配的内存
-    for (uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
-        if (buttonPtrs[i] != nullptr) {
-            delete buttonPtrs[i];
-            buttonPtrs[i] = nullptr;
-        }
+/**
+ * 处理按钮状态转换
+ * 附带校准逻辑
+ * 校准逻辑：
+ * 1. 当按下开始时，将过渡值滑动窗口的最小值存储到lastValueWindow滑动窗口
+ * 2. 整个按下过程，将过渡值滑动窗口的值存储到travelValueWindow滑动窗口
+ * 3. 当释放开始时，将过渡值滑动窗口的最大值存储到firstValueWindow滑动窗口
+ * 4. 整个释放过程，将过渡值滑动窗口的值存储到travelValueWindow滑动窗口
+ * @param btn 按钮指针
+ * @param currentIndex 当前索引
+ * @param currentValue 当前值
+ * @param event 事件
+ */
+void ADCBtnsWorker::handleButtonState(ADCBtn* btn, const uint8_t currentIndex, const uint16_t currentValue, const ButtonEvent event) {
+    switch(event) {
+        case ButtonEvent::PRESS_START:
+            btn->state = ButtonState::PRESSING;
+            btn->lastStateIndex = currentIndex;
+
+            #if ENABLED_DYNAMIC_CALIBRATION == 1
+            /**
+             * 校准逻辑，当按下开始时，将过渡值滑动窗口的最小值存储到lastValueWindow滑动窗口
+             * 然后清空过渡值滑动窗口后并存储当前值到过渡值滑动窗口
+             */
+            lastValueWindow.push(travelValueWindow.getMinValue());
+            travelValueWindow.clear();
+            travelValueWindow.push(currentValue);
+            btn->needCalibration = true;
+            #endif
+
+            break;
+
+        case ButtonEvent::PRESS_COMPLETE:
+            btn->state = ButtonState::PRESSED;
+            btn->lastStateIndex = currentIndex;
+            
+            // 如果当前索引小于上死区索引，则认为按钮被按下
+            if(currentIndex < btn->topDeadzoneIndex) {
+                btn->lastTriggerIndex = currentIndex;
+                buttonTriggerStatusChanged = true;
+                this->virtualPinMask |= (1u << btn->virtualPin);
+            }
+
+            #if ENABLED_DYNAMIC_CALIBRATION == 1
+            /**
+             * 校准逻辑，当按下完成时（整个按下过程），将当前值存储到过渡值滑动窗口
+             */
+            travelValueWindow.push(currentValue);
+            #endif
+
+            break;
+
+        case ButtonEvent::RELEASE_START:
+            btn->state = ButtonState::RELEASING;
+            btn->lastStateIndex = currentIndex;
+
+            #if ENABLED_DYNAMIC_CALIBRATION == 1
+            /**
+             * 校准逻辑，当释放开始时，将过渡值滑动窗口的最大值存储到firstValueWindow滑动窗口
+             * 然后清空过渡值滑动窗口后并存储当前值到过渡值滑动窗口
+             */
+            firstValueWindow.push(travelValueWindow.getMaxValue());
+            travelValueWindow.clear();
+            travelValueWindow.push(currentValue);
+            btn->needCalibration = true;
+            #endif
+
+            break;
+
+        case ButtonEvent::RELEASE_COMPLETE:
+            btn->state = ButtonState::RELEASED;
+            btn->lastStateIndex = currentIndex;
+
+            // 如果当前索引大于下死区索引，则认为按钮被释放
+            if(currentIndex > btn->bottomDeadzoneIndex) {
+                btn->lastTriggerIndex = currentIndex;
+                buttonTriggerStatusChanged = true;
+                this->virtualPinMask &= ~(1u << btn->virtualPin);
+            }
+
+            #if ENABLED_DYNAMIC_CALIBRATION == 1
+            /**
+             * 校准逻辑，当释放完成时（整个释放过程），将当前值存储到过渡值滑动窗口
+             */
+            travelValueWindow.push(currentValue);
+            #endif
+
+            break;
+
+        default:
+            break;
     }
 }

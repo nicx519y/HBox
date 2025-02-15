@@ -44,7 +44,7 @@ public:
     }
 
     // 计算窗口内平均值
-    T getAverage() const {
+    T getAverageValue() const {
         if (validDataCount == 0) {
             return T();
         }
@@ -59,6 +59,22 @@ public:
         
         // 四舍五入后返回
         return static_cast<T>(sum / validDataCount + 0.5f);
+    }
+
+    T getMinValue() const {
+        if (validDataCount == 0) {
+            return T();
+        }
+        
+        return *std::min_element(buffer.begin(), buffer.begin() + validDataCount);
+    }
+
+    T getMaxValue() const {
+        if (validDataCount == 0) {
+            return T();
+        }
+
+        return *std::max_element(buffer.begin(), buffer.begin() + validDataCount);
     }
 
     // 清空缓冲区并重置索引
