@@ -40,7 +40,6 @@ class ADCBtnsMarker {
         ADCBtnsError step();
         
         void reset();
-        void loop();
         const uint32_t* getCurrentMarkingValues() const;
         
         const StepInfo& getStepInfo() const { return step_info; }

@@ -173,11 +173,4 @@ cJSON* ADCBtnsMarker::getStepInfoJSON() const {
     return json;
 }
 
-void ADCBtnsMarker::loop() {
-    // 局部变量添加 const
-    const std::array<uint16_t, NUM_ADC_BUTTONS>& adcValues = ADC_MANAGER.readADCValues();
-    
-    // ... 其他实现
-}
-
 

@@ -2,7 +2,6 @@
 #define _MAIN_STATE_MACHINE_
 
 #include "leds_manager.hpp"
-#include "gpio_btns_worker.hpp"
 #include "storagemanager.hpp"
 #include "drivermanager.hpp"
 #include "configmanager.hpp"
@@ -16,6 +15,7 @@
 #include "qspi-w25q64.h"
 #include "constant.hpp"
 #include "adc_btns/adc_btns_worker.hpp"
+#include "gpio_btns/gpio_btns_worker.hpp"
 #include "utils.h"
 
 class MainStateMachine {

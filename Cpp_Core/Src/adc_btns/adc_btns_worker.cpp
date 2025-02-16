@@ -252,7 +252,7 @@ uint8_t ADCBtnsWorker::searchIndexInMapping(const uint8_t buttonIndex, const uin
 
 
 // 状态转换处理函数
-ButtonEvent ADCBtnsWorker::getButtonEvent(ADCBtn* btn, const uint8_t currentIndex, const uint16_t currentValue) {
+ADCBtnsWorker::ButtonEvent ADCBtnsWorker::getButtonEvent(ADCBtn* btn, const uint8_t currentIndex, const uint16_t currentValue) {
     uint8_t indexDiff;
     
     switch(btn->state) {

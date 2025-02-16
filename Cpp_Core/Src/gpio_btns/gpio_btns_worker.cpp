@@ -7,7 +7,7 @@ GPIOBtnsWorker::GPIOBtnsWorker() {
         buttonStates[i].state = GPIO_Btn_IsPressed(i) ? ButtonState::PRESSED : ButtonState::RELEASED;
         buttonStates[i].lastStateTime = 0;
         buttonStates[i].debounceTime = GPIO_BUTTONS_DEBOUNCE;
-        buttonStates[i].lastRawState = GPIO_Btn_IsPressed(i); // true 表示按下
+        buttonStates[i].lastRawState = GPIO_Btn_IsPressed(i);
 
         // 初始化虚拟引脚掩码
         this->virtualPinMask |= GPIO_Btn_IsPressed(i) ? (1U << buttonStates[i].virtualPin) : 0;

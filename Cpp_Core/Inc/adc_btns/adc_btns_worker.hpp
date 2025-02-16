@@ -28,46 +28,6 @@ enum class ADCBtnsWorkerError {
     BUTTON_CONFIG_ERROR = -10   // 按钮配置错误
 };
 
-// 按钮状态枚举
-enum class ButtonState {
-    RELEASED,       // 完全释放状态
-    RELEASING,      // 正在释放过程中
-    PRESSED,        // 完全按下状态
-    PRESSING,       // 正在按下过程中
-};
-
-// 按钮事件枚举
-enum class ButtonEvent {
-    NONE,
-    PRESS_START,    // 开始按下
-    PRESS_COMPLETE, // 按下完成
-    RELEASE_START,  // 开始释放
-    RELEASE_COMPLETE// 释放完成
-};
-
-typedef struct {
-    // 按钮配置
-    uint32_t virtualPin = 0;    // 虚拟引脚
-    uint8_t pressAccuracyIndex = 0;   // 按下精度 转换成mapping索引数量
-    uint8_t releaseAccuracyIndex = 0; // 释放精度 转换成mapping索引数量
-    uint8_t topDeadzoneIndex = 0;     // 顶部死区 转换成mapping索引值
-    uint8_t bottomDeadzoneIndex = 0;  // 底部死区 转换成mapping索引值
-
-    // 校准参数
-    bool initCompleted = false;     // 初始化完成
-    uint8_t lastTriggerIndex = 0;  // 上一次触发索引
-
-    uint16_t valueMapping[MAX_ADC_VALUES_LENGTH] = {0};           // 值映射
-
-    ButtonState state = ButtonState::RELEASED;  // 当前状态
-    uint8_t lastStateIndex = 0;                // 进入当前状态时的索引值
-
-    #if ENABLED_DYNAMIC_CALIBRATION == 1
-    bool needCalibration = false;
-    #endif
-
-} ADCBtn;
-
 class ADCBtnsWorker {
     public:
         ADCBtnsWorker(ADCBtnsWorker const&) = delete;
@@ -87,6 +47,47 @@ class ADCBtnsWorker {
         void dynamicCalibration();
 
     private:
+
+        // 按钮状态枚举
+        enum class ButtonState {
+            RELEASED,       // 完全释放状态
+            RELEASING,      // 正在释放过程中
+            PRESSED,        // 完全按下状态
+            PRESSING,       // 正在按下过程中
+        };
+
+        // 按钮事件枚举
+        enum class ButtonEvent {
+            NONE,
+            PRESS_START,    // 开始按下
+            PRESS_COMPLETE, // 按下完成
+            RELEASE_START,  // 开始释放
+            RELEASE_COMPLETE// 释放完成
+        };
+
+        typedef struct {
+            // 按钮配置
+            uint32_t virtualPin = 0;    // 虚拟引脚
+            uint8_t pressAccuracyIndex = 0;   // 按下精度 转换成mapping索引数量
+            uint8_t releaseAccuracyIndex = 0; // 释放精度 转换成mapping索引数量
+            uint8_t topDeadzoneIndex = 0;     // 顶部死区 转换成mapping索引值
+            uint8_t bottomDeadzoneIndex = 0;  // 底部死区 转换成mapping索引值
+
+            // 校准参数
+            bool initCompleted = false;     // 初始化完成
+            uint8_t lastTriggerIndex = 0;  // 上一次触发索引
+
+            uint16_t valueMapping[MAX_ADC_VALUES_LENGTH] = {0};           // 值映射
+
+            ButtonState state = ButtonState::RELEASED;  // 当前状态
+            uint8_t lastStateIndex = 0;                // 进入当前状态时的索引值
+
+            #if ENABLED_DYNAMIC_CALIBRATION == 1
+            bool needCalibration = false;
+            #endif
+
+        } ADCBtn;
+
         // 获取按钮事件
         ButtonEvent getButtonEvent(ADCBtn* btn, const uint8_t currentIndex, const uint16_t currentValue);
         // 处理状态转换

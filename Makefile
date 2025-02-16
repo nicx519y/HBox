@@ -88,6 +88,8 @@ Cpp_Core/Src/drivers/xinput \
 Cpp_Core/Src/configs \
 Cpp_Core/Src/gamepad \
 Cpp_Core/Src/states \
+Cpp_Core/Src/adc_btns \
+Cpp_Core/Src/gpio_btns \
 Libs/CRC32/src \
 Libs/httpd \
 

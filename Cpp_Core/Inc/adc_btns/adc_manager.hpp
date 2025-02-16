@@ -106,7 +106,7 @@ class ADCManager {
 
         // 开始采样
         ADCBtnsError startADCSamping(bool enableSamplingRate = false, 
-                                   uint8_t buttonIndex = 0, 
+                                   uint8_t virtualPin = 0, 
                                    uint32_t samplingCountMax = 0);
 
         // 停止采样

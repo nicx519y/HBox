@@ -6,7 +6,6 @@
 #include "config.hpp"
 #include "gamepad/GamepadState.hpp"
 #include "leds_manager.hpp"
-#include "gpio_btns_worker.hpp"
 
 struct GamepadButtonMapping
 {

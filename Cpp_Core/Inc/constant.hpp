@@ -1,8 +1,12 @@
 #ifndef _CONSTANT_H_
 #define _CONSTANT_H_ 
 
-#include <stdint.h>  // 添加这行来使用 uint8_t, uint32_t 等类型
+#include <stdint.h>  // 为 uint8_t, uint32_t 等类型
+#include "stm32h7xx.h"  // 为 GPIO_TypeDef 和 GPIO_PIN_x 定义
 
+
+
+// C 代码部分
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,15 +50,15 @@ static __attribute__((section(".rodata"))) const uint8_t ADC3_BUTTONS_MAPPING[NU
 #define NUM_GPIO_BUTTONS            4               //GPIO按钮数量
 #define GPIO_BUTTONS_DEBOUNCE       50             //去抖动延迟(us) 
 
-
-struct GPIOPinDef {
-    GPIO_TypeDef* port;
+// GPIO 按钮定义结构体
+struct gpio_pin_def {
+    GPIO_TypeDef* port;  // 或者用 void* 也可以
     uint16_t pin;
     uint8_t virtualPin;
 };
 
 // GPIO 按钮映射表
-static __attribute__((section(".rodata"))) const GPIOPinDef GPIO_BUTTONS_MAPPING[NUM_GPIO_BUTTONS] = {
+static __attribute__((section(".rodata"))) const struct gpio_pin_def GPIO_BUTTONS_MAPPING[NUM_GPIO_BUTTONS] = {
     { GPIOC, GPIO_PIN_6, 17 },
     { GPIOC, GPIO_PIN_7, 18 },
     { GPIOC, GPIO_PIN_8, 19 },
