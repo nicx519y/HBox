@@ -19,6 +19,8 @@ void MainStateMachine::setup()
     BootMode bootMode = BootMode::BOOT_MODE_INPUT;
     printf("BootMode: %d\n", bootMode);
 
+    workTime = MICROS_TIMER.micros();
+
     switch(bootMode) {
         case BootMode::BOOT_MODE_WEB_CONFIG:
         
@@ -34,6 +36,11 @@ void MainStateMachine::setup()
 
             /*** 初始化ADC按钮 & LED test begin ***/
             
+            ADC_BTNS_WORKER.setup();
+            GPIO_BTNS_WORKER.setup();
+
+            workTime = MICROS_TIMER.micros();
+            calibrationTime = MICROS_TIMER.micros();
 
             WS2812B_Start();
             WS2812B_SetAllLEDColor(255, 255, 0);
@@ -49,6 +56,20 @@ void MainStateMachine::setup()
             //     // printBinary("ADC_BTNS_STATE_CHANGED: ", *(uint32_t*) data);
             //     WS2812B_SetLEDColorByMask(color1, color2, *(uint32_t*) data);
             // });
+
+            while(1) {
+                if(MICROS_TIMER.checkInterval(READ_BTNS_INTERVAL, workTime)) {
+                    virtualPinMask = GPIO_BTNS_WORKER.read() | ADC_BTNS_WORKER.read();
+                }
+
+                #if ENABLED_DYNAMIC_CALIBRATION == 1
+                if(MICROS_TIMER.checkInterval(DYNAMIC_CALIBRATION_INTERVAL, calibrationTime)) {
+                    ADC_BTNS_WORKER.dynamicCalibration();
+                }
+                #endif
+
+            }
+
             break;
 
 

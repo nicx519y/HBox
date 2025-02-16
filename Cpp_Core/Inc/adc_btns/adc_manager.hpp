@@ -15,6 +15,7 @@
 #include "cJSON.h"
 #include "adc.h"
 #include "message_center.hpp"
+#include <algorithm>  // 为 std::sort
 
 struct ADCValuesMapping {
     char id[16];                                            // 映射ID
@@ -53,6 +54,11 @@ struct ADCChannelStats {
     uint32_t endTime;       // 结束时间
 };
 
+struct ADCButtonValueInfo {
+    uint8_t virtualPin;
+    uint32_t* valuePtr;
+};
+
 class ADCManager {
     public:
         ADCManager(ADCManager const&) = delete;
@@ -63,7 +69,6 @@ class ADCManager {
         }
 
         ADCBtnsError setup();
-        void loop();
         ADCBtnsError deinit();
 
         // 获取映射索引
@@ -107,16 +112,22 @@ class ADCManager {
         // 停止采样
         void stopADCSamping();
 
-        // 读取ADC值
-        const std::array<uint16_t, NUM_ADC_BUTTONS>& readADCValues() const;
+        // 读取ADC值 按virtualPin排序
+        inline const std::array<ADCButtonValueInfo, NUM_ADC_BUTTONS>& readADCValues() const
+        {
+            for(uint8_t i = 0; i < NUM_ADC; i++) {
+                SCB_CleanInvalidateDCache_by_Addr(adcBufferInfo[i].buffer, adcBufferInfo[i].size);
+            }
+            return ADCBufferInfoList;
+        }
 
         /**
          * @brief 读取指定按钮的ADC值
-         * @param buttonIndex 按钮索引
+         * @param virtualPin 虚拟按钮索引
          * @return 指定按钮的ADC值
          */
-        inline const uint32_t readADCValue(uint8_t buttonIndex) {
-            auto indexInfo = findADCIndex(buttonIndex);  // 现在可以直接调用静态函数
+        inline const uint32_t readADCValue(uint8_t virtualPin) {
+            auto indexInfo = findADCButtonVirtualPin(virtualPin);  // 现在可以直接调用静态函数
             if(indexInfo.first == -1) {
                 return 0;
             }
@@ -143,11 +154,11 @@ class ADCManager {
         ADCChannelStats ADCButtonStats;
         bool samplingRateEnabled;
         uint32_t samplingCountMax;
-        std::pair<uint8_t, uint8_t> samplingADCIndex;
+        std::pair<uint8_t, uint8_t> samplingADCInfo;
 
         void handleADCStats(ADC_HandleTypeDef *hadc);
         int8_t saveStore();
-        std::pair<uint8_t, uint8_t> findADCIndex(uint8_t buttonIndex);
+        std::pair<uint8_t, uint8_t> findADCButtonVirtualPin(uint8_t virtualPin);
 
         // 添加 const 修饰符
         ADCBtnsError loadMapping(const char* const id) const;
@@ -155,7 +166,7 @@ class ADCManager {
         void handleADCStats(const ADCChannelStats* const stats) const;
 
         // 成员变量
-        std::array<uint16_t, NUM_ADC_BUTTONS> adcValues;
+        std::array<ADCButtonValueInfo, NUM_ADC_BUTTONS> ADCBufferInfoList;
         std::string defaultMappingId;
         ADCValuesMapping* currentMapping;
         bool isStarted;

@@ -47,6 +47,7 @@ void ConfigUtils::makeDefaultProfile(GamepadProfile& profile, const char* id, bo
 
     for(uint8_t l = 0; l < NUM_ADC_BUTTONS; l++) {
         profile.triggerConfigs.triggerConfigs[l] = {
+            .virtualPin = l,
             .pressAccuracy = 0.1f,
             .releaseAccuracy = 0.1f,
             .topDeadzone = 0.2f,

@@ -34,6 +34,10 @@ class MainStateMachine {
         Storage& storage;
         BaseState& state;
 
+        uint32_t virtualPinMask = 0x0;
+        uint32_t workTime = 0;
+        uint32_t calibrationTime = 0;
+
 };
 
 #define MAIN_STATE_MACHINE MainStateMachine::getInstance()

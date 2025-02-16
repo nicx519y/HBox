@@ -73,17 +73,18 @@ class ADCBtnsWorker {
         ADCBtnsWorker(ADCBtnsWorker const&) = delete;
         void operator=(ADCBtnsWorker const&) = delete;
 
-        // static __attribute__((section("._RAM_D1_Area"))) uint32_t ADC_Values[NUM_ADC_BUTTONS];
-
         static ADCBtnsWorker& getInstance() {
             static ADCBtnsWorker instance;
             return instance;
         }
         ADCBtnsError setup();
-        void loop();
+        uint32_t read();
+
         ADCBtnsError deinit();
         ADCBtnsWorker();
         ~ADCBtnsWorker();
+
+        void dynamicCalibration();
 
     private:
         // 获取按钮事件

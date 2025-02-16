@@ -1,4 +1,5 @@
 #include "adc_btns/adc_manager.hpp"
+#include <algorithm>  // 为 std::sort
 
 // 内存图
 /*
@@ -57,10 +58,31 @@ ADCManager::ADCManager() {
     samplingCountMax = 1000;
     samplingRateEnabled = false;
     ADCButtonStats = {0};
-    samplingADCIndex = std::make_pair(0, 0);
-    adcBufferInfo[0] = {ADC1_Values, sizeof(ADC1_Values), ADC1_BUFFER_TO_KEY_INDEX, NUM_ADC1_BUTTONS};
-    adcBufferInfo[1] = {ADC2_Values, sizeof(ADC2_Values), ADC2_BUFFER_TO_KEY_INDEX, NUM_ADC2_BUTTONS};
-    adcBufferInfo[2] = {ADC3_Values, sizeof(ADC3_Values), ADC3_BUFFER_TO_KEY_INDEX, NUM_ADC3_BUTTONS};
+    samplingADCInfo = std::make_pair(0, 0);
+    adcBufferInfo[0] = {ADC1_Values, sizeof(ADC1_Values), ADC1_BUTTONS_MAPPING, NUM_ADC1_BUTTONS};
+    adcBufferInfo[1] = {ADC2_Values, sizeof(ADC2_Values), ADC2_BUTTONS_MAPPING, NUM_ADC2_BUTTONS};
+    adcBufferInfo[2] = {ADC3_Values, sizeof(ADC3_Values), ADC3_BUTTONS_MAPPING, NUM_ADC3_BUTTONS};
+
+    for(uint8_t i = 0; i < NUM_ADC1_BUTTONS; i++) {
+        ADCBufferInfoList[i].valuePtr = &adcBufferInfo[0].buffer[i];
+        ADCBufferInfoList[i].virtualPin = ADC1_BUTTONS_MAPPING[i];
+    }
+
+    for(uint8_t j = NUM_ADC1_BUTTONS; j < NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS; j++) {
+        ADCBufferInfoList[j].valuePtr = &adcBufferInfo[1].buffer[j - NUM_ADC1_BUTTONS];
+        ADCBufferInfoList[j].virtualPin = ADC2_BUTTONS_MAPPING[j - NUM_ADC1_BUTTONS];
+    }
+
+    for(uint8_t k = NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS; k < NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS + NUM_ADC3_BUTTONS; k++) {
+        ADCBufferInfoList[k].valuePtr = &adcBufferInfo[2].buffer[k - NUM_ADC1_BUTTONS - NUM_ADC2_BUTTONS];
+        ADCBufferInfoList[k].virtualPin = ADC3_BUTTONS_MAPPING[k - NUM_ADC1_BUTTONS - NUM_ADC2_BUTTONS];
+    }
+
+    // 使用 std::sort 按 virtualPin 排序
+    std::sort(ADCBufferInfoList.begin(), ADCBufferInfoList.end(), 
+        [](const ADCButtonValueInfo& a, const ADCButtonValueInfo& b) {
+            return a.virtualPin < b.virtualPin;
+        });
 }
 
 ADCManager::~ADCManager() {
@@ -332,7 +354,7 @@ ADCBtnsError ADCManager::markMapping(const char* const id,
  * @return 错误码
  */
 ADCBtnsError ADCManager::startADCSamping(bool enableSamplingRate, 
-                                        uint8_t buttonIndex, 
+                                        uint8_t virtualPin, 
                                         uint32_t samplingCountMax) {
     // 停止所有 ADC
     this->stopADCSamping();
@@ -382,22 +404,22 @@ ADCBtnsError ADCManager::startADCSamping(bool enableSamplingRate,
     }
 
     // 如果启用采样率统计，则注册回调
-    if(enableSamplingRate && buttonIndex < NUM_ADC_BUTTONS) {
+    if(enableSamplingRate) {
         // 设置采样率统计状态
         samplingRateEnabled = enableSamplingRate;
         if(samplingCountMax > 0) {
             this->samplingCountMax = samplingCountMax;
         }
-        samplingADCIndex = findADCIndex(buttonIndex);
-
-        if(samplingADCIndex.first == -1) {
+        samplingADCInfo = findADCButtonVirtualPin(virtualPin);
+    
+        if(samplingADCInfo.first == -1) {
             ADC_DEBUG_PRINT("Invalid button index\n");
             return ADCBtnsError::INVALID_PARAMS;
         }
 
         // 初始化ADCButtonStats
         ADCButtonStats = {
-            .adcIndex = samplingADCIndex.first,
+            .adcIndex = samplingADCInfo.first,
             .samplingFreq = 0,
             .averageValue = 0,
             .count = 0,
@@ -439,6 +461,7 @@ void ADCManager::stopADCSamping() {
     }
 }   
 
+
 /**
  * @brief 处理ADC转换完成中断
  * 在每次采样完成后，会调用此函数，用于更新采样统计信息
@@ -452,13 +475,13 @@ void ADCManager::handleADCStats(ADC_HandleTypeDef *hadc) {
                         (hadc->Instance == ADC3) ? 2 : 3;
     
     // 如果采样ADC索引不匹配，则返回，此处只处理采样ADC索引对应的ADC
-    if(!samplingRateEnabled || adcIndex != samplingADCIndex.first) return;
+    if(!samplingRateEnabled || adcIndex != samplingADCInfo.first) return;
     
     // 处理数据...
     const auto& info = adcBufferInfo[adcIndex];
     SCB_CleanInvalidateDCache_by_Addr(info.buffer, info.size);
     
-    uint32_t value = info.buffer[samplingADCIndex.second];
+    uint32_t value = info.buffer[samplingADCInfo.second];
 
     if(value == 0) return;
 
@@ -479,27 +502,24 @@ void ADCManager::handleADCStats(ADC_HandleTypeDef *hadc) {
 }
 
 // 根据按钮索引查找对应的ADC索引
-std::pair<uint8_t, uint8_t> ADCManager::findADCIndex(uint8_t buttonIndex) {
-
-    if(buttonIndex >= NUM_ADC_BUTTONS) return {-1, -1};
-
+std::pair<uint8_t, uint8_t> ADCManager::findADCButtonVirtualPin(uint8_t virtualPin) {
     // 检查 ADC1
     for(uint8_t i = 0; i < NUM_ADC1_BUTTONS; i++) {
-        if(ADC1_BUFFER_TO_KEY_INDEX[i] == buttonIndex) {
+        if(ADC1_BUTTONS_MAPPING[i] == virtualPin) {
             return {0, i};  // 返回 ADC1 的索引
         }
     }
 
     // 检查 ADC2
     for(uint8_t i = 0; i < NUM_ADC2_BUTTONS; i++) {
-        if(ADC2_BUFFER_TO_KEY_INDEX[i] == buttonIndex) {
+        if(ADC2_BUTTONS_MAPPING[i] == virtualPin) {
             return {1, i};  // 返回 ADC2 的索引
         }
     }
     
     // 检查 ADC3
     for(uint8_t i = 0; i < NUM_ADC3_BUTTONS; i++) {
-        if(ADC3_BUFFER_TO_KEY_INDEX[i] == buttonIndex) {
+        if(ADC3_BUTTONS_MAPPING[i] == virtualPin) {
             return {2, i};  // 返回 ADC3 的索引
         }
     }

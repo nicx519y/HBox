@@ -52,8 +52,15 @@ typedef struct
     float_t     maxDistance;            // 最大行程 单位毫米
 } ADCButton;
 
+typedef struct
+{
+    uint32_t        virtualPin;
+} GPIOButton;
+
+
 typedef struct __attribute__((packed))
 {
+    uint32_t    virtualPin;
     float_t    pressAccuracy;          // 按下精度 单位毫米
     float_t    releaseAccuracy;        // 回弹精度 单位毫米
     float_t    topDeadzone;            // 顶部死区 单位毫米
@@ -75,12 +82,6 @@ typedef struct
     uint32_t ledColor3;
     uint8_t ledBrightness;
 } LEDProfile;
-
-
-typedef struct
-{
-    uint32_t        virtualPin;
-} GPIOButton;
 
 typedef struct
 {

@@ -1,39 +1,28 @@
 #include "gpio-btn.h"
-#include "stm32h7xx_hal.h"
+
 
 void GPIO_Btn_Init()
 {
     // 时钟已在gpio.c种使能
-
     GPIO_InitTypeDef GPIO_Init;
 
     GPIO_Init.Mode = GPIO_MODE_INPUT;
-    GPIO_Init.Pin = GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9;
     GPIO_Init.Pull = GPIO_PULLDOWN;
     GPIO_Init.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOC, &GPIO_Init);
 
-}
-
-inline uint8_t __attribute__((always_inline)) GPIO_Btn_IsPressed(uint8_t idx)
-{
-    uint8_t result;
-    switch(idx) {
-        case 0:
-            result = GPIO_Btn_0;
-            break;
-        case 1:
-            result = GPIO_Btn_1;
-            break;
-        case 2:
-            result = GPIO_Btn_2;
-            break;
-        case 3:
-            result = GPIO_Btn_3;
-            break;
-        default:
-            break;
+    for(uint8_t i = 0; i < NUM_GPIO_BUTTONS; i++) {
+        GPIO_Init.Pin = GPIO_BUTTONS_MAPPING[i].pin;
+        HAL_GPIO_Init(GPIO_BUTTONS_MAPPING[i].port, &GPIO_Init);
     }
-
-    return result;
 }
+
+bool GPIO_Btn_IsPressed(uint8_t virtualPin) {
+    for(uint8_t i = 0; i < NUM_GPIO_BUTTONS; i++) {
+        if(GPIO_BUTTONS_MAPPING[i].virtualPin == virtualPin) {
+            return HAL_GPIO_ReadPin(GPIO_BUTTONS_MAPPING[i].port, GPIO_BUTTONS_MAPPING[i].pin) == GPIO_PIN_RESET;
+        }
+    }
+    return false;
+}
+
+

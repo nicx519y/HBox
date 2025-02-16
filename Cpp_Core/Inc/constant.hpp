@@ -29,14 +29,14 @@ extern "C" {
 #define NUM_ADC3_BUTTONS                    5
 #define NUM_ADC_BUTTONS                     (NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS + NUM_ADC3_BUTTONS)
 
-#define ADC_BTNS_WORK_INTERVAL              50            // ADC按钮工作间隔 us
+#define READ_BTNS_INTERVAL                  50            // 检查按钮状态间隔 us
 #define ENABLED_DYNAMIC_CALIBRATION         1               //是否启用动态校准
 #define DYNAMIC_CALIBRATION_INTERVAL        (5 * 1000000)            // 动态校准间隔 5s
 
-// C 代码块，使用 const
-static __attribute__((section(".rodata"))) const uint8_t ADC1_BUFFER_TO_KEY_INDEX[NUM_ADC1_BUTTONS] = {1, 8, 9, 6, 0, 5};
-static __attribute__((section(".rodata"))) const uint8_t ADC2_BUFFER_TO_KEY_INDEX[NUM_ADC2_BUTTONS] = {2, 3, 7, 4, 14, 11};
-static __attribute__((section(".rodata"))) const uint8_t ADC3_BUFFER_TO_KEY_INDEX[NUM_ADC3_BUTTONS] = {13, 15, 16, 10, 12};
+// Hall 按钮映射表 DMA to virtualPin
+static __attribute__((section(".rodata"))) const uint8_t ADC1_BUTTONS_MAPPING[NUM_ADC1_BUTTONS] = {1, 8, 9, 6, 0, 5};
+static __attribute__((section(".rodata"))) const uint8_t ADC2_BUTTONS_MAPPING[NUM_ADC2_BUTTONS] = {2, 3, 7, 4, 14, 11};
+static __attribute__((section(".rodata"))) const uint8_t ADC3_BUTTONS_MAPPING[NUM_ADC3_BUTTONS] = {13, 15, 16, 10, 12};
 
 
 #define TIMES_ADC_CALIBRATION               100             // 单个按钮校准时的循环次数，必须100次连续稳定的值用于校准
@@ -44,7 +44,22 @@ static __attribute__((section(".rodata"))) const uint8_t ADC3_BUFFER_TO_KEY_INDE
 #define ADC_VOLATILITY                      300             // ADC的浮动允许最大值
 
 #define NUM_GPIO_BUTTONS            4               //GPIO按钮数量
-#define GPIO_BUTTONS_DEBOUNCE       5             //去抖动延迟(ms) 
+#define GPIO_BUTTONS_DEBOUNCE       50             //去抖动延迟(us) 
+
+
+struct GPIOPinDef {
+    GPIO_TypeDef* port;
+    uint16_t pin;
+    uint8_t virtualPin;
+};
+
+// GPIO 按钮映射表
+static __attribute__((section(".rodata"))) const GPIOPinDef GPIO_BUTTONS_MAPPING[NUM_GPIO_BUTTONS] = {
+    { GPIOC, GPIO_PIN_6, 17 },
+    { GPIOC, GPIO_PIN_7, 18 },
+    { GPIOC, GPIO_PIN_8, 19 },
+    { GPIOC, GPIO_PIN_9, 20 }
+};
 
 #define LED_CALIBRATE_BRIGHTNESS            100             // 校准亮度
 #define LED_CALIBRATE_COLOR_TOP             (uint32_t)0x0000FF  // 校准颜色

@@ -37,7 +37,7 @@ ADCBtnsError ADCBtnsWorker::setup() {
     }
 
     GamepadProfile* profile = STORAGE_MANAGER.getGamepadProfile(STORAGE_MANAGER.config.defaultProfileId);
-    ADCButton* adcButtons = STORAGE_MANAGER.config.ADCButtons;
+    const std::array<ADCButtonValueInfo, NUM_ADC_BUTTONS>& adcBtnInfos = ADC_MANAGER.readADCValues();
     const ADCValuesMapping* mapping = ADC_MANAGER.getMapping(id.c_str());
 
     if(profile == nullptr) {
@@ -51,11 +51,13 @@ ADCBtnsError ADCBtnsWorker::setup() {
     this->mapping = mapping;
     
     // 初始化按钮配置
-    for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
-
+    for(uint8_t i = 0; i < adcBtnInfos.size(); i++) {
+        const ADCButtonValueInfo& adcBtnInfo = adcBtnInfos[i];
+        const uint8_t virtualPin = adcBtnInfo.virtualPin;
+        
         RapidTriggerProfile* triggerConfig = &profile->triggerConfigs.triggerConfigs[i];
-        // 初始化按钮配置
-        buttonPtrs[i]->virtualPin = adcButtons[i].virtualPin;
+        // 初始化按钮配置 默认triggerConfig是按照ADCButtonValueInfo的virtualPin排序的
+        buttonPtrs[i]->virtualPin = adcBtnInfo.virtualPin;
         buttonPtrs[i]->pressAccuracyIndex = (uint8_t)(triggerConfig->pressAccuracy / this->mapping->step);
         buttonPtrs[i]->releaseAccuracyIndex = (uint8_t)(triggerConfig->releaseAccuracy / this->mapping->step);
         buttonPtrs[i]->topDeadzoneIndex = (uint8_t)(this->mapping->length - 1 - triggerConfig->topDeadzone / this->mapping->step);
@@ -93,61 +95,65 @@ ADCBtnsError ADCBtnsWorker::deinit() {
  * 处理ADC转换完成消息
  * @param data ADC句柄指针
  */
-void ADCBtnsWorker::loop() {
-    // 如果上次loop时间与当前时间差小于50us，则不进行工作
-    if(MICROS_TIMER.checkInterval(ADC_BTNS_WORK_INTERVAL, lastWorkTime)) {
-        // 使用引用避免拷贝
-        const std::array<uint16_t, NUM_ADC_BUTTONS>& adcValues = ADC_MANAGER.readADCValues();
+uint32_t ADCBtnsWorker::read() {
+    // 使用引用避免拷贝
+    const std::array<ADCButtonValueInfo, NUM_ADC_BUTTONS>& adcValues = ADC_MANAGER.readADCValues();
+    
+    // 缓存频繁使用的值
+    const uint16_t noise = this->mapping->samplingNoise;
+    const uint8_t mappingLength = this->mapping->length;
+
+    for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
+        ADCBtn* const btn = buttonPtrs[i];
+        if(!btn || !btn->initCompleted) {
+            continue;
+        }
+
+        // 使用 valuePtr 获取 ADC 值
+        const uint16_t adcValue = *adcValues[i].valuePtr;
+        if(adcValue == 0 || adcValue > UINT16_MAX) {
+            continue;
+        }
         
-        // 缓存频繁使用的值
-        const uint16_t noise = this->mapping->samplingNoise;
-        const uint8_t mappingLength = this->mapping->length;
-
-        for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
-            ADCBtn* const btn = buttonPtrs[i];  // 使用 const 指针
-            if(!btn || !btn->initCompleted) {
-                continue;
-            }
-
-            const uint16_t adcValue = adcValues[i];
-            if(adcValue == 0 || adcValue > UINT16_MAX) {
-                continue;
-            }
+        const uint8_t currentIndex = this->searchIndexInMapping(i, adcValue);
+        
+        // 获取按钮事件
+        const ButtonEvent event = getButtonEvent(btn, currentIndex, adcValue);
+        
+        // 处理状态转换
+        if(event != ButtonEvent::NONE) {
+            handleButtonState(btn, currentIndex, adcValue, event);
             
-            const uint8_t currentIndex = this->searchIndexInMapping(i, adcValue);
-            
-            // 获取按钮事件
-            const ButtonEvent event = getButtonEvent(btn, currentIndex, adcValue);
-            
-            // 处理状态转换
-            if(event != ButtonEvent::NONE) {
-                handleButtonState(btn, currentIndex, adcValue, event);
-                
-                #ifdef DEBUG_ADC
-                ADC_DEBUG_PRINT("Button %d state: %d, event: %d, index: %d\n", 
-                    i, static_cast<int>(btn->state), 
-                    static_cast<int>(event), currentIndex);
-                #endif
-            }
+            #ifdef DEBUG_ADC
+            ADC_DEBUG_PRINT("Button %d state: %d, event: %d, index: %d\n", 
+                i, static_cast<int>(btn->state), 
+                static_cast<int>(event), currentIndex);
+            #endif
         }
+    }
 
-        if(buttonTriggerStatusChanged) {
-            MC.publish(MessageId::ADC_BTNS_STATE_CHANGED, &this->virtualPinMask);
-            buttonTriggerStatusChanged = false;
-        }
-    } 
+    if(buttonTriggerStatusChanged) {
+        MC.publish(MessageId::ADC_BTNS_STATE_CHANGED, &this->virtualPinMask);
+        buttonTriggerStatusChanged = false;
+    }
 
+    return this->virtualPinMask;
+}
+
+
+/**
+ * 动态校准
+ */
+void ADCBtnsWorker::dynamicCalibration() {
     #if ENABLED_DYNAMIC_CALIBRATION == 1
-    else if(MICROS_TIMER.checkInterval(DYNAMIC_CALIBRATION_INTERVAL, lastCalibrationTime)) {
-        const uint16_t firstValue = firstValueWindow.getAverageValue();
-        const uint16_t lastValue = lastValueWindow.getAverageValue();
-        
-        for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
-            ADCBtn* const btn = buttonPtrs[i];
-            if(btn && btn->needCalibration) {
-                updateButtonMapping(btn->valueMapping, firstValue, lastValue);
-                btn->needCalibration = false;
-            }
+    const uint16_t firstValue = firstValueWindow.getAverageValue();
+    const uint16_t lastValue = lastValueWindow.getAverageValue();
+    
+    for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
+        ADCBtn* const btn = buttonPtrs[i];
+        if(btn && btn->needCalibration) {
+            updateButtonMapping(btn->valueMapping, firstValue, lastValue);
+            btn->needCalibration = false;
         }
     }
     #endif
@@ -339,7 +345,7 @@ void ADCBtnsWorker::handleButtonState(ADCBtn* btn, const uint8_t currentIndex, c
             if(currentIndex < btn->topDeadzoneIndex) {
                 btn->lastTriggerIndex = currentIndex;
                 buttonTriggerStatusChanged = true;
-                this->virtualPinMask |= (1u << btn->virtualPin);
+                this->virtualPinMask |= (1U << btn->virtualPin);
             }
 
             #if ENABLED_DYNAMIC_CALIBRATION == 1
@@ -376,7 +382,7 @@ void ADCBtnsWorker::handleButtonState(ADCBtn* btn, const uint8_t currentIndex, c
             if(currentIndex > btn->bottomDeadzoneIndex) {
                 btn->lastTriggerIndex = currentIndex;
                 buttonTriggerStatusChanged = true;
-                this->virtualPinMask &= ~(1u << btn->virtualPin);
+                this->virtualPinMask &= ~(1U << btn->virtualPin);
             }
 
             #if ENABLED_DYNAMIC_CALIBRATION == 1
