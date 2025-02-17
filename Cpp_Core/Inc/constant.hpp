@@ -60,19 +60,13 @@ static __attribute__((section(".rodata"))) const struct gpio_pin_def GPIO_BUTTON
     { GPIOC, GPIO_PIN_9, 20 }
 };
 
-#define LED_CALIBRATE_BRIGHTNESS            100             // 校准亮度
-#define LED_CALIBRATE_COLOR_TOP             (uint32_t)0x0000FF  // 校准颜色
-#define LED_CALIBRATE_COLOR_BOTTOM          (uint32_t)0x00FF00  // 校准颜色
-#define LED_CALIBRATE_COLOR_COMPLETE        (uint32_t)0xFF0000  // 校准颜色
-
-#define HAS_LED                                    //是否有LED
+#define HAS_LED                                   1             //是否有LED
 #define NUM_LED	                    (NUM_ADC_BUTTONS + NUM_GPIO_BUTTONS) //LED数量
-// #define NUM_LED                             1
 
 #define NUM_LEDs_PER_ADC_BUTTON     1              //每个按钮多少个LED
-#define LEDS_BRIGHTNESS_RADIO       0.3             //默认led 亮度系数
+#define LEDS_BRIGHTNESS_RADIO       0.3             //默认led 亮度系数 会以实际亮度乘以这个系数
 #define LEDS_ANIMATION_CYCLE        6000            //LED 动画长度
-#define LEDS_ANIMATION_STEP         80             //LED 动画步长，影响性能和效果
+#define LEDS_ANIMATION_INTERVAL         80          //LED 动画间隔，影响性能和效果 ms
 
 #define LED_ENABLE_SWITCH_PIN        GPIO_PIN_12    // 灯效开关引脚
 #define LED_ENABLE_SWITCH_PORT       GPIOC           // 灯效开关端口

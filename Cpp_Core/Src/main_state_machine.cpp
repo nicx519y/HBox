@@ -39,12 +39,17 @@ void MainStateMachine::setup()
             ADC_BTNS_WORKER.setup();
             GPIO_BTNS_WORKER.setup();
 
+            #if HAS_LED == 1
+                LEDS_MANAGER.setup();
+            #endif
+
             workTime = MICROS_TIMER.micros();
             calibrationTime = MICROS_TIMER.micros();
+            ledAnimationTime = MICROS_TIMER.micros();
 
-            WS2812B_Start();
-            WS2812B_SetAllLEDColor(255, 255, 0);
-            WS2812B_SetAllLEDBrightness(30);
+            // WS2812B_Start();
+            // WS2812B_SetAllLEDColor(255, 255, 0);
+            // WS2812B_SetAllLEDBrightness(30);
             
             // struct RGBColor color1 = {0, 0, 255};
             // struct RGBColor color2 = {255, 255, 0};
@@ -65,6 +70,12 @@ void MainStateMachine::setup()
                 #if ENABLED_DYNAMIC_CALIBRATION == 1
                 if(MICROS_TIMER.checkInterval(DYNAMIC_CALIBRATION_INTERVAL, calibrationTime)) {
                     ADC_BTNS_WORKER.dynamicCalibration();
+                }
+                #endif
+
+                #if HAS_LED == 1
+                if(MICROS_TIMER.checkInterval(LEDS_ANIMATION_INTERVAL * 1000, workTime)) {
+                    LEDS_MANAGER.loop(virtualPinMask);
                 }
                 #endif
 

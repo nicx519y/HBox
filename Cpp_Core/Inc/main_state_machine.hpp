@@ -36,6 +36,7 @@ class MainStateMachine {
         uint32_t virtualPinMask = 0x0;
         uint32_t workTime = 0;
         uint32_t calibrationTime = 0;
+        uint32_t ledAnimationTime = 0;
 
 };
 
