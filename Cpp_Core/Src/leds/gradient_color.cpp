@@ -1,4 +1,4 @@
-#include "gradient_color.hpp"
+#include "leds/gradient_color.hpp"
 #include "utils.h"
 #include <stdio.h>
 
@@ -15,6 +15,7 @@ void GradientColor::setup(
 {
         cr = (double_t)color1.r;
         cg = (double_t)color1.g;
+        
         cb = (double_t)color1.b;
         er = (double_t)color2.r;
         eg = (double_t)color2.g;

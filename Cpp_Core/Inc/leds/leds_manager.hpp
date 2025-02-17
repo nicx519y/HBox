@@ -2,11 +2,13 @@
 #define _LEDS_MANAGER_H_
 
 #include "pwm-ws2812b.h"
+#include "storagemanager.hpp"
+#include "utils.h"
 #include "enums.hpp"
 #include "types.hpp"
 #include "constant.hpp"
 #include "config.hpp"
-#include "gradient_color.hpp"
+#include "leds/gradient_color.hpp"
 
 class LEDsManager {
     public:
@@ -18,13 +20,22 @@ class LEDsManager {
         }
 
         void setup();
+        void loop(uint32_t virtualPinMask);
         void deinit();
-        void runAnimate();
     private:
         LEDsManager();
         uint32_t t;
         GradientColor gtc;
-        GamepadProfile* opts;
+        const LEDProfile* opts;
+        RGBColor frontColor;
+        RGBColor backgroundColor1;
+        RGBColor backgroundColor2;
+        uint8_t brightness;
+        uint32_t lastBreathTime = 0;
+        uint8_t breathBrightness = 0;
+        bool breathIncreasing = true;
 };
+
+#define LEDS_MANAGER LEDsManager::getInstance()
 
 #endif // _LEDS_MANAGER_H_

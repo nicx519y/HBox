@@ -40,8 +40,6 @@ void ConfigUtils::makeDefaultProfile(GamepadProfile& profile, const char* id, bo
     profile.keysConfig.keyButtonS2 = 1 << 18;
     profile.keysConfig.keyButtonFn = 1 << 19;
 
-    
-
     // 设置triggerConfigs 
     profile.triggerConfigs.isAllBtnsConfiguring = true;
 
@@ -82,16 +80,6 @@ bool ConfigUtils::load(Config& config)
         strcpy(config.defaultProfileId, "profile-0");
         config.numProfilesMax = NUM_PROFILES;
 
-        // 设置ADCButtons
-        for(uint8_t i = 0; i < NUM_ADC_BUTTONS; i++) {
-            config.ADCButtons[i].virtualPin = i;
-        }
-
-        // 设置GPIOButtons
-        for(uint8_t j = 0; j < NUM_GPIO_BUTTONS; j++) {
-            config.GPIOButtons[j].virtualPin = j + NUM_ADC_BUTTONS;
-        }
-        
         // 设置profiles
         for(uint8_t k = 0; k < NUM_PROFILES; k++) {
             // 设置profile id, name, enabled

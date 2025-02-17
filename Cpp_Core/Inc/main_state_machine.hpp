@@ -1,7 +1,6 @@
 #ifndef _MAIN_STATE_MACHINE_
 #define _MAIN_STATE_MACHINE_
 
-#include "leds_manager.hpp"
 #include "storagemanager.hpp"
 #include "drivermanager.hpp"
 #include "configmanager.hpp"
@@ -12,11 +11,11 @@
 #include "states/base_state.hpp"
 #include "states/webconfig_state.hpp"
 #include "tim.h"
-#include "qspi-w25q64.h"
 #include "constant.hpp"
 #include "adc_btns/adc_btns_worker.hpp"
 #include "gpio_btns/gpio_btns_worker.hpp"
 #include "utils.h"
+#include "leds/leds_manager.hpp"
 
 class MainStateMachine {
     public:

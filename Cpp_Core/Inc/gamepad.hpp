@@ -5,7 +5,7 @@
 #include "enums.hpp"
 #include "config.hpp"
 #include "gamepad/GamepadState.hpp"
-#include "leds_manager.hpp"
+#include "leds/leds_manager.hpp"
 
 struct GamepadButtonMapping
 {

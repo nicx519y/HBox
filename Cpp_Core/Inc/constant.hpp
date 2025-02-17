@@ -37,27 +37,22 @@ extern "C" {
 #define ENABLED_DYNAMIC_CALIBRATION         1               //是否启用动态校准
 #define DYNAMIC_CALIBRATION_INTERVAL        (5 * 1000000)            // 动态校准间隔 5s
 
-// Hall 按钮映射表 DMA to virtualPin
+// Hall 按钮映射表 DMA to virtualPin，virtualPin 是按钮在所有按钮中的序号
 static __attribute__((section(".rodata"))) const uint8_t ADC1_BUTTONS_MAPPING[NUM_ADC1_BUTTONS] = {1, 8, 9, 6, 0, 5};
 static __attribute__((section(".rodata"))) const uint8_t ADC2_BUTTONS_MAPPING[NUM_ADC2_BUTTONS] = {2, 3, 7, 4, 14, 11};
 static __attribute__((section(".rodata"))) const uint8_t ADC3_BUTTONS_MAPPING[NUM_ADC3_BUTTONS] = {13, 15, 16, 10, 12};
-
-
-#define TIMES_ADC_CALIBRATION               100             // 单个按钮校准时的循环次数，必须100次连续稳定的值用于校准
-#define DELAY_ADC_CALIBRATION               10              // 校准时间 TIMES_ADC_CALIBRATION * DELAY_ADC_CALIBRATION
-#define ADC_VOLATILITY                      300             // ADC的浮动允许最大值
 
 #define NUM_GPIO_BUTTONS            4               //GPIO按钮数量
 #define GPIO_BUTTONS_DEBOUNCE       50             //去抖动延迟(us) 
 
 // GPIO 按钮定义结构体
 struct gpio_pin_def {
-    GPIO_TypeDef* port;  // 或者用 void* 也可以
+    GPIO_TypeDef* port;
     uint16_t pin;
     uint8_t virtualPin;
 };
 
-// GPIO 按钮映射表
+// GPIO 按钮映射表 GPIO to virtualPin
 static __attribute__((section(".rodata"))) const struct gpio_pin_def GPIO_BUTTONS_MAPPING[NUM_GPIO_BUTTONS] = {
     { GPIOC, GPIO_PIN_6, 17 },
     { GPIOC, GPIO_PIN_7, 18 },
@@ -78,6 +73,9 @@ static __attribute__((section(".rodata"))) const struct gpio_pin_def GPIO_BUTTON
 #define LEDS_BRIGHTNESS_RADIO       0.3             //默认led 亮度系数
 #define LEDS_ANIMATION_CYCLE        6000            //LED 动画长度
 #define LEDS_ANIMATION_STEP         80             //LED 动画步长，影响性能和效果
+
+#define LED_ENABLE_SWITCH_PIN        GPIO_PIN_12    // 灯效开关引脚
+#define LED_ENABLE_SWITCH_PORT       GPIOC           // 灯效开关端口
 
 #define NUM_GAMEPAD_HOTKEYS                 (uint8_t)11   // 快捷键数量
 

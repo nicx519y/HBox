@@ -18,7 +18,7 @@ typedef struct
     bool fourWayMode;
     bool invertXAxis;
     bool invertYAxis;
-    uint32_t keyDpadUp;             // example: 0001 0000 0010 0000 0000 0000 0000 0000  说明 keyDpadUp 这个功能按键和物理按键pin的关系
+    uint32_t keyDpadUp;             // example: 0001 0000 0010 0000 0000 0000 0000 0000  说明 keyDpadUp 这个功能按键和物理按键virtualPin的关系
     uint32_t keyDpadDown;
     uint32_t keyDpadLeft;
     uint32_t keyDpadRight;
@@ -60,7 +60,7 @@ typedef struct
 
 typedef struct __attribute__((packed))
 {
-    uint32_t    virtualPin;
+    uint32_t   virtualPin;
     float_t    pressAccuracy;          // 按下精度 单位毫米
     float_t    releaseAccuracy;        // 回弹精度 单位毫米
     float_t    topDeadzone;            // 顶部死区 单位毫米
@@ -99,8 +99,6 @@ typedef struct
     BootMode bootMode;
     char defaultProfileId[16];
     uint8_t numProfilesMax;
-    ADCButton ADCButtons[NUM_ADC_BUTTONS];
-    GPIOButton GPIOButtons[NUM_GPIO_BUTTONS];
     GamepadProfile profiles[NUM_PROFILES];
     GamepadHotkeyEntry hotkeys[NUM_GAMEPAD_HOTKEYS];
 } Config;

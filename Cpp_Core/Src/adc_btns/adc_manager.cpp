@@ -55,31 +55,31 @@ ADCManager::ADCManager() {
     // 注册消息
     MC.registerMessage(MessageId::ADC_SAMPLING_STATS_COMPLETE);
 
-    samplingCountMax = 1000;
-    samplingRateEnabled = false;
-    ADCButtonStats = {0};
-    samplingADCInfo = std::make_pair(0, 0);
-    adcBufferInfo[0] = {ADC1_Values, sizeof(ADC1_Values), ADC1_BUTTONS_MAPPING, NUM_ADC1_BUTTONS};
-    adcBufferInfo[1] = {ADC2_Values, sizeof(ADC2_Values), ADC2_BUTTONS_MAPPING, NUM_ADC2_BUTTONS};
-    adcBufferInfo[2] = {ADC3_Values, sizeof(ADC3_Values), ADC3_BUTTONS_MAPPING, NUM_ADC3_BUTTONS};
+    this->samplingCountMax = 1000; // 采样次数 默认1000次
+    this->samplingRateEnabled = false; // 采样率统计是否开启 默认关闭
+    this->ADCButtonStats = {0}; // 采样统计信息
+    this->samplingADCInfo = std::make_pair(0, 0); // 采样ADC信息
+    this->adcBufferInfo[0] = {ADC1_Values, sizeof(ADC1_Values), ADC1_BUTTONS_MAPPING, NUM_ADC1_BUTTONS}; // ADC1缓存信息
+    this->adcBufferInfo[1] = {ADC2_Values, sizeof(ADC2_Values), ADC2_BUTTONS_MAPPING, NUM_ADC2_BUTTONS}; // ADC2缓存信息    
+    this->adcBufferInfo[2] = {ADC3_Values, sizeof(ADC3_Values), ADC3_BUTTONS_MAPPING, NUM_ADC3_BUTTONS}; // ADC3缓存信息
 
     for(uint8_t i = 0; i < NUM_ADC1_BUTTONS; i++) {
-        ADCBufferInfoList[i].valuePtr = &adcBufferInfo[0].buffer[i];
-        ADCBufferInfoList[i].virtualPin = ADC1_BUTTONS_MAPPING[i];
+        this->ADCBufferInfoList[i].valuePtr = &this->adcBufferInfo[0].buffer[i];
+        this->ADCBufferInfoList[i].virtualPin = ADC1_BUTTONS_MAPPING[i];
     }
 
     for(uint8_t j = NUM_ADC1_BUTTONS; j < NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS; j++) {
-        ADCBufferInfoList[j].valuePtr = &adcBufferInfo[1].buffer[j - NUM_ADC1_BUTTONS];
-        ADCBufferInfoList[j].virtualPin = ADC2_BUTTONS_MAPPING[j - NUM_ADC1_BUTTONS];
+        this->ADCBufferInfoList[j].valuePtr = &this->adcBufferInfo[1].buffer[j - NUM_ADC1_BUTTONS];
+        this->ADCBufferInfoList[j].virtualPin = ADC2_BUTTONS_MAPPING[j - NUM_ADC1_BUTTONS];
     }
 
     for(uint8_t k = NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS; k < NUM_ADC1_BUTTONS + NUM_ADC2_BUTTONS + NUM_ADC3_BUTTONS; k++) {
-        ADCBufferInfoList[k].valuePtr = &adcBufferInfo[2].buffer[k - NUM_ADC1_BUTTONS - NUM_ADC2_BUTTONS];
-        ADCBufferInfoList[k].virtualPin = ADC3_BUTTONS_MAPPING[k - NUM_ADC1_BUTTONS - NUM_ADC2_BUTTONS];
+        this->ADCBufferInfoList[k].valuePtr = &this->adcBufferInfo[2].buffer[k - NUM_ADC1_BUTTONS - NUM_ADC2_BUTTONS];
+        this->ADCBufferInfoList[k].virtualPin = ADC3_BUTTONS_MAPPING[k - NUM_ADC1_BUTTONS - NUM_ADC2_BUTTONS];
     }
 
     // 使用 std::sort 按 virtualPin 排序
-    std::sort(ADCBufferInfoList.begin(), ADCBufferInfoList.end(), 
+    std::sort(this->ADCBufferInfoList.begin(), this->ADCBufferInfoList.end(), 
         [](const ADCButtonValueInfo& a, const ADCButtonValueInfo& b) {
             return a.virtualPin < b.virtualPin;
         });

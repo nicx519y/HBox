@@ -90,6 +90,7 @@ Cpp_Core/Src/gamepad \
 Cpp_Core/Src/states \
 Cpp_Core/Src/adc_btns \
 Cpp_Core/Src/gpio_btns \
+Cpp_Core/Src/leds \
 Libs/CRC32/src \
 Libs/httpd \
 
