@@ -38,6 +38,7 @@ void MainStateMachine::setup()
             
             ADC_BTNS_WORKER.setup();
             GPIO_BTNS_WORKER.setup();
+            GAMEPAD.setup();
 
             #if HAS_LED == 1
                 LEDS_MANAGER.setup();
@@ -46,26 +47,15 @@ void MainStateMachine::setup()
             workTime = MICROS_TIMER.micros();
             calibrationTime = MICROS_TIMER.micros();
             ledAnimationTime = MICROS_TIMER.micros();
-
-            // WS2812B_Start();
-            // WS2812B_SetAllLEDColor(255, 255, 0);
-            // WS2812B_SetAllLEDBrightness(30);
             
-            // struct RGBColor color1 = {0, 0, 255};
-            // struct RGBColor color2 = {255, 255, 0};
-
-            // ADC_BTNS_WORKER.setup();
-            // ADC_BTNS_WORKER.test();
-
-            // MC.subscribe(MessageId::ADC_BTNS_STATE_CHANGED, [color1, color2](const void* data) {
-            //     // printBinary("ADC_BTNS_STATE_CHANGED: ", *(uint32_t*) data);
-            //     WS2812B_SetLEDColorByMask(color1, color2, *(uint32_t*) data);
-            // });
-
             while(1) {
                 if(MICROS_TIMER.checkInterval(READ_BTNS_INTERVAL, workTime)) {
                     virtualPinMask = GPIO_BTNS_WORKER.read() | ADC_BTNS_WORKER.read();
+                    GAMEPAD.read(virtualPinMask);
+                    // driver.process(GAMEPAD); // xinput 处理游戏手柄数据，将按键数据映射到xinput协议 形成 report 数据，然后通过 usb 发送出去
                 }
+
+                tud_task();
 
                 #if ENABLED_DYNAMIC_CALIBRATION == 1
                 if(MICROS_TIMER.checkInterval(DYNAMIC_CALIBRATION_INTERVAL, calibrationTime)) {

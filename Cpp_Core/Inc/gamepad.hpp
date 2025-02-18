@@ -120,4 +120,6 @@ class Gamepad {
 
 };
 
+#define GAMEPAD Gamepad::getInstance()
+
 #endif // _GAMEPAD_H_

@@ -51,28 +51,25 @@ void LEDsManager::loop(uint32_t virtualPinMask)
     }
 
     // 声明变量在 switch 外部
-    RGBColor currentColor;
-    uint8_t currentBrightness;
+    GradientState currentState;
 
     // 处理不同的灯效
     switch(opts->ledEffect) {
         case LEDEffect::BREATHING:
             // 更新渐变过程
-            gtc.process();
             
             // 获取当前颜色和亮度
-            currentColor = gtc.getCurrentRGB();
-            currentBrightness = gtc.getCurrentBrightness();
+            currentState = gtc.getCurrentState();
 
             // 根据按钮状态设置颜色和亮度
             WS2812B_SetLEDColorByMask(
                 frontColor,
-                currentColor,
+                currentState.color,
                 virtualPinMask
             );
             WS2812B_SetLEDBrightnessByMask(
                 brightness,
-                currentBrightness,
+                currentState.brightness,
                 virtualPinMask
             );
             break;

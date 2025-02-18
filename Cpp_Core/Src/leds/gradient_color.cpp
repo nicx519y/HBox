@@ -1,8 +1,19 @@
 #include "leds/gradient_color.hpp"
 #include "utils.h"
 #include <stdio.h>
+#include <math.h>
 
-GradientColor::GradientColor()
+// 定义 PI 常量
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+GradientColor::GradientColor() : 
+    cr(0), cg(0), cb(0),
+    er(0), eg(0), eb(0),
+    b1(0), b2(0),
+    startTime(0),
+    animationCycle(1000) // 默认1秒
 {}
 
 void GradientColor::setup(
@@ -11,61 +22,47 @@ void GradientColor::setup(
     const uint8_t brightness1,
     const uint8_t brightness2, 
     const uint32_t cycle
-)
-{
-        cr = (double_t)color1.r;
-        cg = (double_t)color1.g;
-        
-        cb = (double_t)color1.b;
-        er = (double_t)color2.r;
-        eg = (double_t)color2.g;
-        eb = (double_t)color2.b;
-        b1 = (double_t)brightness1;
-        b2 = (double_t)brightness2;
-        animationCycle = cycle;
-}
-
-inline void GradientColor::process()
-{
-    if(t == 0 || HAL_GetTick() - t >= 10 * animationCycle) {
-        t = HAL_GetTick();
-    }
-}
-
-struct RGBColor GradientColor::getCurrentRGB()
-{
-    uint32_t dt = HAL_GetTick() - t;
-    double_t radio = (double_t) (dt % animationCycle) / (double_t) animationCycle;
+) {
+    // 保存颜色参数
+    cr = static_cast<double_t>(color1.r);
+    cg = static_cast<double_t>(color1.g);
+    cb = static_cast<double_t>(color1.b);
+    er = static_cast<double_t>(color2.r);
+    eg = static_cast<double_t>(color2.g);
+    eb = static_cast<double_t>(color2.b);
     
-    struct RGBColor color;
+    // 保存亮度参数
+    b1 = static_cast<double_t>(brightness1);
+    b2 = static_cast<double_t>(brightness2);
+    
+    // 设置周期和开始时间
+    animationCycle = cycle;
+    startTime = HAL_GetTick();
+}
 
-    if(radio < 1.0 && radio >= 0.5) {
-        radio = 1.0 - radio;
-    }
-
-    // printf("e color er: %d, eg: %d, eb: %d\n", (uint8_t)er, (uint8_t)eg, (uint8_t)eb);
-    // printf("c color cr: %d, cg: %d, cb: %d\n", (uint8_t)cr, (uint8_t)cg, (uint8_t)cb);
-
-    color = {
-        .r = (uint8_t)round(cr + (er - cr) * radio * 2),
-        .g = (uint8_t)round(cg + (eg - cg) * radio * 2),
-        .b = (uint8_t)round(cb + (eb - cb) * radio * 2),
+struct GradientState GradientColor::getCurrentState() {
+    // 计算当前时间点
+    uint32_t currentTime = HAL_GetTick();
+    
+    // 我们只关心一个周期内的时间，所以直接用减法
+    // 即使发生溢出，模运算也能得到正确的周期内时间
+    uint32_t elapsedTime = currentTime - startTime;  
+    
+    // 计算渐变比例 (0.0 - 1.0)
+    // 由于使用了模运算，所以不需要担心溢出问题
+    double_t phase = static_cast<double_t>(elapsedTime % animationCycle) / animationCycle;
+    
+    // 使用正弦波计算渐变比例，只计算一次
+    double_t ratio = (sin(2.0 * M_PI * phase) + 1.0) / 2.0;
+    
+    // 返回颜色和亮度
+    return {
+        .color = {
+            .r = static_cast<uint8_t>(cr + (er - cr) * ratio),
+            .g = static_cast<uint8_t>(cg + (eg - cg) * ratio),
+            .b = static_cast<uint8_t>(cb + (eb - cb) * ratio)
+        },
+        .brightness = static_cast<uint8_t>(b1 + (b2 - b1) * ratio)
     };
-
-    // printf("color r: %d, g: %d, b: %d\n", color.r, color.g, color.b);
-    
-    return color;
-}
-
-uint8_t GradientColor::getCurrentBrightness()
-{
-    uint32_t dt = HAL_GetTick() - t;
-    double_t radio = (double_t) (dt % animationCycle) / (double_t) animationCycle;
-    
-    if(radio < 1.0 && radio >= 0.5) {
-        radio = 1.0 - radio;
-    }
-
-    return (uint8_t) round(b1 + (b2 - b1) * radio * 2);
 }
 
