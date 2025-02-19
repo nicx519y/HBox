@@ -12,7 +12,9 @@
 *.tmp
 
 /build	
+/build_bootloader
 /www/.next
 /www/build
 /www/.dest
 /www//node_modules
+
