@@ -29,7 +29,9 @@
                 "${workspaceFolder}/USB_DEVICE/App",
                 "${workspaceFolder}/USB_DEVICE/Target",
                 "${workspaceFolder}/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc",
-                "${workspaceFolder}/Middlewares/ST/STM32_USB_Device_Library/Core/Inc"
+                "${workspaceFolder}/Middlewares/ST/STM32_USB_Device_Library/Core/Inc",
+                "${workspaceFolder}/Bootloader/Inc",
+                "${workspaceFolder}/Bootloader/Src"
             ],
             "defines": [
                 "USE_HAL_DRIVER",

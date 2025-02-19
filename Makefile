@@ -13,7 +13,8 @@
 ######################################
 # target
 ######################################
-TARGET = HBox
+TARGET = HBox_application
+TARGET_BOOTLOADER = HBox_bootloader
 
 
 ######################################
@@ -101,6 +102,38 @@ startup_stm32h750xx.s
 # ASM sources
 ASMM_SOURCES = 
 
+# bootloader 源文件
+BOOTLOADER_C_SOURCES = \
+Core/Src/stm32h7xx_hal_msp.c \
+Core/Src/stm32h7xx_it.c \
+Core/Src/system_stm32h7xx.c \
+Bootloader/Src/error_handler.c \
+Bootloader/Src/system_config.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma_ex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_exti.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_flash.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_flash_ex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_gpio.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_hsem.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_i2c.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_i2c_ex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_mdma.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr_ex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim_ex.c
+
+BOOTLOADER_CPP_SOURCES = \
+Bootloader/Src/main.cpp \
+Bootloader/Src/update.cpp
+
+BOOTLOADER_ASM_SOURCES = \
+Bootloader/Startup/startup_stm32h750xx_bootloader.s
 
 #######################################
 # binaries
@@ -180,6 +213,7 @@ C_INCLUDES =  \
 -IUSB_DEVICE/Target \
 -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
 -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
+-IBootloader/Inc \
 
 # -ILibs/FatFS \
 # -ITinyusbUser/net \
@@ -203,6 +237,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 #######################################
 # link script
 LDSCRIPT = STM32H750XBHx_application.ld
+LDSCRIPT_BOOTLOADER = STM32H750XBHx_bootloader.ld
 
 # libraries
 LIBS = -lc -lm -lnosys -lstdc++
@@ -224,34 +259,63 @@ Libs/stm32_mw_lwip/src/apps/http/httpd.c \
 Libs/httpd/fs.c \
 Libs/httpd/fsdata.c \
 
-# default action: build all
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+# bootloader 编译规则 (放在文件前面，bootloader 目标之前)
+$(BUILD_DIR)/%.o: %.cpp Makefile | $(BUILD_DIR)
+	@echo "Compiling CPP: $<"
+	$(CXX) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.cpp=.lst)) $< -o $@
 
-# $(info $(C_SOURCES))
-# $(info $(CPP_SOURCES))
+$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
+	@echo "Compiling C: $<"
+	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
-OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))	
+$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+	@echo "Assembling: $<"
+	$(AS) -c $(CFLAGS) $< -o $@
+
+# bootloader 目标文件
+BOOTLOADER_OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(BOOTLOADER_C_SOURCES:.c=.o)))
+vpath %.c $(sort $(dir $(BOOTLOADER_C_SOURCES)))
+
+BOOTLOADER_OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(BOOTLOADER_CPP_SOURCES:.cpp=.o)))
+vpath %.cpp $(sort $(dir $(BOOTLOADER_CPP_SOURCES)))
+
+BOOTLOADER_OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(BOOTLOADER_ASM_SOURCES:.s=.o)))
+vpath %.s $(sort $(dir $(BOOTLOADER_ASM_SOURCES)))
+
+# bootloader 编译目标
+$(BUILD_DIR)/$(TARGET_BOOTLOADER).elf: $(BOOTLOADER_OBJECTS) Makefile
+	@echo "Linking bootloader..."
+	@echo "BOOTLOADER_OBJECTS = $(BOOTLOADER_OBJECTS)"
+	@echo "BOOTLOADER_C_SOURCES = $(BOOTLOADER_C_SOURCES)"
+	@echo "BOOTLOADER_CPP_SOURCES = $(BOOTLOADER_CPP_SOURCES)"
+	@echo "BOOTLOADER_ASM_SOURCES = $(BOOTLOADER_ASM_SOURCES)"
+	$(CXX) $(BOOTLOADER_OBJECTS) $(LDFLAGS) -T$(LDSCRIPT_BOOTLOADER) -o $@
+	$(SZ) $@
+
+$(BUILD_DIR)/$(TARGET_BOOTLOADER).hex: $(BUILD_DIR)/$(TARGET_BOOTLOADER).elf | $(BUILD_DIR)
+	$(HEX) $< $@
+	
+$(BUILD_DIR)/$(TARGET_BOOTLOADER).bin: $(BUILD_DIR)/$(TARGET_BOOTLOADER).elf | $(BUILD_DIR)
+	$(BIN) $< $@
+
+# 编译 bootloader
+bootloader: $(BUILD_DIR)/$(TARGET_BOOTLOADER).elf $(BUILD_DIR)/$(TARGET_BOOTLOADER).hex $(BUILD_DIR)/$(TARGET_BOOTLOADER).bin
+	@echo "Building bootloader..."
+	@echo "BOOTLOADER_OBJECTS = $(BOOTLOADER_OBJECTS)"
+	@echo "BOOTLOADER_C_SOURCES = $(BOOTLOADER_C_SOURCES)"
+	@echo "BOOTLOADER_CPP_SOURCES = $(BOOTLOADER_CPP_SOURCES)"
+	@echo "BOOTLOADER_ASM_SOURCES = $(BOOTLOADER_ASM_SOURCES)"
+	@echo "BUILD_DIR = $(BUILD_DIR)"
+	@echo "TARGET_BOOTLOADER = $(TARGET_BOOTLOADER)"
+	@echo "LDSCRIPT_BOOTLOADER = $(LDSCRIPT_BOOTLOADER)"
+
+# 在 OBJECTS 变量定义之前添加
+OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
-# C++
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(CPP_SOURCES:.cpp=.o)))
 vpath %.cpp $(sort $(dir $(CPP_SOURCES)))
-
-# list of ASM program objects
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
-OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASMM_SOURCES:.S=.o)))
-vpath %.S $(sort $(dir $(ASMM_SOURCES)))
-
-$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
-	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
-# C++
-$(BUILD_DIR)/%.o: %.cpp Makefile | $(BUILD_DIR) 
-	$(CXX) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.cpp=.lst)) $< -o $@	
-	
-$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)	
-	$(AS) -c $(CFLAGS) $< -o $@
-$(BUILD_DIR)/%.o: %.S Makefile | $(BUILD_DIR)
-	$(AS) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
@@ -264,7 +328,8 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(BIN) $< $@	
 	
 $(BUILD_DIR):
-	mkdir $@		
+	@echo "Creating build directory..."
+	mkdir -p $@		
 
 # openocdinit:
 # 	openocd -f interface/stlink-v2-1.cfg -f target/stm32h7x.cfg -c init -c "reset halt" -c "stm32h7x unlock 0" -c "reset halt" -c "exit"
@@ -309,6 +374,36 @@ exfsdata-download:
 	-c reset \
 	-c shutdown
 
+# 编译 application (原有的编译目标)
+application: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+
+# 编译所有
+all: bootloader application
+
+# 下载 bootloader
+flash-bootloader:
+	openocd \
+	-f Openocd_Script/ST-LINK-QSPIFLASH.cfg \
+	-c init \
+	-c halt \
+	-c "reset init" \
+	-c "flash write_image erase $(BUILD_DIR)/$(TARGET_BOOTLOADER).bin 0x08000000" \
+	-c reset \
+	-c shutdown
+
+# 下载 application
+flash-application:
+	openocd \
+	-f Openocd_Script/ST-LINK-QSPIFLASH.cfg \
+	-c init \
+	-c halt \
+	-c "reset init" \
+	-c "flash write_image erase $(BUILD_DIR)/$(TARGET).bin 0x08020000" \
+	-c reset \
+	-c shutdown
+
+# 下载所有
+flash-all: flash-bootloader flash-application
 
 #######################################
 # clean up

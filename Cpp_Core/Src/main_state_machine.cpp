@@ -47,7 +47,7 @@ void MainStateMachine::setup()
             workTime = MICROS_TIMER.micros();
             calibrationTime = MICROS_TIMER.micros();
             ledAnimationTime = MICROS_TIMER.micros();
-            
+
             while(1) {
                 if(MICROS_TIMER.checkInterval(READ_BTNS_INTERVAL, workTime)) {
                     virtualPinMask = GPIO_BTNS_WORKER.read() | ADC_BTNS_WORKER.read();

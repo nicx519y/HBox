@@ -2,6 +2,72 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "build-bootloader",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "bootloader",
+                "-j16"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "build-application",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "application",
+                "-j16"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "build-all",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "all",
+                "-j16"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "flash-bootloader",
+            "type": "shell",
+            "command": "make",
+            "args": ["flash-bootloader"],
+            "group": "build",
+            "problemMatcher": ["$gcc"],
+            "dependsOn": ["build-bootloader"]
+        },
+        {
+            "label": "flash-application",
+            "type": "shell",
+            "command": "make",
+            "args": ["flash-application"],
+            "group": "build",
+            "problemMatcher": ["$gcc"],
+            "dependsOn": ["build-application"]
+        },
+        {
+            "label": "flash-all",
+            "type": "shell",
+            "command": "make",
+            "args": ["flash-all"],
+            "group": "build",
+            "problemMatcher": ["$gcc"],
+            "dependsOn": ["build-all"]
+        },
+        {
             "label": "build",
             "type": "shell",
             "command": "make",

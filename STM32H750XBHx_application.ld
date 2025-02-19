@@ -16,7 +16,7 @@
 **
 **  Target      : STMicroelectronics STM32
 **
-**  Distribution: The file is distributed “as is,” without any warranty
+**  Distribution: The file is distributed "as is," without any warranty
 **                of any kind.
 **
 *****************************************************************************
@@ -67,7 +67,7 @@ RAM_D1 (xrw)        : ORIGIN = 0x24078000, LENGTH = 32K   /* 32K use to store dm
 RAM_D2 (xrw)        : ORIGIN = 0x30000000, LENGTH = 288K
 RAM_D3 (xrw)        : ORIGIN = 0x38000000, LENGTH = 64K
 ITCMRAM (xrw)       : ORIGIN = 0x00000000, LENGTH = 64K
-FLASH (rx)          : ORIGIN = 0x08000000, LENGTH = 128K
+FLASH    (rx)    : ORIGIN = 0x08020000, LENGTH = 128K   /* Application 区域 */
 QSPI_FLASH (rx)     : ORIGIN = 0x90000000, LENGTH = 8192K
 }
 
