@@ -175,7 +175,7 @@ int8_t QSPI_W25Qxx_Init(void)
 		printf("W25Q64 OK, flash ID:%X\r\n", (unsigned int)Device_ID);
 		
 		// 初始化成功后立即开启XIP模式
-		if(QSPI_W25Qxx_MemoryMappedMode() != QSPI_W25Qxx_OK) {
+		if(QSPI_W25Qxx_EnterMemoryMappedMode() != QSPI_W25Qxx_OK) {
 			printf("Enable XIP mode failed!\r\n");
 			return W25Qxx_ERROR_INIT;
 		}
@@ -336,7 +336,7 @@ uint32_t QSPI_W25Qxx_ReadID(void)
  * @return int8_t 
  * QSPI_W25Qxx_OK - 写使能成功，W25Qxx_ERROR_WriteEnable - 写使能失败
  */
-int8_t QSPI_W25Qxx_MemoryMappedMode(void)
+int8_t QSPI_W25Qxx_EnterMemoryMappedMode(void)
 {
 	if(xip_enabled) {
 		return QSPI_W25Qxx_OK;
@@ -761,7 +761,7 @@ int8_t QSPI_W25Qxx_WriteBuffer(uint8_t* pBuffer, uint32_t WriteAddr, uint32_t Nu
 
 exit:
 	// 恢复XIP模式
-	int8_t xip_status = QSPI_W25Qxx_MemoryMappedMode();
+	int8_t xip_status = QSPI_W25Qxx_EnterMemoryMappedMode();
 	return (status != QSPI_W25Qxx_OK) ? status : xip_status;
 }
 
@@ -820,7 +820,7 @@ int8_t QSPI_W25Qxx_ReadBuffer(uint8_t* pBuffer, uint32_t ReadAddr, uint32_t NumB
 
 exit:
 	// 恢复XIP模式
-	int8_t xip_status = QSPI_W25Qxx_MemoryMappedMode();
+	int8_t xip_status = QSPI_W25Qxx_EnterMemoryMappedMode();
 	return (status != QSPI_W25Qxx_OK) ? status : xip_status;
 }
 
@@ -879,7 +879,7 @@ int8_t QSPI_W25Qxx_Test(uint32_t test_addr)
 }
 
 // 添加退出XIP模式的函数
-static int8_t QSPI_W25Qxx_ExitMemoryMappedMode(void)
+int8_t QSPI_W25Qxx_ExitMemoryMappedMode(void)
 {
 	if(!xip_enabled) {
 		return QSPI_W25Qxx_OK;
@@ -1031,7 +1031,7 @@ int8_t QSPI_W25Qxx_BufferErase(uint32_t StartAddr, uint32_t Size)
 
 exit:
     // 恢复内存映射模式
-    if(QSPI_W25Qxx_MemoryMappedMode() != QSPI_W25Qxx_OK) {
+    if(QSPI_W25Qxx_ExitMemoryMappedMode() != QSPI_W25Qxx_OK) {
         return W25Qxx_ERROR_MemoryMapped;
     }
 

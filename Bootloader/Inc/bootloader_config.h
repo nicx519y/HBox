@@ -19,4 +19,17 @@
 // Flash 操作超时时间
 #define FLASH_TIMEOUT       50000U      // 超时时间
 
-#endif // __BOOTLOADER_CONFIG_H 
+// QSPI Flash 分区定义
+#define QSPI_APP_ADDRESS        0x90000000  // 应用程序起始地址
+#define QSPI_APP_SIZE          0x100000    // 应用程序大小 (1MB)
+
+#define QSPI_NEW_FIRM_ADDRESS   0x90100000  // 新固件存储地址
+#define QSPI_NEW_FIRM_SIZE     0x100000    // 新固件区域大小 (1MB)
+
+#define QSPI_USER_DATA_ADDRESS  0x90200000  // 用户数据起始地址
+#define QSPI_USER_DATA_SIZE    0x600000    // 用户数据区域大小 (6MB)
+
+#define BOOTLOADER_VERSION "1.0.0"
+#define APPLICATION_ADDRESS 0x08020000
+
+#endif /* __BOOTLOADER_CONFIG_H */ 

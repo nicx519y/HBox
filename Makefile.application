@@ -1,0 +1,169 @@
+# Application 相关配置
+TARGET = HBox_application
+BUILD_DIR = build
+
+# 编译器标志
+CXXFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+CXXFLAGS += -fno-exceptions -fno-rtti 
+
+# 源文件目录
+C_SOURCE_DIRS = \
+Core/Src \
+Drivers/STM32H7xx_HAL_Driver/Src \
+Drivers/QSPI-W25Q64 \
+Drivers/USART \
+Drivers/LED \
+Drivers/USB \
+Drivers/ADC \
+Drivers/PWM-WS2812B \
+Drivers/GPIO-BTN \
+Libs/tinyusb/src \
+Libs/tinyusb/src/device \
+Libs/tinyusb/src/host \
+Libs/tinyusb/src/common \
+Libs/tinyusb/lib/networking \
+Libs/tinyusb/src/portable/synopsys/dwc2 \
+Libs/tinyusb/src/class/net \
+Libs/rndis \
+Libs/stm32_mw_lwip/src/apps \
+Libs/stm32_mw_lwip/src/core \
+Libs/stm32_mw_lwip/src/netif \
+Libs/stm32_mw_lwip/src/core/ipv4 \
+Libs/cJSON \
+USB_DEVICE/App \
+USB_DEVICE/Target \
+Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src \
+Middlewares/ST/STM32_USB_Device_Library/Core/Src
+
+# C++ 源文件目录
+CPP_SOURCE_DIRS = \
+Cpp_Core/Src \
+Cpp_Core/Src/drivers/net \
+Cpp_Core/Src/drivers/xinput \
+Cpp_Core/Src/configs \
+Cpp_Core/Src/gamepad \
+Cpp_Core/Src/states \
+Cpp_Core/Src/adc_btns \
+Cpp_Core/Src/gpio_btns \
+Cpp_Core/Src/leds \
+Libs/CRC32/src \
+Libs/httpd
+
+# 自动查找源文件
+C_SOURCES = $(foreach dir,$(C_SOURCE_DIRS),$(wildcard $(dir)/*.c))
+CPP_SOURCES = $(foreach dir,$(CPP_SOURCE_DIRS),$(wildcard $(dir)/*.cpp))
+ASM_SOURCES = startup_stm32h750xx.s
+
+# 额外的源文件
+C_SOURCES += \
+Libs/stm32_mw_lwip/src/apps/http/httpd.c \
+Libs/httpd/fs.c \
+Libs/httpd/fsdata.c
+
+# 包含通用配置
+include Makefile.common
+
+# 添加 application 特定的包含路径
+C_INCLUDES += \
+-ICpp_Core/Inc \
+-ICpp_Core/Inc/configs \
+-ICpp_Core/Inc/drivers \
+-ICpp_Core/Inc/gamepad \
+-ICpp_Core/Inc/states \
+-ICpp_Core/Inc/leds \
+-ICpp_Core/Inc/enums \
+-ICpp_Core/Inc/constants \
+-IDrivers \
+-IDrivers/QSPI-W25Q64 \
+-IDrivers/USART \
+-IDrivers/LED \
+-IDrivers/USB \
+-IDrivers/ADC \
+-IDrivers/PWM-WS2812B \
+-IDrivers/GPIO-BTN \
+-ILibs/httpd \
+-ILibs/tinyusb/hw \
+-ILibs/tinyusb/src \
+-ILibs/tinyusb/src/device \
+-ILibs/tinyusb/src/host \
+-ILibs/tinyusb/src/common \
+-ILibs/tinyusb/lib/networking \
+-ILibs/tinyusb/src/portable/synopsys/dwc2 \
+-ILibs/tinyusb/src/class/net \
+-ILibs/rndis \
+-ILibs/stm32_mw_lwip/src/apps \
+-ILibs/stm32_mw_lwip/src/core \
+-ILibs/stm32_mw_lwip/src/netif \
+-ILibs/stm32_mw_lwip/src/core/ipv4 \
+-ILibs/stm32_mw_lwip/src/include \
+-ILibs/stm32_mw_lwip/system \
+-ILibs/lwip-port \
+-ILibs/cJSON \
+-IUSB_DEVICE/App \
+-IUSB_DEVICE/Target \
+-IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
+-IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc
+
+# 目标文件
+OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
+vpath %.c $(sort $(dir $(C_SOURCES)))
+OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(CPP_SOURCES:.cpp=.o)))
+vpath %.cpp $(sort $(dir $(CPP_SOURCES)))
+OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
+vpath %.s $(sort $(dir $(ASM_SOURCES)))
+
+# Bootloader 特定的链接脚本
+LDSCRIPT = STM32H750XBHx_application.ld
+
+# 链接选项
+LDFLAGS = $(MCU) -specs=nano.specs -specs=nosys.specs $(LIBS) -Wl,--gc-sections -u _printf_float
+LDFLAGS += -flto -Wl,--gc-sections -Wl,--strip-debug
+
+# 编译规则
+all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+
+$(BUILD_DIR):
+	@if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
+
+$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
+	@$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
+
+$(BUILD_DIR)/%.o: %.cpp Makefile | $(BUILD_DIR)
+	@$(CXX) -c $(CXXFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.cpp=.lst)) $< -o $@
+
+$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+	@$(AS) -c $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
+	@$(CXX) $(OBJECTS) $(LDFLAGS) -T$(LDSCRIPT) -o $@
+	@$(SZ) $@
+
+$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	@$(HEX) $< $@
+
+$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	@$(BIN) $< $@
+
+clean:
+	@echo "Cleaning application build files..."
+	-if exist $(BUILD_DIR) rd /s /q $(BUILD_DIR)
+	@echo "Clean complete"
+
+print-debug:
+	@echo "C_SOURCES = $(C_SOURCES)"
+	@echo "CPP_SOURCES = $(CPP_SOURCES)"
+	@echo "ASM_SOURCES = $(ASM_SOURCES)"
+	@echo "OBJECTS = $(OBJECTS)"
+
+.PHONY: all clean print-debug
+
+# 下载
+flash:
+	openocd \
+	-f Openocd_Script/ST-LINK-QSPIFLASH.cfg \
+	-c init \
+	-c halt \
+	-c "reset init" \
+	-c "flash write_image erase $(BUILD_DIR)/$(TARGET).bin 0x08020000" \
+	-c reset \
+	-c shutdown 

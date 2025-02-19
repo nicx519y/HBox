@@ -1,7 +1,7 @@
-#include "main.h"
+#include "bootloader_main.h"
 #include "update.hpp"
 #include "bootloader_config.h"
-#include "w25qxx.h"
+#include "qspi-w25q64.h"
 
 extern "C" {
     void SystemClock_Config(void);
@@ -12,10 +12,11 @@ typedef void (*pFunction)(void);
 // 全局对象
 extern FirmwareUpdater firmwareUpdater;
 
+
 void jumpToApplication(void)
 {
     // 初始化QSPI为内存映射模式
-    if(W25QXX_EnableMemoryMappedMode() != W25QXX_OK) {
+    if(QSPI_W25Qxx_EnterMemoryMappedMode() != QSPI_W25Qxx_OK) {
         Error_Handler();
     }
     
@@ -44,8 +45,11 @@ int main(void)
     // 配置系统时钟
     SystemClock_Config();
     
-    // 初始化QSPI Flash
-    if(W25QXX_Init() != W25QXX_OK) {
+    // 初始化 QSPI GPIO
+    MX_QUADSPI_Init();
+    
+    // 初始化 W25Q64
+    if(QSPI_W25Qxx_Init() != QSPI_W25Qxx_OK) {
         Error_Handler();
     }
     

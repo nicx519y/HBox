@@ -7,7 +7,6 @@
             "command": "make",
             "args": [
                 "bootloader",
-                "-j16"
             ],
             "group": "build",
             "problemMatcher": [
@@ -20,7 +19,6 @@
             "command": "make",
             "args": [
                 "application",
-                "-j16"
             ],
             "group": "build",
             "problemMatcher": [
@@ -33,7 +31,6 @@
             "command": "make",
             "args": [
                 "all",
-                "-j16"
             ],
             "group": "build",
             "problemMatcher": [
@@ -68,46 +65,12 @@
             "dependsOn": ["build-all"]
         },
         {
-            "label": "build",
-            "type": "shell",
-            "command": "make",
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "args": [
-                "-j16"
-            ]
-        },
-        {
             "label": "clean",
             "type": "shell",
             "command": "make clean",
             "group": "build",
             "problemMatcher": [
                 "$gcc"
-            ]
-        },
-        {
-            "label": "rebuild",
-            "type": "shell",
-            "command": "make -j16",
-            "dependsOn": "make clean -k",
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
-            "label": "flash",
-            "type": "shell",
-            "command": "make openocd",
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": "build",
-            "dependsOn": [
-                "build"
             ]
         },
         {

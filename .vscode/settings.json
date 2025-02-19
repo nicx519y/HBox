@@ -154,7 +154,9 @@
         "semaphore": "cpp",
         "stop_token": "cpp",
         "thread": "cpp",
-        "pwm-ws2812b.h": "c"
+        "pwm-ws2812b.h": "c",
+        "tusb_config.h": "c",
+        "tusb_mcu.h": "c"
     },
     "cmake.sourceDirectory": "E:/Works/STM32/HBox/tinyusb/examples/device/hid_generic_inout"
 }

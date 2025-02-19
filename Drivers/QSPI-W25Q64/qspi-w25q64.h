@@ -1,5 +1,5 @@
-#ifndef QSPI_w25q64_H
-#define QSPI_w25q64_H
+#ifndef __QSPI_W25Q64_H
+#define __QSPI_W25Q64_H
 
 #include "stm32h7xx_hal.h"
 #include "usart.h"
@@ -98,18 +98,20 @@ int8_t	QSPI_W25Qxx_WritePage(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumB
 int8_t	QSPI_W25Qxx_WriteBuffer(uint8_t* pData, uint32_t WriteAddr, uint32_t Size);				// 写入数据，最大不能超过flash芯片的大小
 int8_t 	QSPI_W25Qxx_ReadBuffer(uint8_t* pBuffer, uint32_t ReadAddr, uint32_t NumByteToRead);	// 读取数据，最大不能超过flash芯片的大小
 
-static int8_t QSPI_W25Qxx_ExitMemoryMappedMode(void);
 int8_t QSPI_W25Qxx_WriteString(char* string, uint32_t ReadAddr);
 int8_t QSPI_W25Qxx_ReadString(char* buffer, uint32_t ReadAddr);
 
 int8_t QSPI_W25Qxx_Test(uint32_t test_addr);  // 修改测试函数声明，添加地址参数
 int8_t QSPI_W25Qxx_BufferErase(uint32_t StartAddr, uint32_t Size);  // 添加缓冲区擦除函数声明
 
+int8_t QSPI_W25Qxx_ExitMemoryMappedMode(void); // 退出内存映射模式
+int8_t QSPI_W25Qxx_EnterMemoryMappedMode(void); // 进入内存映射模式
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif // QSPI_w25q64_H 
+#endif /* __QSPI_W25Q64_H */ 
 
 
 

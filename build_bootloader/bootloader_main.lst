@@ -1,0 +1,137 @@
+ARM GAS  C:\Users\nicx5\AppData\Local\Temp\ccHEYyoa.s 			page 1
+
+
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 4
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"bootloader_main.cpp"
+  15              		.text
+  16              		.section	.text._Z17jumpToApplicationv,"ax",%progbits
+  17              		.align	1
+  18              		.global	_Z17jumpToApplicationv
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  23              	_Z17jumpToApplicationv:
+  24              		@ args = 0, pretend = 0, frame = 0
+  25              		@ frame_needed = 0, uses_anonymous_args = 0
+  26 0000 70B5     		push	{r4, r5, r6, lr}
+  27 0002 FFF7FEFF 		bl	QSPI_W25Qxx_EnterMemoryMappedMode
+  28 0006 08B1     		cbz	r0, .L2
+  29 0008 FFF7FEFF 		bl	Error_Handler
+  30              	.L2:
+  31 000c 4FF01044 		mov	r4, #-1879048192
+  32 0010 6568     		ldr	r5, [r4, #4]
+  33              		.syntax unified
+  34              	@ 209 "Drivers/CMSIS/Include/cmsis_gcc.h" 1
+  35 0012 72B6     		cpsid i
+  36              	@ 0 "" 2
+  37              		.thumb
+  38              		.syntax unified
+  39 0014 FFF7FEFF 		bl	HAL_DeInit
+  40 0018 2368     		ldr	r3, [r4]
+  41              		.syntax unified
+  42              	@ 400 "Drivers/CMSIS/Include/cmsis_gcc.h" 1
+  43 001a 83F30888 		MSR msp, r3
+  44              	@ 0 "" 2
+  45              		.thumb
+  46              		.syntax unified
+  47 001e 2B46     		mov	r3, r5
+  48 0020 BDE87040 		pop	{r4, r5, r6, lr}
+  49 0024 1847     		bx	r3	@ indirect register sibling call
+  51              		.section	.text.startup.main,"ax",%progbits
+  52              		.align	1
+  53              		.global	main
+  54              		.syntax unified
+  55              		.thumb
+  56              		.thumb_func
+  58              	main:
+  59              		@ args = 0, pretend = 0, frame = 0
+  60              		@ frame_needed = 0, uses_anonymous_args = 0
+ARM GAS  C:\Users\nicx5\AppData\Local\Temp\ccHEYyoa.s 			page 2
+
+
+  61 0000 08B5     		push	{r3, lr}
+  62 0002 FFF7FEFF 		bl	HAL_Init
+  63 0006 FFF7FEFF 		bl	SystemClock_Config
+  64 000a FFF7FEFF 		bl	MX_QUADSPI_Init
+  65 000e FFF7FEFF 		bl	QSPI_W25Qxx_Init
+  66 0012 08B1     		cbz	r0, .L7
+  67 0014 FFF7FEFF 		bl	Error_Handler
+  68              	.L7:
+  69 0018 FFF7FEFF 		bl	_ZN15FirmwareUpdater14checkForUpdateEv
+  70 001c 78B1     		cbz	r0, .L8
+  71 001e FFF7FEFF 		bl	_ZN15FirmwareUpdater13performUpdateEv
+  72 0022 60B1     		cbz	r0, .L8
+  73              		.syntax unified
+  74              	@ 946 "Drivers/CMSIS/Include/cmsis_gcc.h" 1
+  75 0024 BFF34F8F 		dsb 0xF
+  76              	@ 0 "" 2
+  77              		.thumb
+  78              		.syntax unified
+  79 0028 0949     		ldr	r1, .L23
+  80 002a 0A4B     		ldr	r3, .L23+4
+  81 002c CA68     		ldr	r2, [r1, #12]
+  82 002e 02F4E062 		and	r2, r2, #1792
+  83 0032 1343     		orrs	r3, r3, r2
+  84 0034 CB60     		str	r3, [r1, #12]
+  85              		.syntax unified
+  86              	@ 946 "Drivers/CMSIS/Include/cmsis_gcc.h" 1
+  87 0036 BFF34F8F 		dsb 0xF
+  88              	@ 0 "" 2
+  89              		.thumb
+  90              		.syntax unified
+  91              	.L9:
+  92              		.syntax unified
+  93              	@ 2167 "Drivers/CMSIS/Include/core_cm7.h" 1
+  94 003a 00BF     		nop
+  95              	@ 0 "" 2
+  96              		.thumb
+  97              		.syntax unified
+  98 003c FDE7     		b	.L9
+  99              	.L8:
+ 100 003e FFF7FEFF 		bl	_ZN15FirmwareUpdater17verifyApplicationEv
+ 101 0042 08B1     		cbz	r0, .L10
+ 102 0044 FFF7FEFF 		bl	_Z17jumpToApplicationv
+ 103              	.L10:
+ 104 0048 FFF7FEFF 		bl	Error_Handler
+ 105 004c 0020     		movs	r0, #0
+ 106 004e 08BD     		pop	{r3, pc}
+ 107              	.L24:
+ 108              		.align	2
+ 109              	.L23:
+ 110 0050 00ED00E0 		.word	-536810240
+ 111 0054 0400FA05 		.word	100270084
+ 113              		.ident	"GCC: (GNU) 13.3.0"
+ARM GAS  C:\Users\nicx5\AppData\Local\Temp\ccHEYyoa.s 			page 3
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 bootloader_main.cpp
+C:\Users\nicx5\AppData\Local\Temp\ccHEYyoa.s:17     .text._Z17jumpToApplicationv:00000000 $t
+C:\Users\nicx5\AppData\Local\Temp\ccHEYyoa.s:23     .text._Z17jumpToApplicationv:00000000 _Z17jumpToApplicationv
+C:\Users\nicx5\AppData\Local\Temp\ccHEYyoa.s:52     .text.startup.main:00000000 $t
+C:\Users\nicx5\AppData\Local\Temp\ccHEYyoa.s:58     .text.startup.main:00000000 main
+C:\Users\nicx5\AppData\Local\Temp\ccHEYyoa.s:110    .text.startup.main:00000050 $d
+
+UNDEFINED SYMBOLS
+QSPI_W25Qxx_EnterMemoryMappedMode
+Error_Handler
+HAL_DeInit
+HAL_Init
+SystemClock_Config
+MX_QUADSPI_Init
+QSPI_W25Qxx_Init
+_ZN15FirmwareUpdater14checkForUpdateEv
+_ZN15FirmwareUpdater13performUpdateEv
+_ZN15FirmwareUpdater17verifyApplicationEv

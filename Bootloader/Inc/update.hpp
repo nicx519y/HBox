@@ -1,7 +1,7 @@
 #ifndef __UPDATE_HPP
 #define __UPDATE_HPP
 
-#include "main.h"
+#include "bootloader_main.h"
 #include "bootloader_config.h"
 
 // 固件头部结构
@@ -14,17 +14,17 @@ struct FirmwareHeader {
 
 class FirmwareUpdater {
 public:
-    bool checkForUpdate();
-    bool performUpdate();
-    bool verifyApplication();
+    static bool checkForUpdate();
+    static bool performUpdate();
+    static bool verifyApplication();
     
 private:
-    bool eraseApplicationSpace();
-    bool writeFlash(uint32_t address, uint8_t* data, uint32_t length);
-    uint32_t calculateChecksum(uint8_t* data, uint32_t length);
-    bool verifyChecksum(uint8_t* data, uint32_t length, uint32_t expected);
-    bool unlockFlash();
-    bool lockFlash();
+    static bool eraseApplicationSpace();
+    static bool writeFlash(uint32_t address, uint8_t* data, uint32_t length);
+    static uint32_t calculateChecksum(uint8_t* data, uint32_t length);
+    static bool verifyChecksum(uint8_t* data, uint32_t length, uint32_t expected);
+    static bool unlockFlash();
+    static bool lockFlash();
 };
 
 extern FirmwareUpdater firmwareUpdater;

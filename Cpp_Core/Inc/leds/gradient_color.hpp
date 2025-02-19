@@ -3,10 +3,10 @@
 
 #include "stm32h750xx.h"
 #include "stm32h7xx_hal.h"
-
+#include "utils.h"
 // 定义包含颜色和亮度的结构体
 struct GradientState {
-    struct RGBColor color;
+    RGBColor color;  // 现在 RGBColor 已定义，可以使用
     uint8_t brightness;
 };
 

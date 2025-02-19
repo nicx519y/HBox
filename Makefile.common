@@ -1,0 +1,49 @@
+# 编译器配置
+PREFIX = arm-none-eabi-
+CC = $(PREFIX)gcc
+CXX = $(PREFIX)g++
+AS = $(PREFIX)gcc -x assembler-with-cpp
+CP = $(PREFIX)objcopy
+SZ = $(PREFIX)size
+HEX = $(CP) -O ihex
+BIN = $(CP) -O binary -S
+
+# MCU 配置
+CPU = -mcpu=cortex-m7
+FPU = -mfpu=fpv5-d16
+FLOAT-ABI = -mfloat-abi=hard
+MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
+
+# 编译选项
+DEBUG = 1
+OPT = -Os
+
+# 通用 CFLAGS (仅用于 C 文件)
+CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+CFLAGS += -flto -fmerge-constants
+CFLAGS += -fno-unwind-tables -fno-asynchronous-unwind-tables
+ifeq ($(DEBUG), 1)
+CFLAGS += -g -gdwarf-2
+endif
+
+# C++ 编译标志 (仅用于 C++ 文件)
+CXXFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+CXXFLAGS += -fno-exceptions -fno-rtti
+
+# 链接选项
+LIBS = -lc -lm -lnosys -lstdc++
+LDFLAGS = $(MCU) -specs=nano.specs -specs=nosys.specs $(LIBS) -Wl,--gc-sections -u _printf_float
+LDFLAGS += -flto -Wl,--gc-sections -Wl,--strip-debug
+
+# 通用定义
+C_DEFS = \
+-DUSE_HAL_DRIVER \
+-DSTM32H750xx
+
+# 通用包含路径
+C_INCLUDES = \
+-ICore/Inc \
+-IDrivers/STM32H7xx_HAL_Driver/Inc \
+-IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \
+-IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
+-IDrivers/CMSIS/Include 

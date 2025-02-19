@@ -1,9 +1,8 @@
 #include "update.hpp"
-#include "main.h"
-#include "storagemanager.hpp"
+#include "bootloader_main.h"
 #include "bootloader_config.h"
 #include "stm32h7xx_hal_flash.h"
-#include "w25qxx.h"
+#include "qspi-w25q64.h"
 
 // Flash 相关宏定义
 #define FLASH_TYPEPROGRAM_DOUBLEWORD   FLASH_TYPEPROGRAM_FLASHWORD  // H7系列使用 FLASHWORD
@@ -77,31 +76,13 @@ bool FirmwareUpdater::verifyApplication() {
 }
 
 bool FirmwareUpdater::eraseApplicationSpace() {
-    // 擦除QSPI Flash中的应用程序区域
-    uint32_t sectorCount = (BOOT_SECTOR_SIZE + QSPI_SECTOR_SIZE - 1) / QSPI_SECTOR_SIZE;
-    
-    for(uint32_t i = 0; i < sectorCount; i++) {
-        if(W25QXX_EraseSector(APP_ADDRESS + (i * QSPI_SECTOR_SIZE)) != W25QXX_OK) {
-            return false;
-        }
-    }
-    return true;
+    // 使用 QSPI_W25Qxx_ 开头的函数
+    return QSPI_W25Qxx_SectorErase(APP_ADDRESS) == QSPI_W25Qxx_OK;
 }
 
 bool FirmwareUpdater::writeFlash(uint32_t address, uint8_t* data, uint32_t length) {
-    // 写入QSPI Flash
-    uint32_t pageCount = (length + QSPI_PAGE_SIZE - 1) / QSPI_PAGE_SIZE;
-    
-    for(uint32_t i = 0; i < pageCount; i++) {
-        uint32_t pageOffset = i * QSPI_PAGE_SIZE;
-        uint32_t writeSize = (length - pageOffset) > QSPI_PAGE_SIZE ? 
-                            QSPI_PAGE_SIZE : (length - pageOffset);
-                            
-        if(W25QXX_WritePage(data + pageOffset, address + pageOffset, writeSize) != W25QXX_OK) {
-            return false;
-        }
-    }
-    return true;
+    // 使用 QSPI_W25Qxx_ 开头的函数
+    return QSPI_W25Qxx_WriteBuffer(data, address, length) == QSPI_W25Qxx_OK;
 }
 
 uint32_t FirmwareUpdater::calculateChecksum(uint8_t* data, uint32_t length) {
