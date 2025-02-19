@@ -63,12 +63,12 @@ MEMORY
 {
 DTCMRAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 128K
 RAM (xrw)           : ORIGIN = 0x24000000, LENGTH = 480K /* 480K use to store data. webconfig resources. code in fsdata.c */
-RAM_D1 (xrw)        : ORIGIN = 0x24078000, LENGTH = 32K   /* 32K use to store dma buffer. ws2812b use this area. adc use this area. */
+RAM_D1 (xrw)        : ORIGIN = 0x24000000, LENGTH = 512K
 RAM_D2 (xrw)        : ORIGIN = 0x30000000, LENGTH = 288K
 RAM_D3 (xrw)        : ORIGIN = 0x38000000, LENGTH = 64K
 ITCMRAM (xrw)       : ORIGIN = 0x00000000, LENGTH = 64K
 FLASH    (rx)    : ORIGIN = 0x08020000, LENGTH = 128K   /* Application 区域 */
-QSPI_FLASH (rx)     : ORIGIN = 0x90000000, LENGTH = 8192K
+QSPIFLASH (rx)     : ORIGIN = 0x90000000, LENGTH = 8M  /* QSPI Flash */
 }
 
 /* Define output sections */
@@ -81,7 +81,7 @@ SECTIONS
     KEEP(*(.web_resources))
     KEEP(*(.fsdata))
     . = ALIGN(4);
-  } >QSPI_FLASH
+  } >QSPIFLASH
 
   /* The startup code goes first into FLASH */
   .isr_vector :
@@ -89,7 +89,7 @@ SECTIONS
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
-  } >FLASH
+  } >QSPIFLASH
 
   /* The program code and other data goes into FLASH */
   .text :
@@ -106,7 +106,7 @@ SECTIONS
 
     . = ALIGN(4);
     _etext = .;        /* define a global symbols at end of code */
-  } >FLASH
+  } >QSPIFLASH
 
   /* Constant data goes into FLASH */
   .rodata :
@@ -115,35 +115,35 @@ SECTIONS
     *(.rodata)         /* .rodata sections (constants, strings, etc.) */
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
     . = ALIGN(4);
-  } >FLASH
+  } >QSPIFLASH
 
-  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
+  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >QSPIFLASH
   .ARM : {
     __exidx_start = .;
     *(.ARM.exidx*)
     __exidx_end = .;
-  } >FLASH
+  } >QSPIFLASH
 
   .preinit_array     :
   {
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array*))
     PROVIDE_HIDDEN (__preinit_array_end = .);
-  } >FLASH
+  } >QSPIFLASH
   .init_array :
   {
     PROVIDE_HIDDEN (__init_array_start = .);
     KEEP (*(SORT(.init_array.*)))
     KEEP (*(.init_array*))
     PROVIDE_HIDDEN (__init_array_end = .);
-  } >FLASH
+  } >QSPIFLASH
   .fini_array :
   {
     PROVIDE_HIDDEN (__fini_array_start = .);
     KEEP (*(SORT(.fini_array.*)))
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
-  } >FLASH
+  } >QSPIFLASH
 
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
@@ -158,7 +158,7 @@ SECTIONS
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-  } >DTCMRAM AT> FLASH
+  } >DTCMRAM AT> QSPIFLASH
 
   
   /* Uninitialized data section */

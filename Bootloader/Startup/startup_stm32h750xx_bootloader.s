@@ -124,6 +124,47 @@ g_pfnVectors:
   
   /* External Interrupts */
   .word     WWDG_IRQHandler                   /* Window WatchDog              */
+  .word     PVD_AVD_IRQHandler               /* PVD/AVD                      */
+  .word     TAMP_STAMP_IRQHandler            /* Tamper and TimeStamps        */
+  .word     RTC_WKUP_IRQHandler              /* RTC Wakeup                   */
+  .word     FLASH_IRQHandler                 /* FLASH                        */
+  .word     RCC_IRQHandler                   /* RCC                          */
+  .word     EXTI0_IRQHandler                 /* EXTI Line0                   */
+  .word     EXTI1_IRQHandler                 /* EXTI Line1                   */
+  .word     EXTI2_IRQHandler                 /* EXTI Line2                   */
+  .word     EXTI3_IRQHandler                 /* EXTI Line3                   */
+  .word     EXTI4_IRQHandler                 /* EXTI Line4                   */
+  .word     DMA1_Stream0_IRQHandler          /* DMA1 Stream 0                */
+  .word     DMA1_Stream1_IRQHandler          /* DMA1 Stream 1                */
+  .word     DMA1_Stream2_IRQHandler          /* DMA1 Stream 2                */
+  .word     DMA1_Stream3_IRQHandler          /* DMA1 Stream 3                */
+  .word     DMA1_Stream4_IRQHandler          /* DMA1 Stream 4                */
+  .word     DMA1_Stream5_IRQHandler          /* DMA1 Stream 5                */
+  .word     DMA1_Stream6_IRQHandler          /* DMA1 Stream 6                */
+  .word     ADC_IRQHandler                   /* ADC1, ADC2                   */
+  .word     FDCAN1_IT0_IRQHandler            /* FDCAN1 interrupt line 0      */
+  .word     FDCAN2_IT0_IRQHandler            /* FDCAN2 interrupt line 0      */
+  .word     FDCAN1_IT1_IRQHandler            /* FDCAN1 interrupt line 1      */
+  .word     FDCAN2_IT1_IRQHandler            /* FDCAN2 interrupt line 1      */
+  .word     EXTI9_5_IRQHandler              /* External Line[9:5]s          */
+  .word     TIM1_BRK_IRQHandler             /* TIM1 Break interrupt         */
+  .word     TIM1_UP_IRQHandler              /* TIM1 Update interrupt        */
+  .word     TIM1_TRG_COM_IRQHandler         /* TIM1 Trigger and Commutation */
+  .word     TIM1_CC_IRQHandler              /* TIM1 Capture Compare         */
+  .word     TIM2_IRQHandler                 /* TIM2                         */
+  .word     TIM3_IRQHandler                 /* TIM3                         */
+  .word     TIM4_IRQHandler                 /* TIM4                         */
+  .word     I2C1_EV_IRQHandler             /* I2C1 Event                   */
+  .word     I2C1_ER_IRQHandler             /* I2C1 Error                   */
+  .word     I2C2_EV_IRQHandler             /* I2C2 Event                   */
+  .word     I2C2_ER_IRQHandler             /* I2C2 Error                   */
+  .word     SPI1_IRQHandler                /* SPI1                         */
+  .word     SPI2_IRQHandler                /* SPI2                         */
+  .word     USART1_IRQHandler              /* USART1                       */
+  .word     USART2_IRQHandler              /* USART2                       */
+  .word     USART3_IRQHandler              /* USART3                       */
+  .word     EXTI15_10_IRQHandler           /* External Line[15:10]s        */
+  .word     RTC_Alarm_IRQHandler           /* RTC Alarm (A and B)          */
   /* ... 其他中断向量 ... */
 
 /*******************************************************************************

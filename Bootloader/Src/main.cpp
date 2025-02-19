@@ -1,6 +1,7 @@
 #include "main.h"
 #include "update.hpp"
 #include "bootloader_config.h"
+#include "w25qxx.h"
 
 extern "C" {
     void SystemClock_Config(void);
@@ -13,6 +14,12 @@ extern FirmwareUpdater firmwareUpdater;
 
 void jumpToApplication(void)
 {
+    // 初始化QSPI为内存映射模式
+    if(W25QXX_EnableMemoryMappedMode() != W25QXX_OK) {
+        Error_Handler();
+    }
+    
+    // 获取应用程序入口点
     uint32_t JumpAddress = *(__IO uint32_t*)(APP_ADDRESS + 4);
     pFunction Jump = (pFunction)JumpAddress;
     
@@ -31,22 +38,31 @@ void jumpToApplication(void)
 
 int main(void)
 {
-    // 基础初始化
+    // 初始化 HAL 库
     HAL_Init();
+    
+    // 配置系统时钟
     SystemClock_Config();
     
-    // 检查是否需要更新固件
-    if(firmwareUpdater.checkForUpdate()) {
-        // 执行固件更新
-        firmwareUpdater.performUpdate();
+    // 初始化QSPI Flash
+    if(W25QXX_Init() != W25QXX_OK) {
+        Error_Handler();
     }
     
-    // 检查应用程序有效性
+    // 检查是否需要更新
+    if(firmwareUpdater.checkForUpdate()) {
+        if(firmwareUpdater.performUpdate()) {
+            // 更新成功，重启
+            NVIC_SystemReset();
+        }
+    }
+    
+    // 验证应用程序
     if(firmwareUpdater.verifyApplication()) {
         // 跳转到应用程序
         jumpToApplication();
     }
     
-    // 如果到这里说明出错了,进入错误处理
+    // 如果到这里说明出错了
     Error_Handler();
 } 

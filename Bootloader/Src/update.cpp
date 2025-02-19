@@ -3,6 +3,7 @@
 #include "storagemanager.hpp"
 #include "bootloader_config.h"
 #include "stm32h7xx_hal_flash.h"
+#include "w25qxx.h"
 
 // Flash 相关宏定义
 #define FLASH_TYPEPROGRAM_DOUBLEWORD   FLASH_TYPEPROGRAM_FLASHWORD  // H7系列使用 FLASHWORD
@@ -76,43 +77,30 @@ bool FirmwareUpdater::verifyApplication() {
 }
 
 bool FirmwareUpdater::eraseApplicationSpace() {
-    FLASH_EraseInitTypeDef EraseInitStruct;
-    uint32_t SectorError = 0;
+    // 擦除QSPI Flash中的应用程序区域
+    uint32_t sectorCount = (BOOT_SECTOR_SIZE + QSPI_SECTOR_SIZE - 1) / QSPI_SECTOR_SIZE;
     
-    if(!unlockFlash()) {
-        return false;
+    for(uint32_t i = 0; i < sectorCount; i++) {
+        if(W25QXX_EraseSector(APP_ADDRESS + (i * QSPI_SECTOR_SIZE)) != W25QXX_OK) {
+            return false;
+        }
     }
-    
-    EraseInitStruct.TypeErase = FLASH_TYPEERASE_SECTORS;
-    EraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
-    EraseInitStruct.Banks = FLASH_BANK_1;
-    EraseInitStruct.Sector = FLASH_SECTOR_1;
-    EraseInitStruct.NbSectors = 1;
-    
-    if(HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError) != HAL_OK) {
-        lockFlash();
-        return false;
-    }
-    
-    lockFlash();
     return true;
 }
 
 bool FirmwareUpdater::writeFlash(uint32_t address, uint8_t* data, uint32_t length) {
-    if(!unlockFlash()) {
-        return false;
-    }
+    // 写入QSPI Flash
+    uint32_t pageCount = (length + QSPI_PAGE_SIZE - 1) / QSPI_PAGE_SIZE;
     
-    // H7系列每次写入32字节
-    for(uint32_t i = 0; i < length; i += 32) {
-        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, address + i, 
-           (uint32_t)(data + i)) != HAL_OK) {
-            lockFlash();
+    for(uint32_t i = 0; i < pageCount; i++) {
+        uint32_t pageOffset = i * QSPI_PAGE_SIZE;
+        uint32_t writeSize = (length - pageOffset) > QSPI_PAGE_SIZE ? 
+                            QSPI_PAGE_SIZE : (length - pageOffset);
+                            
+        if(W25QXX_WritePage(data + pageOffset, address + pageOffset, writeSize) != W25QXX_OK) {
             return false;
         }
     }
-    
-    lockFlash();
     return true;
 }
 
