@@ -160,6 +160,7 @@ print-debug:
 # 下载
 flash:
 	openocd \
+	-d0 \
 	-f Openocd_Script/ST-LINK-QSPIFLASH.cfg \
 	-c init \
 	-c halt \
@@ -167,5 +168,22 @@ flash:
 	-c "qspi_init" \
 	-c "flash write_image erase $(BUILD_DIR)/$(TARGET).hex 0x00000000" \
 	-c "flash verify_image $(BUILD_DIR)/$(TARGET).hex 0x00000000" \
+	-c reset \
+	-c shutdown 
+
+
+# ExFsData file path
+WEB_RESOURCES_PATH = Libs/httpd/ex_fsdata.bin
+
+# 下载 web-resources 到 QSPIFLASH
+flash-web-resources:
+	openocd \
+	-d0 \
+	-f Openocd_Script/ST-LINK-QSPIFLASH.cfg \
+	-c init \
+	-c halt \
+	-c "reset init" \
+	-c "flash write_image erase $(WEB_RESOURCES_PATH) 0x90100000" \
+	-c "flash verify_image $(WEB_RESOURCES_PATH) 0x90100000" \
 	-c reset \
 	-c shutdown 

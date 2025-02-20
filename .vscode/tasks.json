@@ -40,8 +40,7 @@
         {
             "label": "flash-bootloader",
             "type": "shell",
-            "command": "make",
-            "args": ["flash-bootloader"],
+            "command": "make flash-bootloader",
             "group": "build",
             "problemMatcher": ["$gcc"],
             "dependsOn": ["build-bootloader"]
@@ -49,17 +48,25 @@
         {
             "label": "flash-application",
             "type": "shell",
-            "command": "make",
-            "args": ["flash-application"],
+            "command": "make flash-application",
             "group": "build",
             "problemMatcher": ["$gcc"],
             "dependsOn": ["build-application"]
         },
         {
+            "label": "flash-web-resources",
+            "type": "shell",
+            "command": "make flash-web-resources",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "dependsOn": []
+        },
+        {
             "label": "flash-all",
             "type": "shell",
-            "command": "make",
-            "args": ["flash-all"],
+            "command": "make flash-all",
             "group": "build",
             "problemMatcher": ["$gcc"],
             "dependsOn": ["build-all"]
@@ -72,16 +79,6 @@
             "problemMatcher": [
                 "$gcc"
             ]
-        },
-        {
-            "label": "exfsdata-download",
-            "type": "shell",
-            "command": "make exfsdata-download",
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": "build",
-            "dependsOn": []
         }
         // {
         //     "type": "cppbuild",

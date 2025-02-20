@@ -18,9 +18,6 @@ extern "C" {
         LED1_ON;
         APP_DBG("cpp_main: LED1_ON success.");
         
-        // 检查 SystemCoreClock
-        APP_DBG("cpp_main: SystemCoreClock = %lu Hz", SystemCoreClock);
-        
         // Test FPU Status
         uint32_t fpscr = __get_FPSCR();
         APP_DBG("cpp_main: FPSCR = 0x%08lx", fpscr);

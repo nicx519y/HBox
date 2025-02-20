@@ -15,8 +15,7 @@ extern "C" {
 #define CONFIG_VERSION                      (uint32_t)0x000100  //配置版本 三位版本号 0x aa bb cc
 #define ADC_MAPPING_VERSION                 (uint32_t)0x000001  //ADC值映射表版本
 
-#define EX_ADDR                             0x90000000
-#define FSDATA_ADDR                         0x0               // flash起始地址 webconfig 网页数据地址
+#define WEB_RESOURCES_ADDR                  0x90100000
 #define ADC_VALUES_MAPPING_ADDR             0x00200000       //ADC值映射表地址
 #define CONFIG_ADDR                         0x00400000       //配置数据地址
 

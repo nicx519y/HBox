@@ -3,6 +3,8 @@
 
 #include "main.h"
 #include "bootloader_config.h"
+#include "qspi-w25q64.h"
+#include <stdbool.h>
 
 // 固件头部结构
 typedef struct {

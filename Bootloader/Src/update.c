@@ -1,5 +1,5 @@
 #include "update.h"
-#include "qspi-w25q64.h"
+
 
 // 内部函数声明
 static bool erase_application_space(void);

@@ -63,13 +63,13 @@ _Min_Stack_Size = 0x400;     /* required amount of stack */
 MEMORY
 {
 DTCMRAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 128K
-RAM (xrw)           : ORIGIN = 0x24000000, LENGTH = 480K /* 480K use to store data. webconfig resources. code in fsdata.c */
 RAM_D1 (xrw)        : ORIGIN = 0x24000000, LENGTH = 512K
 RAM_D2 (xrw)        : ORIGIN = 0x30000000, LENGTH = 288K
 RAM_D3 (xrw)        : ORIGIN = 0x38000000, LENGTH = 64K
 ITCMRAM (xrw)       : ORIGIN = 0x00000000, LENGTH = 64K
-FLASH    (rx)    : ORIGIN = 0x08020000, LENGTH = 128K   /* Application 区域 */
-QSPIFLASH (rx)     : ORIGIN = 0x90000000, LENGTH = 8M  /* QSPI Flash */
+FLASH    (rx)    : ORIGIN = 0x08020000, LENGTH = 128K   /* Bootloader 区域 */
+QSPIFLASH (rx)     : ORIGIN = 0x90000000, LENGTH = 1M  /* application 区域 */
+WEB_RESOURCES (rx) : ORIGIN = 0x90100000, LENGTH = 1M  /* web resources 区域 */
 }
 
 /* Define output sections */
@@ -82,7 +82,7 @@ SECTIONS
     KEEP(*(.web_resources))
     KEEP(*(.fsdata))
     . = ALIGN(4);
-  } >QSPIFLASH
+  } >WEB_RESOURCES
 
   /* The startup code goes first into FLASH */
   .isr_vector :
@@ -202,18 +202,6 @@ SECTIONS
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
   /* RAM sections */
-
-  ._RAM_Area :
-  {
-    . = ALIGN(32);
-    __ram_area_start = .;
-    *(.RAM_Area)         /* RAM area section */
-    *(.RAM_Area*)        /* RAM area section */
-    *(._RAM_Area)        /* RAM area section with dot prefix */
-    *(._RAM_Area*)       /* RAM area section with dot prefix */
-    . = ALIGN(32);
-    __ram_area_end = .;
-  } >RAM
 
   /* DMA buffer section. use to store DMA buffer data. ws2812b use this area. adc use this area. */
   

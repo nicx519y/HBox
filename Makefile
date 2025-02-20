@@ -15,13 +15,19 @@ clean:
 	$(MAKE) -f Makefile.bootloader clean
 
 # 下载
-flash-all: flash-bootloader flash-application
+flash-all: flash-bootloader flash-application flash-web-resources
 
+# 下载 bootloader
 flash-bootloader:
 	$(MAKE) -f Makefile.bootloader flash
 
+# 下载 application
 flash-application:
 	$(MAKE) -f Makefile.application flash
+
+# 下载 web-resources
+flash-web-resources:
+	$(MAKE) -f Makefile.application flash-web-resources
 
 bootloader-debug:
 	@echo "Building bootloader with debug info..."

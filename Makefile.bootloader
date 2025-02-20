@@ -91,7 +91,8 @@ print-debug:
 # 下载
 flash:
 	openocd \
-	-f Openocd_Script/ST-LINK.cfg \
+	-d0 \
+	-f Openocd_Script/ST-LINK-FLASH.cfg \
 	-c init \
 	-c halt \
 	-c "reset halt" \

@@ -5,6 +5,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+// 禁用废弃函数警告
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #define file_NULL (struct fsdata_file *) NULL
 
 #ifndef FS_FILE_FLAGS_HEADER_INCLUDED
@@ -123,10 +127,10 @@ const struct fsdata_file * getFSRoot(void)
         uint32_t addr;
         uint32_t size;
 
-        uint8_t *base_ptr = (uint8_t*)(EX_ADDR);
+        uint8_t *base_ptr = (uint8_t*)(WEB_RESOURCES_ADDR);
         uint32_t *size_ptr = (uint32_t*)base_ptr;
         len = read_uint32_be(base_ptr);
-        addr = EX_ADDR + 4 * (len + 1);  // 跳过文件数量和所有size
+        addr = WEB_RESOURCES_ADDR + 4 * (len + 1);  // 跳过文件数量和所有size
 
         size = read_uint32_be(base_ptr + 4);
         data__fonts_icomoon_ttf = (uint8_t*)addr;
