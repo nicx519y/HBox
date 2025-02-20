@@ -103,6 +103,7 @@ int main(void)
 
   cpp_main();
 
+  // 到不了这
   while (1)
   {
     /* USER CODE END WHILE */

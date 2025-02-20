@@ -14,6 +14,9 @@ extern "C" {
     {   
         board_init();
         APP_DBG("cpp_main: board_init success.");
+
+        LED1_ON;
+        APP_DBG("cpp_main: LED1_ON success.");
         
         // 检查 SystemCoreClock
         APP_DBG("cpp_main: SystemCoreClock = %lu Hz", SystemCoreClock);
@@ -28,40 +31,8 @@ extern "C" {
 
         getFSRoot();
         APP_DBG("cpp_main: getFSRoot success.");
-        // MainStateMachine::getInstance().setup();
 
-        // InputMode inputMode = InputMode::INPUT_MODE_CONFIG;
-        // // InputMode inputMode = InputMode::INPUT_MODE_XINPUT;
-        // ConfigType configType = ConfigType::CONFIG_TYPE_WEB;
-        // DriverManager::getInstance().setup(inputMode);      
-        // ConfigManager::getInstance().setup(configType);
-
-
-        // bool configMode = true;
-        
-        // // Start the TinyUSB Device functionality
-        // tud_init(TUD_OPT_RHPORT);
-
-        uint32_t t = HAL_GetTick();
-        APP_DBG("cpp_main: t = %d", t);
-        while(1) {
-            // APP_DBG("cpp_main: HAL_GetTick() = %d", HAL_GetTick());
-            if(HAL_GetTick() - t >= 1000)
-            {
-                APP_DBG("cpp_main: LED1_Toggle");
-                LED1_Toggle;
-                t = HAL_GetTick();
-            }
-
-            // if(configMode) {
-            //     ConfigManager::getInstance().loop();
-            // } else {
-            //     // inputDriver->process(&gamepad);
-            //     tud_task();
-            // }
-        }
-
-        // MAIN_STATE_MACHINE.setup();
+        MAIN_STATE_MACHINE.setup();
 
         return 0;
     }
@@ -72,6 +43,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
     MC.publish(MessageId::DMA_ADC_CONV_CPLT, hadc);
 }
 
+// ADC错误回调
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 {
     uint32_t error = HAL_ADC_GetError(hadc);

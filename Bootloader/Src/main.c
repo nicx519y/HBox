@@ -119,26 +119,7 @@ int main(void)
     BOOT_DBG("Jump to W25Q64 user program>>>\r\n\r\n");
 
     JumpToApplication(); // 执行跳转
-    /* USER CODE END Init */
 
-    /* USER CODE BEGIN SysInit */
-
-    /* USER CODE END SysInit */
-
-    /* Initialize all configured peripherals */
-    /* USER CODE BEGIN 2 */
-
-    /* USER CODE END 2 */
-
-    /* Infinite loop */
-    /* USER CODE BEGIN WHILE */
-    while (1)
-    {
-        /* USER CODE END WHILE */
-
-        /* USER CODE BEGIN 3 */
-    }
-    /* USER CODE END 3 */
 }
 
 /**
@@ -255,13 +236,10 @@ void MPU_Config(void)
  */
 void Error_Handler(void)
 {
-    /* USER CODE BEGIN Error_Handler_Debug */
-    /* User can add his own implementation to report the HAL error return state */
     __disable_irq();
     while (1)
     {
     }
-    /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef USE_FULL_ASSERT
