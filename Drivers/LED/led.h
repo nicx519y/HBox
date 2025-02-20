@@ -1,7 +1,7 @@
 #ifndef __LED_H
 #define __LED_H
 
-#include <stdbool.h>
+#include "stm32h7xx_hal.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,9 +9,9 @@ extern "C" {
 
 /*------------------------------------------ LED配置宏 ----------------------------------*/
 
-#define LED1_PIN            			 GPIO_PIN_13        			// LED1 引脚      
-#define LED1_PORT           			 GPIOC                 			// LED1 GPIO端口     
-#define __HAL_RCC_LED1_CLK_ENABLE       __HAL_RCC_GPIOC_CLK_ENABLE() 	// LED1 GPIO端口时钟
+#define LED1_PIN                GPIO_PIN_3
+#define LED1_PORT              GPIOE
+#define __HAL_RCC_LED1_CLK_ENABLE()   __HAL_RCC_GPIOE_CLK_ENABLE()
  
 
   

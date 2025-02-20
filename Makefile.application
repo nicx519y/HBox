@@ -164,6 +164,8 @@ flash:
 	-c init \
 	-c halt \
 	-c "reset init" \
-	-c "flash write_image erase $(BUILD_DIR)/$(TARGET).bin 0x08020000" \
+	-c "qspi_init" \
+	-c "flash write_image erase $(BUILD_DIR)/$(TARGET).hex 0x00000000" \
+	-c "flash verify_image $(BUILD_DIR)/$(TARGET).hex 0x00000000" \
 	-c reset \
 	-c shutdown 

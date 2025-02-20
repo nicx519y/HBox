@@ -7,6 +7,9 @@ const uint8_t D1CorePrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6, 7, 
 
 void SystemInit(void)
 {
+    // 翻转 LED 状态
+    GPIOE->ODR ^= GPIO_PIN_3;
+    
     // 基本系统初始化
     SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));  // Enable FPU
     

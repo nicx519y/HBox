@@ -1,6 +1,18 @@
 #ifndef __BOOTLOADER_CONFIG_H
 #define __BOOTLOADER_CONFIG_H
 
+// 调试开关
+#define BOOTLOADER_DEBUG 1  // 设置为 0 可以关闭调试输出
+
+// 调试输出宏
+#if BOOTLOADER_DEBUG
+    #define BOOT_DBG(fmt, ...) printf("[BOOT] " fmt "\r\n", ##__VA_ARGS__)
+    #define BOOT_ERR(fmt, ...) printf("[BOOT] ERROR: " fmt "\r\n", ##__VA_ARGS__)
+#else
+    #define BOOT_DBG(fmt, ...) ((void)0)
+    #define BOOT_ERR(fmt, ...) ((void)0)
+#endif
+
 // Flash 相关定义
 #define BOOTLOADER_ADDRESS   0x08000000      // Bootloader在内部Flash起始地址
 #define APP_ADDRESS         0x90000000      // 应用程序在QSPI Flash起始地址
@@ -31,5 +43,6 @@
 
 #define BOOTLOADER_VERSION "1.0.0"
 #define APPLICATION_ADDRESS 0x08020000
+#define MAX_FLASH_SIZE        0x00200000  // 2MB
 
 #endif /* __BOOTLOADER_CONFIG_H */ 
