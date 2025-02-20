@@ -245,7 +245,7 @@
  * include the "Connection: keep-alive" header (pass argument "-11" to makefsdata).
  */
 #if !defined LWIP_HTTPD_SUPPORT_11_KEEPALIVE || defined __DOXYGEN__
-#define LWIP_HTTPD_SUPPORT_11_KEEPALIVE     0
+#define LWIP_HTTPD_SUPPORT_11_KEEPALIVE     1
 #endif
 
 /** Set this to 1 to support HTTP request coming in in multiple packets/pbufs */

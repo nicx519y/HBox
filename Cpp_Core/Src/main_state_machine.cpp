@@ -10,14 +10,14 @@ MainStateMachine::MainStateMachine()
 
 void MainStateMachine::setup()
 {
-    printf("MainStateMachine::setup \n");
+    APP_DBG("MainStateMachine::setup");
     Storage::getInstance().initConfig();
-    printf("Storage initConfig success.\n");
+    APP_DBG("Storage initConfig success.");
 
     // BootMode bootMode = Storage::getInstance().config.bootMode;
-    // BootMode bootMode = BootMode::BOOT_MODE_WEB_CONFIG;
-    BootMode bootMode = BootMode::BOOT_MODE_INPUT;
-    printf("BootMode: %d\n", bootMode);
+    BootMode bootMode = BootMode::BOOT_MODE_WEB_CONFIG;
+    // BootMode bootMode = BootMode::BOOT_MODE_INPUT;
+    APP_DBG("BootMode: %d", bootMode);
 
     workTime = MICROS_TIMER.micros();
 

@@ -55,6 +55,9 @@ try changing the first byte of tud_network_mac_address[] below from 0x02 to 0x00
 
 #define INIT_IP4(a,b,c,d) { PP_HTONL(LWIP_MAKEU32(a,b,c,d)) }
 
+// 函数声明放在所有 include 之后，全局变量之前
+void safe_pbuf_free(struct pbuf *p);
+
 /* lwip context */
 static struct netif netif_data;
 
@@ -89,6 +92,7 @@ static const dhcp_config_t dhcp_config =
     TU_ARRAY_SIZE(entries),                    /* num entry */
     entries                                    /* entries */
 };
+
 static err_t linkoutput_fn(struct netif *netif, struct pbuf *p)
 {
   (void)netif;
@@ -194,7 +198,9 @@ static void service_traffic(void)
   if (received_frame)
   {
     ethernet_input(received_frame, &netif_data);
-    pbuf_free(received_frame);
+    if (received_frame != NULL && received_frame->ref > 0) {
+        pbuf_free(received_frame);
+    }
     received_frame = NULL;
     tud_network_recv_renew();
   }
@@ -207,7 +213,9 @@ void tud_network_init_cb(void)
   /* if the network is re-initializing and we have a leftover packet, we must do a cleanup */
   if (received_frame)
   {
-    pbuf_free(received_frame);
+    if (received_frame != NULL && received_frame->ref > 0) {
+        pbuf_free(received_frame);
+    }
     received_frame = NULL;
   }
 }
@@ -250,6 +258,12 @@ void sys_arch_unprotect(sys_prot_t pval)
 /* lwip needs a millisecond time source, and the TinyUSB board support code has one available */
 uint32_t sys_now(void)
 {
-  // return to_ms_since_boot(get_absolute_time());
   return HAL_GetTick();
+}
+
+// 函数定义放在文件最后
+void safe_pbuf_free(struct pbuf *p) {
+    if (p != NULL && p->ref > 0) {
+        pbuf_free(p);
+    }
 }

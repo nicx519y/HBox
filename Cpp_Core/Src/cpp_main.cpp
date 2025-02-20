@@ -44,12 +44,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 {
     uint32_t error = HAL_ADC_GetError(hadc);
-    printf("ADC Error: Instance=0x%p\n", (void*)hadc->Instance);
-    printf("State=0x%x\n", HAL_ADC_GetState(hadc));
-    printf("Error flags: 0x%lx\n", error);
+    APP_DBG("ADC Error: Instance=0x%p", (void*)hadc->Instance);
+    APP_DBG("State=0x%x", HAL_ADC_GetState(hadc));
+    APP_DBG("Error flags: 0x%lx", error);
     
-    if (error & HAL_ADC_ERROR_INTERNAL) printf("- Internal error\n");
-    if (error & HAL_ADC_ERROR_OVR) printf("- Overrun error\n");
-    if (error & HAL_ADC_ERROR_DMA) printf("- DMA transfer error\n");
+    if (error & HAL_ADC_ERROR_INTERNAL) APP_DBG("- Internal error");
+    if (error & HAL_ADC_ERROR_OVR) APP_DBG("- Overrun error");
+    if (error & HAL_ADC_ERROR_DMA) APP_DBG("- DMA transfer error");
 }
 

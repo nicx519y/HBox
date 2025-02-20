@@ -5,10 +5,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-// 禁用废弃函数警告
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
 #define file_NULL (struct fsdata_file *) NULL
 
 #ifndef FS_FILE_FLAGS_HEADER_INCLUDED

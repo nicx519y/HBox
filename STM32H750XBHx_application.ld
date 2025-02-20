@@ -67,9 +67,10 @@ RAM_D1 (xrw)        : ORIGIN = 0x24000000, LENGTH = 512K
 RAM_D2 (xrw)        : ORIGIN = 0x30000000, LENGTH = 288K
 RAM_D3 (xrw)        : ORIGIN = 0x38000000, LENGTH = 64K
 ITCMRAM (xrw)       : ORIGIN = 0x00000000, LENGTH = 64K
-FLASH    (rx)    : ORIGIN = 0x08020000, LENGTH = 128K   /* Bootloader 区域 */
 QSPIFLASH (rx)     : ORIGIN = 0x90000000, LENGTH = 1M  /* application 区域 */
 WEB_RESOURCES (rx) : ORIGIN = 0x90100000, LENGTH = 1M  /* web resources 区域 */
+ADC_VALUES_MAPPING (rx) : ORIGIN = 0x00200000, LENGTH = 1M  /* adc values mapping 区域 */
+CONFIG (rx) : ORIGIN = 0x00300000, LENGTH = 1M  /* config 区域 */
 }
 
 /* Define output sections */

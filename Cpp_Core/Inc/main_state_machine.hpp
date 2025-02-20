@@ -16,6 +16,7 @@
 #include "gpio_btns/gpio_btns_worker.hpp"
 #include "utils.h"
 #include "leds/leds_manager.hpp"
+#include "board_cfg.h"
 
 class MainStateMachine {
     public:

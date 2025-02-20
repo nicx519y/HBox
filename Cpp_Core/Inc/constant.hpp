@@ -15,9 +15,9 @@ extern "C" {
 #define CONFIG_VERSION                      (uint32_t)0x000100  //配置版本 三位版本号 0x aa bb cc
 #define ADC_MAPPING_VERSION                 (uint32_t)0x000001  //ADC值映射表版本
 
-#define WEB_RESOURCES_ADDR                  0x90100000
-#define ADC_VALUES_MAPPING_ADDR             0x00200000       //ADC值映射表地址
-#define CONFIG_ADDR                         0x00400000       //配置数据地址
+#define WEB_RESOURCES_ADDR                  0x90100000       // 网页资源地址 memory map 地址 qspi flash 0x90100000
+#define ADC_VALUES_MAPPING_ADDR             0x00200000       // ADC值映射表地址  qspi flash 0x00200000
+#define CONFIG_ADDR                         0x00300000       // 配置数据地址  qspi flash 0x00300000
 
 #define NUM_ADC_VALUES_MAPPING              8             // 最大8个映射 ADC按钮映射表用于值查找
 #define MAX_ADC_VALUES_LENGTH               40             // 每个映射最大40个值 ADC按钮映射表用于值查找

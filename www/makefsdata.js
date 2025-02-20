@@ -351,11 +351,11 @@ function makefsdata() {
 	fsdata += `        uint32_t size;\n\n`;
 	
 	// 使用内存指针直接读取
-	fsdata += `        uint8_t *base_ptr = (uint8_t*)(EX_ADDR);\n`;
+	fsdata += `        uint8_t *base_ptr = (uint8_t*)(WEB_RESOURCES_ADDR);\n`;
 	fsdata += `        uint32_t *size_ptr = (uint32_t*)base_ptr;\n`;
 	// 读取文件数量
 	fsdata += `        len = read_uint32_be(base_ptr);\n`;
-	fsdata += `        addr = EX_ADDR + 4 * (len + 1);  // 跳过文件数量和所有size\n\n`;
+	fsdata += `        addr = WEB_RESOURCES_ADDR + 4 * (len + 1);  // 跳过文件数量和所有size\n\n`;
 	
 	fileInfos.forEach((info, index) => {
 		// 读取第index个文件
