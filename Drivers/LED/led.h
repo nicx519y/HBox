@@ -9,9 +9,9 @@ extern "C" {
 
 /*------------------------------------------ LED配置宏 ----------------------------------*/
 
-#define LED1_PIN                GPIO_PIN_3
-#define LED1_PORT              GPIOE
-#define __HAL_RCC_LED1_CLK_ENABLE()   __HAL_RCC_GPIOE_CLK_ENABLE()
+#define LED1_PIN               GPIO_PIN_13
+#define LED1_PORT              GPIOC
+#define __HAL_RCC_LED1_CLK_ENABLE()   __HAL_RCC_GPIOC_CLK_ENABLE()
  
 
   

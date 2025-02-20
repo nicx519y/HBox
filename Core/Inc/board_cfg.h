@@ -35,34 +35,14 @@
 
 #define SYSTEM_CLOCK_FREQ      480000000
 
-#define LED_PORT              GPIOC
-#define LED_PIN               GPIO_PIN_13
-#define LED_STATE_ON          0
+/* Debug print configuration */
+#define APPLICATION_DEBUG_PRINT  1   // 设置为 0 可以关闭所有调试打印
 
-// Blue push-button
-// #define BUTTON_PORT           GPIOC
-// #define BUTTON_PIN            GPIO_PIN_13
-// #define BUTTON_STATE_ACTIVE   1
-
-// UART
-#define UART_DEV              USART1
-#define UART_CLK_EN           __HAL_RCC_USART1_CLK_ENABLE
-#define UART_GPIO_PORT        GPIOA
-#define UART_GPIO_AF          GPIO_AF7_USART1
-#define UART_TX_PIN           GPIO_PIN_9
-#define UART_RX_PIN           GPIO_PIN_10
-
-// VBUS Sense detection
-#define OTG_FS_VBUS_SENSE     0
-#define OTG_HS_VBUS_SENSE     0
-
-// USB HS External PHY Pin: CLK, STP, DIR, NXT, D0-D7
-#define ULPI_PINS \
-  {GPIOA, GPIO_PIN_3 }, {GPIOA, GPIO_PIN_5 }, {GPIOB, GPIO_PIN_0 }, {GPIOB, GPIO_PIN_1 }, \
-  {GPIOB, GPIO_PIN_5 }, {GPIOB, GPIO_PIN_10}, {GPIOB, GPIO_PIN_11}, {GPIOB, GPIO_PIN_12}, \
-  {GPIOB, GPIO_PIN_13}, {GPIOC, GPIO_PIN_0 }, {GPIOH, GPIO_PIN_4 }, {GPIOI, GPIO_PIN_11}
-
-
+#if APPLICATION_DEBUG_PRINT
+    #define APP_DBG(fmt, ...) printf("[APP] " fmt "\r\n", ##__VA_ARGS__)
+#else
+    #define APP_DBG(fmt, ...) ((void)0)
+#endif
 
 static inline void board_stm32h7_post_init(void)
 {

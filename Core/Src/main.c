@@ -46,9 +46,6 @@
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-// void SystemClock_Config(void);
-// void PeriphCommonClock_Config(void);
-// static void MPU_Config(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -67,60 +64,44 @@
 int main(void)
 {
   /* Enable FPU */
-  // Enable CP10 and CP11 Full Access
+  // 启用 CP10 和 CP11 全访问
   SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));
   
-  // Enable FPU and configure it
+  // 启用 FPU 并配置它
   FPU->FPCCR |= FPU_FPCCR_ASPEN_Msk | FPU_FPCCR_LSPEN_Msk;
   FPU->FPCAR = 0;
   FPU->FPDSCR = 0;
   
-  // Clear floating-point status and control register
+  // 清除浮点状态和控制寄存器
   __set_FPSCR(0);
   
-  // Ensure all FPU instructions complete and flush pipeline
+  // 确保所有 FPU 指令完成并刷新流水线
   __DSB();
   __ISB();
   __DMB();
 
   /* MCU Configuration--------------------------------------------------------*/
 
+  // 清除所有中断
+  for(uint8_t i = 0; i < 8; i++)
+	{
+		NVIC->ICER[i]=0xFFFFFFFF;
+		NVIC->ICPR[i]=0xFFFFFFFF;
+	}
+  SCB->VTOR = QSPI_BASE;
+  // 启用全局中断
+  __enable_irq();
+  // 允许中断
+	__set_PRIMASK(0);
+
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  SystemClock_Config();
-  
-  // Initialize UART first for debug output
-  USART1_Init();
-  
-  // Simple UART test
-  // printf("\r\n\r\n=== UART Test Start ===\r\n");
-  // printf("System Clock: %lu Hz\r\n", HAL_RCC_GetSysClockFreq());
-  // printf("HCLK: %lu Hz\r\n", HAL_RCC_GetHCLKFreq());
-  // printf("PCLK1: %lu Hz\r\n", HAL_RCC_GetPCLK1Freq());
-  // printf("PCLK2: %lu Hz\r\n", HAL_RCC_GetPCLK2Freq());
-  // printf("=== UART Test End ===\r\n\r\n");
-
-  /* USER CODE BEGIN Init */
 
   // Enable the CPU Cache
   SCB_EnableICache(); /* Enable I-Cache */
   SCB_EnableDCache(); /* Enable D-Cache */
 
   cpp_main();
-  /* USER CODE END Init */
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  /* USER CODE BEGIN 2 */
-  
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
 
   while (1)
   {

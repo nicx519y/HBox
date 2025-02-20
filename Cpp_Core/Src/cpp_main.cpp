@@ -1,6 +1,7 @@
 #include "cpp_main.hpp"
 #include <stdio.h>
 #include "bsp/board_api.h"
+#include "board_cfg.h"
 #include "main_state_machine.hpp"
 #include "fsdata.h"
 #include "led.h"
@@ -12,18 +13,21 @@ extern "C" {
     int cpp_main(void) 
     {   
         board_init();
-        printf("================== board_init success. =======================\n");
+        APP_DBG("cpp_main: board_init success.");
+        
+        // 检查 SystemCoreClock
+        APP_DBG("cpp_main: SystemCoreClock = %lu Hz", SystemCoreClock);
         
         // Test FPU Status
         uint32_t fpscr = __get_FPSCR();
-        printf("================== FPSCR = 0x%08lx =======================\r\n", fpscr);
+        APP_DBG("cpp_main: FPSCR = 0x%08lx", fpscr);
 
         // 注册ADC消息
         MC.registerMessage(MessageId::DMA_ADC_CONV_CPLT);
         MC.registerMessage(MessageId::ADC_BTNS_STATE_CHANGED);
 
         getFSRoot();
-        printf("================== getFSRoot success. =======================\n");
+        APP_DBG("cpp_main: getFSRoot success.");
         // MainStateMachine::getInstance().setup();
 
         // InputMode inputMode = InputMode::INPUT_MODE_CONFIG;
@@ -38,26 +42,26 @@ extern "C" {
         // // Start the TinyUSB Device functionality
         // tud_init(TUD_OPT_RHPORT);
 
-        // uint32_t t = HAL_GetTick();
+        uint32_t t = HAL_GetTick();
+        APP_DBG("cpp_main: t = %d", t);
+        while(1) {
+            // APP_DBG("cpp_main: HAL_GetTick() = %d", HAL_GetTick());
+            if(HAL_GetTick() - t >= 1000)
+            {
+                APP_DBG("cpp_main: LED1_Toggle");
+                LED1_Toggle;
+                t = HAL_GetTick();
+            }
 
-        // while(1) {
-        //     if(HAL_GetTick() - t >= 1000)
-        //     {
-        //         printf("================== process =======================\n");
-        //         LED1_Toggle;
-        //         // gamepad.loop();
-        //         t = HAL_GetTick();
-        //     }
+            // if(configMode) {
+            //     ConfigManager::getInstance().loop();
+            // } else {
+            //     // inputDriver->process(&gamepad);
+            //     tud_task();
+            // }
+        }
 
-        //     if(configMode) {
-        //         ConfigManager::getInstance().loop();
-        //     } else {
-        //         // inputDriver->process(&gamepad);
-        //         tud_task();
-        //     }
-        // }
-
-        MAIN_STATE_MACHINE.setup();
+        // MAIN_STATE_MACHINE.setup();
 
         return 0;
     }

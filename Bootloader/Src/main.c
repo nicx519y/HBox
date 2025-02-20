@@ -21,7 +21,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "led.h"
 #include "usart.h"
 #include "qspi-w25q64.h"
 #include <string.h>
@@ -83,9 +82,6 @@ int main(void)
 
     /* USER CODE BEGIN Init */
     SystemClock_Config(); // 初始化时钟
-
-    LED_Init();          // LED初始化
-    LED1_ON;            // 先点亮LED
     
     USART1_Init();      // 串口初始化
     BOOT_DBG("\r\nsystem start...\r\n");
