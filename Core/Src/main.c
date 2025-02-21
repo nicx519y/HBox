@@ -57,6 +57,8 @@
 
 /* USER CODE END 0 */
 
+extern uint32_t _application_dst; // 引入外部符号
+
 /**
   * @brief  The application entry point.
   * @retval int
@@ -88,7 +90,7 @@ int main(void)
 		NVIC->ICER[i]=0xFFFFFFFF;
 		NVIC->ICPR[i]=0xFFFFFFFF;
 	}
-  SCB->VTOR = QSPI_BASE;
+  SCB->VTOR = (uint32_t)&_application_dst; // 设置中断向量表地址
   // 启用全局中断
   __enable_irq();
   // 允许中断
@@ -100,6 +102,7 @@ int main(void)
   // Enable the CPU Cache
   SCB_EnableICache(); /* Enable I-Cache */
   SCB_EnableDCache(); /* Enable D-Cache */
+
 
   cpp_main();
 

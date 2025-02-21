@@ -11,10 +11,11 @@ _Min_Stack_Size = 0x400;     /* required amount of stack */
 MEMORY
 {
   FLASH    (rx)    : ORIGIN = 0x08000000, LENGTH = 128K    /* 只读和执行权限 */
-  RAM_D1   (rw)    : ORIGIN = 0x24000000, LENGTH = 512K    /* 只读写权限 */
+  RAM_D1   (xrw)    : ORIGIN = 0x24000000, LENGTH = 512K   
   RAM_D2   (xrw)   : ORIGIN = 0x30000000, LENGTH = 288K   /* AHB SRAM */
   RAM_D3   (xrw)   : ORIGIN = 0x38000000, LENGTH = 64K    /* AHB SRAM */
   ITCMRAM  (xrw)   : ORIGIN = 0x00000000, LENGTH = 64K    /* ITCM RAM */
+  QSPIFLASH (rx)  : ORIGIN = 0x90000000, LENGTH = 256K    /* QSPI FLASH */
 }
 
 /* Sections */
@@ -134,5 +135,22 @@ SECTIONS
     libgcc.a ( * )
   }
 
+  .application :
+  {
+      . = ALIGN(4);
+      *(.application)
+      *(.application*)
+      . = ALIGN(4);
+  } >RAM_D2 AT >QSPIFLASH    /* 应用程序存储在QSPI Flash */
+
   .ARM.attributes 0 : { *(.ARM.attributes) }
+
+
+  PROVIDE(_application_src = LOADADDR(.application));     /* QSPI Flash起始地址: 0x90000000 */
+  PROVIDE(_application_dst = ADDR(.application));        /* RAM_D2起始地址 */
+  PROVIDE(_application_size = LENGTH(QSPIFLASH));      /* QSPI Flash大小: 256K */
 } 
+
+
+
+

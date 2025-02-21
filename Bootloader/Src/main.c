@@ -60,7 +60,9 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+extern uint32_t _application_src;    // QSPI Flash中应用程序的起始地址
+extern uint32_t _application_dst;    // RAM中应用程序的目标地址
+extern uint32_t _application_size;    // QSPI Flash中应用程序的结束地址
 /* USER CODE END 0 */
 
 /**
@@ -98,6 +100,30 @@ int main(void)
     HAL_MPU_Disable(); // 关闭MPU
     BOOT_DBG("\r\nMPU disabled\r\n");
 
+    // const uint32_t ram_addr = 0x30000000;
+
+    BOOT_DBG("Checking memory addresses:\r\n");
+    BOOT_DBG("_application_src: 0x%08X, \r\n", (uint32_t) &_application_src); 
+    BOOT_DBG("_application_dst: 0x%08X\r\n", (uint32_t) &_application_dst);    
+    BOOT_DBG("_application_size: 0x%08X\r\n", (uint32_t) &_application_size);  
+
+    // 拷贝应用程序到 从QSPI Flash 到 RAM_D2
+    const uint32_t app_size = &_application_size; // 根据实际程序大小调整
+    const uint32_t ram_addr = &_application_dst; // 根据实际RAM地址调整
+    const uint32_t qspi_addr = &_application_src; // 根据实际QSPI地址调整
+
+    BOOT_DBG("Copying application from QSPI to RAM...\r\n");
+    
+    // 进入XIP模式
+    if(QSPI_W25Qxx_EnterMemoryMappedMode() != QSPI_W25Qxx_OK) {
+        BOOT_DBG("Failed to enter memory mapped mode\r\n");
+        return -1;
+    }
+
+    // 拷贝应用程序 从QSPI Flash 到 RAM_D2
+    memcpy((void*)ram_addr, (void*)qspi_addr, app_size);
+
+
     SysTick->CTRL = 0; // 关闭SysTick
     SysTick->LOAD = 0; // 清零重载
     SysTick->VAL = 0;  // 清零计数
@@ -114,12 +140,13 @@ int main(void)
 
     BOOT_DBG("\r\nNVIC disabled\r\n");
 
-    JumpToApplication = (pFunction)(*(__IO uint32_t *)(W25Qxx_Mem_Addr + 4)); // 设置起始地址
-    __set_MSP(*(__IO uint32_t *)W25Qxx_Mem_Addr);                             // 设置主堆栈指
-    BOOT_DBG("Jump to W25Q64 user program>>>\r\n\r\n");
+    JumpToApplication = (pFunction)(*(__IO uint32_t *)(ram_addr + 4)); // 设置起始地址
+    __set_MSP(*(__IO uint32_t *)ram_addr);                             // 设置主堆栈指
+    BOOT_DBG("Jump to W25Q64 user program RAM_D1>>>\r\n\r\n");
 
     JumpToApplication(); // 执行跳转
 
+    while(1);
 }
 
 /**

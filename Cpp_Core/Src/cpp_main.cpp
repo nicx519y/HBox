@@ -27,6 +27,24 @@ extern "C" {
         MC.registerMessage(MessageId::ADC_BTNS_STATE_CHANGED);
 
         getFSRoot();
+
+        // 测试qspi flash
+        // QSPI_W25Qxx_ExitMemoryMappedMode();
+        // APP_DBG("cpp_main: QSPI_W25Qxx_ExitMemoryMappedMode success.");
+        // uint8_t data[1024];
+        // for (int i = 0; i < 1024; i++) {
+        //     data[i] = i;
+        // }
+        // QSPI_W25Qxx_WriteBuffer(data, 0x04000000, 1024);
+        // APP_DBG("cpp_main: QSPI_W25Qxx_WriteBuffer success.");
+
+        // uint8_t read_data[1024];
+        // QSPI_W25Qxx_ReadBuffer(read_data, 0x04000000, 1024);
+        // APP_DBG("cpp_main: QSPI_W25Qxx_ReadBuffer success.");
+        // for (int i = 0; i < 1024; i++) {
+        //     APP_DBG("cpp_main: read_data[%d] = 0x%02x", i, read_data[i]);
+        // }
+
         APP_DBG("cpp_main: getFSRoot success.");
 
         MAIN_STATE_MACHINE.setup();
