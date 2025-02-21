@@ -160,7 +160,7 @@ SECTIONS
 
         . = ALIGN(4);
         _edata = .;        /* define a global symbol at data end */
-    } >RAM_D1 AT> QSPIFLASH
+    } >DTCMRAM AT> QSPIFLASH
 
     /* Uninitialized data section */
     . = ALIGN(4);
