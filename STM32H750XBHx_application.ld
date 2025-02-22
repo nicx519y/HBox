@@ -68,7 +68,7 @@ MEMORY
     RAM_D2 (xrw)        : ORIGIN = 0x30000000, LENGTH = 288K
     RAM_D3 (xrw)        : ORIGIN = 0x38000000, LENGTH = 64K
     ITCMRAM (xrw)       : ORIGIN = 0x00000000, LENGTH = 64K
-    QSPIFLASH (rx)      : ORIGIN = 0x90000000, LENGTH = 256K  /* application 区域 */
+    QSPIFLASH (rx)      : ORIGIN = 0x90000000, LENGTH = 1M  /* application 区域 */
     WEB_RESOURCES (rx)  : ORIGIN = 0x90100000, LENGTH = 1M  /* web resources 区域 */
     HALL_BTNS_CONFIG (rx) : ORIGIN = 0x00200000, LENGTH = 1M  /* hall btns config 区域 */
     CONFIG (rx)         : ORIGIN = 0x00300000, LENGTH = 1M  /* config 区域 */

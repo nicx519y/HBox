@@ -15,8 +15,8 @@ MEMORY
   RAM_D2   (xrw)   : ORIGIN = 0x30000000, LENGTH = 288K   /* AHB SRAM */
   RAM_D3   (xrw)   : ORIGIN = 0x38000000, LENGTH = 64K    /* AHB SRAM */
   ITCMRAM  (xrw)   : ORIGIN = 0x00000000, LENGTH = 64K    /* ITCM RAM */
-  QSPIFLASH (rx)  : ORIGIN = 0x90000000, LENGTH = 1M    /* QSPI FLASH */
-  QSPIFLASH_METADATA (rx)  : ORIGIN = 0x90100000, LENGTH = 1K    /* QSPI FLASH */
+  QSPIFLASH (rx)  : ORIGIN = 0x90000000, LENGTH = 1M    /* 应用程序区域 */
+  QSPIFLASH_METADATA (rx)  : ORIGIN = 0x90100000, LENGTH = 4K    /* 元数据区域 */
 }
 
 /* Sections */
@@ -133,6 +133,7 @@ SECTIONS
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
+  /* 修改这些符号的定义 */
   PROVIDE(_QSPIFLASH_start = ORIGIN(QSPIFLASH));  
   PROVIDE(_QSPIFLASH_size = SIZEOF(QSPIFLASH)); 
   PROVIDE(_QSPIFLASH_METADATA_start = ORIGIN(QSPIFLASH_METADATA));  

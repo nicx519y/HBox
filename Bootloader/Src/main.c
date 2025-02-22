@@ -45,7 +45,7 @@ extern uint32_t _QSPIFLASH_size;
 extern uint32_t _QSPIFLASH_METADATA_start;
 extern uint32_t _QSPIFLASH_METADATA_size;
 
-const AppMetadata *metadata = (AppMetadata *)&_QSPIFLASH_METADATA_start;
+const AppMetadata *metadata = (AppMetadata *)QSPI_METADATA_ADDRESS;  // 使用正确的元数据地址
 /**
  * @brief  The application entry point.
  * @retval int
@@ -369,9 +369,10 @@ void assert_failed(uint8_t *file, uint32_t line)
 
 void copyCodeFromQSPIToRAM(void)
 {
-    AppMetadata *metadata = (AppMetadata *)&_QSPIFLASH_METADATA_start;
+    // 从正确的地址读取元数据
+    AppMetadata *metadata = (AppMetadata *)QSPI_METADATA_ADDRESS;
     
-    BOOT_DBG("Metadata address: 0x%08X", &_QSPIFLASH_METADATA_start);
+    BOOT_DBG("Metadata address: 0x%08X", QSPI_METADATA_ADDRESS);
     BOOT_DBG("Metadata magic: 0x%08X", metadata->magic);
 
     if(metadata->magic == METADATA_MAGIC) {
@@ -429,7 +430,23 @@ void copyCodeFromQSPIToRAM(void)
         size = metadata->isr_vector.vma_end - metadata->isr_vector.vma_start;
         if(size > 0) {
             BOOT_DBG("Copying ISR vector section");
-            memcpy((void*)metadata->isr_vector.vma_start, (void*)metadata->isr_vector.lma_start, size);
+            
+            // 打印源数据
+            BOOT_DBG("Source data (LMA):");
+            for(int i = 0; i < 16; i++) {
+                BOOT_DBG("ISR Vector %2d: 0x%08X", 
+                    i, *(uint32_t*)(metadata->isr_vector.lma_start + i * 4));
+            }
+            
+            memcpy((void*)metadata->isr_vector.vma_start, 
+                   (void*)metadata->isr_vector.lma_start, size);
+            
+            // 打印目标数据
+            BOOT_DBG("Destination data (VMA):");
+            for(int i = 0; i < 16; i++) {
+                BOOT_DBG("ISR Vector %2d: 0x%08X", 
+                    i, *(uint32_t*)(metadata->isr_vector.vma_start + i * 4));
+            }
         }
 
         BOOT_DBG("All sections copied successfully");

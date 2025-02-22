@@ -37,8 +37,8 @@
 #define QSPI_APP_ADDRESS        0x90000000  // 应用程序起始地址
 #define QSPI_APP_SIZE          0x100000    // 应用程序大小 (1MB)
 
-#define QSPI_NEW_FIRM_ADDRESS   0x90100000  // 新固件存储地址
-#define QSPI_NEW_FIRM_SIZE     0x100000    // 新固件区域大小 (1MB)
+#define QSPI_METADATA_ADDRESS   0x90100000  // 元数据存储地址
+#define QSPI_METADATA_SIZE     0x1000      // 元数据大小 (4KB)
 
 #define QSPI_USER_DATA_ADDRESS  0x90200000  // 用户数据起始地址
 #define QSPI_USER_DATA_SIZE    0x600000    // 用户数据区域大小 (6MB)
@@ -55,11 +55,11 @@ typedef struct {
         uint32_t vma_end;
         uint32_t lma_start;
         uint32_t lma_end;
-    } text,                  /* .text section */
-      data,                  /* .data section */
-      bss,                   /* .bss section */
-      rodata,                /* .rodata section */
-      isr_vector;           /* .isr_vector section */
+    } isr_vector,           /* .isr_vector section (must be first) */
+      text,                 /* .text section */
+      data,                 /* .data section */
+      bss,                  /* .bss section */
+      rodata;              /* .rodata section */
 } AppMetadata;
 
 // 定义魔数 (MTAD in little-endian)
