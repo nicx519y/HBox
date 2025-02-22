@@ -62,6 +62,7 @@ _Min_Stack_Size = 0x400;     /* required amount of stack */
 /* Specify the memory areas */
 MEMORY
 {
+    FLASH (rx)          : ORIGIN = 0x08000000, LENGTH = 128K
     DTCMRAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 128K
     RAM_D1 (xrw)        : ORIGIN = 0x24000000, LENGTH = 512K
     RAM_D2 (xrw)        : ORIGIN = 0x30000000, LENGTH = 288K
@@ -133,7 +134,7 @@ SECTIONS
 
         . = ALIGN(4);
         _edata = .;        /* define a global symbol at data end */
-    } >DTCMRAM
+    } >RAM_D2
 
     /* Uninitialized data section */
     . = ALIGN(4);
@@ -149,7 +150,7 @@ SECTIONS
         . = ALIGN(4);
         _ebss = .;         /* define a global symbol at bss end */
         __bss_end__ = _ebss;
-    } >RAM_D1
+    } >RAM_D2
 
     /* User_heap_stack section, used to check that there is enough RAM left */
     ._user_heap_stack :
@@ -160,7 +161,7 @@ SECTIONS
         . = . + _Min_Heap_Size;
         . = . + _Min_Stack_Size;
         . = ALIGN(8);
-    } >RAM_D1
+    } >DTCMRAM
 
     /* Remove information from the standard libraries */
     /DISCARD/ :
@@ -209,18 +210,8 @@ SECTIONS
         . = ALIGN(32);
     } >DTCMRAM
 
-    .application :
-    {
-        . = ALIGN(4);
-        *(.application)
-        *(.application*)
-        . = ALIGN(4);
-    } >RAM_D2 AT >QSPIFLASH    /* 应用程序存储在QSPI Flash */
-
     /* Define symbols for application */
-    PROVIDE(_application_src = LOADADDR(.application));     /* QSPI Flash起始地址: 0x90000000 */
-    PROVIDE(_application_dst = ADDR(.application));        /* RAM_D2起始地址 */
-    PROVIDE(_application_size = LENGTH(QSPIFLASH));      /* QSPI Flash大小: 256K */
+    PROVIDE(_application_dst = ORIGIN(RAM_D2));        /* RAM_D2起始地址 */
 }
 
 

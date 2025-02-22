@@ -55,13 +55,6 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
-  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
-  .ARM : {
-    __exidx_start = .;
-    *(.ARM.exidx*)
-    __exidx_end = .;
-  } >FLASH
-
   .preinit_array     :
   {
     PROVIDE_HIDDEN (__preinit_array_start = .);
@@ -133,21 +126,14 @@ SECTIONS
     libc.a ( * )
     libm.a ( * )
     libgcc.a ( * )
+    *(.ARM.exidx*)
+    *(.ARM.exidx.*)
   }
-
-  .application :
-  {
-      . = ALIGN(4);
-      *(.application)
-      *(.application*)
-      . = ALIGN(4);
-  } >RAM_D2 AT >QSPIFLASH    /* 应用程序存储在QSPI Flash */
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
 
-  PROVIDE(_application_src = LOADADDR(.application));     /* QSPI Flash起始地址: 0x90000000 */
-  PROVIDE(_application_dst = ADDR(.application));        /* RAM_D2起始地址 */
+  PROVIDE(_application_dst = ORIGIN(RAM_D2));        /* RAM_D2起始地址 */
   PROVIDE(_application_size = LENGTH(QSPIFLASH));      /* QSPI Flash大小: 256K */
 } 
 
