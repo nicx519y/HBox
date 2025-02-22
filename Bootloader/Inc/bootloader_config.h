@@ -1,6 +1,8 @@
 #ifndef __BOOTLOADER_CONFIG_H
 #define __BOOTLOADER_CONFIG_H
 
+#include <stdint.h>  // 添加这行来支持 uint32_t 类型
+
 // 调试开关
 #define BOOTLOADER_DEBUG 1  // 设置为 0 可以关闭调试输出
 
@@ -48,10 +50,16 @@
 // 添加元数据结构定义
 typedef struct {
     uint32_t magic;          /* Magic number: 'MTAD' */
-    uint32_t text_size;      /* .text section size */
-    uint32_t data_size;      /* .data section size */
-    uint32_t bss_size;       /* .bss section size */
-    uint32_t total_size;     /* Total size */
+    struct {
+        uint32_t vma_start;
+        uint32_t vma_end;
+        uint32_t lma_start;
+        uint32_t lma_end;
+    } sections[5];           /* .text, .data, .bss, .rodata, .isr_vector */
 } AppMetadata;
+
+// 定义魔数 (MTAD in little-endian)
+#define METADATA_MAGIC         (('D') | ('A' << 8) | ('T' << 16) | ('M' << 24))  // 0x4D544144
+#define METADATA_MAGIC_STR     "MTAD"  // 用于打印
 
 #endif /* __BOOTLOADER_CONFIG_H */ 

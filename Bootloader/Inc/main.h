@@ -30,23 +30,7 @@ extern "C" {
 #include "stm32h7xx_hal.h"
 #include <stdio.h>
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
-
-/* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
-
-/* USER CODE END ET */
-
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
-
-/* USER CODE END EC */
-
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
 
 // 重定向 printf 到串口
 #ifdef __GNUC__
@@ -66,6 +50,10 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
+
+#define METADATA_MAGIC         (('M' << 24) | ('T' << 16) | ('A' << 8) | 'D')  // 0x4D544144
+// 或者
+#define METADATA_MAGIC_STR     "MTAD"  // 用于打印
 
 /* USER CODE END Private defines */
 
