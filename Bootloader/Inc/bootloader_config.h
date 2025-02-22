@@ -45,4 +45,13 @@
 #define APPLICATION_ADDRESS 0x08020000
 #define MAX_FLASH_SIZE        0x00200000  // 2MB
 
+// 添加元数据结构定义
+typedef struct {
+    uint32_t magic;          /* Magic number: 'MTAD' */
+    uint32_t text_size;      /* .text section size */
+    uint32_t data_size;      /* .data section size */
+    uint32_t bss_size;       /* .bss section size */
+    uint32_t total_size;     /* Total size */
+} AppMetadata;
+
 #endif /* __BOOTLOADER_CONFIG_H */ 

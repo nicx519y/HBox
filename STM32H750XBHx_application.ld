@@ -77,27 +77,34 @@ MEMORY
 /* Define output sections */
 SECTIONS
 {
-    /* Web resources in QSPI Flash */
-    .web_resources :
+    /* 在程序开始处添加元数据段 */
+    .metadata_header :
     {
         . = ALIGN(4);
-        KEEP(*(.web_resources))
-        KEEP(*(.fsdata))
+        PROVIDE(__metadata_start = .);
+        LONG(0x4D544144);        /* 'MTAD' Magic number */
+        LONG(SIZEOF(.text));    /* .text section size */
+        LONG(__data_end - __data_start);   /* .data section size */
+        LONG(__bss_end - __bss_start);     /* .bss section size */
         . = ALIGN(4);
-    } >WEB_RESOURCES
+        PROVIDE(__metadata_end = .);
+    } >RAM_D2 AT >QSPIFLASH
 
-    /* The startup code goes first into FLASH */
+    /* The startup code goes first into RAM_D2 */
     .isr_vector :
     {
         . = ALIGN(4);
+        __isr_vector_start = .; /* 定义 .isr_vector 段的起始地址 */
         KEEP(*(.isr_vector)) /* Startup code */
         . = ALIGN(4);
-    } >RAM_D2
+        __isr_vector_end = .; /* 定义 .isr_vector 段的结束地址 */
+    } >RAM_D2 AT >QSPIFLASH
 
     /* The program code and other data goes into FLASH */
     .text :
     {
         . = ALIGN(4);
+        __text_start = .;  /* 定义 .text 段的起始地址 */
         *(.text)           /* .text sections (code) */
         *(.text*)          /* .text* sections (code) */
         *(.glue_7)         /* glue arm to thumb code */
@@ -108,48 +115,49 @@ SECTIONS
         KEEP (*(.fini))
 
         . = ALIGN(4);
+        __text_end = .;    /* 定义 .text 段的结束地址 */
         _etext = .;        /* define a global symbols at end of code */
-    } >RAM_D2
+    } >RAM_D2 AT >QSPIFLASH
 
     /* Constant data goes into FLASH */
     .rodata :
     {
         . = ALIGN(4);
+        __rodata_start = .; /* 定义 .rodata 段的起始地址 */
         *(.rodata)         /* .rodata sections (constants, strings, etc.) */
         *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
         . = ALIGN(4);
-    } >RAM_D2
-
-
-    /* used by the startup to initialize data */
-    _sidata = LOADADDR(.data);
+        __rodata_end = .;  /* 定义 .rodata 段的结束地址 */
+    } >FLASH
 
     /* Initialized data sections goes into RAM, load LMA copy after code */
     .data : 
     {
         . = ALIGN(4);
-        _sdata = .;        /* create a global symbol at data start */
-        *(.data)           /* .data sections */
-        *(.data*)          /* .data* sections */
+        _sidata = LOADADDR(.data);  /* 定义初始化数据的起始地址 */
+        __data_start = .;           /* 定义数据段的起始地址 */
+        _sdata = .;                  /* 定义数据段的起始地址 */
+        *(.data)                     /* .data sections */
+        *(.data*)                    /* .data* sections */
 
         . = ALIGN(4);
-        _edata = .;        /* define a global symbol at data end */
-    } >RAM_D2
+        __data_end = .;             /* 定义 .data 段的结束地址 */
+        _edata = .;                  /* define a global symbol at data end */
+    } >RAM_D2 AT >QSPIFLASH
 
     /* Uninitialized data section */
-    . = ALIGN(4);
     .bss :
     {
-        /* This is used by the startup in order to initialize the .bss secion */
+        . = ALIGN(4);
         _sbss = .;         /* define a global symbol at bss start */
-        __bss_start__ = _sbss;
+        __bss_start = .;   /* define alternative symbol for bss start */
         *(.bss)
         *(.bss*)
         *(COMMON)
 
         . = ALIGN(4);
         _ebss = .;         /* define a global symbol at bss end */
-        __bss_end__ = _ebss;
+        __bss_end = .;     /* define alternative symbol for bss end */
     } >RAM_D2
 
     /* User_heap_stack section, used to check that there is enough RAM left */
@@ -161,7 +169,7 @@ SECTIONS
         . = . + _Min_Heap_Size;
         . = . + _Min_Stack_Size;
         . = ALIGN(8);
-    } >DTCMRAM
+    } >RAM_D2
 
     /* Remove information from the standard libraries */
     /DISCARD/ :
@@ -210,9 +218,38 @@ SECTIONS
         . = ALIGN(32);
     } >DTCMRAM
 
+    /* Web resources in QSPI Flash */
+    .web_resources :
+    {
+        . = ALIGN(4);
+        KEEP(*(.web_resources))
+        KEEP(*(.fsdata))
+        . = ALIGN(4);
+    } >WEB_RESOURCES
+
     /* Define symbols for application */
-    PROVIDE(_application_dst = ORIGIN(RAM_D2));        /* RAM_D2起始地址 */
+    PROVIDE(__text_vma_start = ADDR(.text));            /* RAM 中的地址 */
+    PROVIDE(__text_vma_end = ADDR(.text) + SIZEOF(.text));
+    PROVIDE(__text_lma_start = LOADADDR(.text));        /* QSPI Flash 中的地址 */
+    PROVIDE(__text_lma_end = LOADADDR(.text) + SIZEOF(.text));
+
+    PROVIDE(__data_vma_start = ADDR(.data));
+    PROVIDE(__data_vma_end = ADDR(.data) + SIZEOF(.data));
+    PROVIDE(__data_lma_start = LOADADDR(.data));
+    PROVIDE(__data_lma_end = LOADADDR(.data) + SIZEOF(.data));
+    
+    PROVIDE(__bss_vma_start = ADDR(.bss));
+    PROVIDE(__bss_vma_end = ADDR(.bss) + SIZEOF(.bss));
+
+    PROVIDE(__rodata_vma_start = ADDR(.rodata));
+    PROVIDE(__rodata_vma_end = ADDR(.rodata) + SIZEOF(.rodata));
+
+    PROVIDE(__isr_vector_vma_start = ADDR(.isr_vector));
+    PROVIDE(__isr_vector_vma_end = ADDR(.isr_vector) + SIZEOF(.isr_vector));
+    PROVIDE(__isr_vector_lma_start = LOADADDR(.isr_vector));
+    PROVIDE(__isr_vector_lma_end = LOADADDR(.isr_vector) + SIZEOF(.isr_vector));
 }
+
 
 
 

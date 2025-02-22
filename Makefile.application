@@ -120,7 +120,7 @@ LDFLAGS = $(MCU) -specs=nano.specs -specs=nosys.specs $(LIBS) -Wl,--gc-sections 
 LDFLAGS += -flto -Wl,--gc-sections -Wl,--strip-debug
 
 # 编译规则
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin metadata
 
 $(BUILD_DIR):
 	@if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
@@ -146,7 +146,7 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 
 clean:
 	@echo "Cleaning application build files..."
-	-if exist $(BUILD_DIR) rd /s /q $(BUILD_DIR)
+	@if exist $(BUILD_DIR) rd /s /q $(BUILD_DIR)
 	@echo "Clean complete"
 
 print-debug:
@@ -157,20 +157,24 @@ print-debug:
 
 .PHONY: all clean print-debug
 
-# 下载
-flash:
+# 添加生成元数据的目标
+metadata: $(BUILD_DIR)/$(TARGET).hex
+	@echo "Generating metadata..."
+	@python scripts/generate_metadata.py $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/metadata.bin $(BUILD_DIR)/metadata.txt
+
+# 修改烧录命令以包含元数据
+flash: $(BUILD_DIR)/$(TARGET).hex metadata
 	openocd \
 	-d0 \
 	-f Openocd_Script/ST-LINK-QSPIFLASH.cfg \
 	-c init \
 	-c halt \
 	-c "reset init" \
-	-c "qspi_init" \
 	-c "flash write_image erase $(BUILD_DIR)/$(TARGET).hex 0x00000000" \
 	-c "flash verify_image $(BUILD_DIR)/$(TARGET).hex 0x00000000" \
+	-c "load_image $(BUILD_DIR)/metadata.bin 0x90100000" \
 	-c reset \
-	-c shutdown 
-
+	-c shutdown
 
 # ExFsData file path
 WEB_RESOURCES_PATH = Libs/httpd/ex_fsdata.bin

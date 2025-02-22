@@ -57,7 +57,6 @@
 
 /* USER CODE END 0 */
 
-extern uint32_t _application_dst; // 引入外部符号
 
 /**
   * @brief  The application entry point.
@@ -90,7 +89,7 @@ int main(void)
 		NVIC->ICER[i]=0xFFFFFFFF;
 		NVIC->ICPR[i]=0xFFFFFFFF;
 	}
-  SCB->VTOR = (uint32_t)&_application_dst; // 设置中断向量表地址
+  SCB->VTOR = 0x30000000; // 设置中断向量表地址
   // 启用全局中断
   __enable_irq();
   // 允许中断

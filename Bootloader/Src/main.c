@@ -53,6 +53,7 @@ int8_t mmpResult = -1;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void checkInterruptVectorTable(void);
 static void MPU_Config(void);
 /* USER CODE BEGIN PFP */
 
@@ -62,6 +63,7 @@ static void MPU_Config(void);
 /* USER CODE BEGIN 0 */
 extern uint32_t _application_dst;    // RAM中应用程序的目标地址
 extern uint32_t _application_size;    // QSPI Flash中应用程序的结束地址
+extern uint32_t _application_length;    //RAM_D2的大小
 /* USER CODE END 0 */
 
 /**
@@ -107,7 +109,7 @@ int main(void)
 
     // 拷贝应用程序到 从QSPI Flash 到 RAM_D2
     const uint32_t app_size = &_application_size; // 根据实际程序大小调整
-    const uint32_t ram_addr = &_application_dst; // 根据实际RAM地址调整
+    uint32_t ram_addr = &_application_dst; // 根据实际RAM地址调整
 
     BOOT_DBG("Copying application from QSPI to RAM...\r\n");
     
@@ -120,15 +122,16 @@ int main(void)
     // // 拷贝应用程序 从QSPI Flash 到 RAM_D2
     // memcpy((void*)ram_addr, (void*)qspi_addr, app_size);
 
-    // 拷贝应用程序 从QSPI Flash 到 RAM_D2
+    // 拷贝应用程序 从QSPI Flash 到 RAM_D1
     if(QSPI_W25Qxx_ReadBuffer((uint8_t*)ram_addr, 0x00000000, app_size) != QSPI_W25Qxx_OK) {
-        BOOT_DBG("Failed to read application from QSPI Flash to RAM_D2\r\n");
+        BOOT_DBG("Failed to read application from QSPI Flash to RAM_D1\r\n");
         return -1;
     }
 
-    BOOT_DBG("Application copied to RAM_D2\r\n");
+    BOOT_DBG("Application copied to RAM_D1\r\n");
 
-    QSPI_W25Qxx_EnterMemoryMappedMode();
+    // QSPI_W25Qxx_EnterMemoryMappedMode();
+    
 
     SysTick->CTRL = 0; // 关闭SysTick
     SysTick->LOAD = 0; // 清零重载
@@ -136,23 +139,33 @@ int main(void)
     BOOT_DBG("\r\nSysTick disabled\r\n");
 
     SCB->VTOR = (uint32_t)ram_addr; // 设置中断向量表地址
+    // 检查中断向量表地址是否设置正确
+    checkInterruptVectorTable();
 
     for (uint8_t i = 0; i < 8; i++)
     { // clear all NVIC Enable and Pending registers
         NVIC->ICER[i] = 0xFFFFFFFF;
         NVIC->ICPR[i] = 0xFFFFFFFF;
     }
+
     __set_CONTROL(0); // priviage mode
     __disable_irq();  // disable interrupt
     __set_PRIMASK(1);
 
+    
+    
+
     BOOT_DBG("\r\nNVIC disabled\r\n");
+
+    BOOT_DBG("ram_addr: 0x%08X\r\n", (uint32_t)ram_addr);
 
     JumpToApplication = (pFunction)(*(__IO uint32_t *)(ram_addr + 4)); // 设置起始地址
     __set_MSP(*(__IO uint32_t *)ram_addr);                             // 设置主堆栈指
     BOOT_DBG("Jump to W25Q64 user program RAM_D2>>>\r\n\r\n");
 
     JumpToApplication(); // 执行跳转
+
+    print_app_metadata();
 
     while(1);
 }
@@ -263,6 +276,54 @@ void MPU_Config(void)
     HAL_MPU_ConfigRegion(&MPU_InitStruct);
     /* Enables the MPU */
     HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
+
+}
+
+// 定义中断向量表的大小
+#define NVIC_NUM_INTERRUPTS 166 // 根据实际中断数量调整
+
+void checkInterruptVectorTable(void)
+{
+    // 获取中断向量表的起始地址
+    uint32_t *vectorTable = (uint32_t *)SCB->VTOR;
+    BOOT_DBG("Checking interrupt vector table...\r\n");
+
+    // 检查每个中断处理程序的地址
+    for (uint32_t i = 0; i < NVIC_NUM_INTERRUPTS; i++)
+    {
+        uint32_t handlerAddress = vectorTable[i];
+
+        // 检查是否指向 QSPI Flash (0x9xxxxxxx)
+        if ((handlerAddress & 0xF0000000) == 0x90000000)
+        {
+            // 计算相对偏移量并重定向到 RAM_D2
+            uint32_t offset = handlerAddress - 0x90000000;
+            uint32_t new_address = (uint32_t)&_application_dst + offset;
+
+            // 更新向量表
+            // vectorTable[i] = new_address;
+
+            BOOT_DBG("Fixed vector %d: 0x%08X -> 0x%08X", i, handlerAddress, new_address);
+        } else {
+            BOOT_DBG("Vector %d OK: 0x%08X", i, handlerAddress);
+        }
+
+        // // 检查修复后的地址是否在 RAM_D2 范围内
+        // handlerAddress = vectorTable[i];
+        // if (handlerAddress < (uint32_t)&_application_dst || 
+        //     handlerAddress >= ((uint32_t)&_application_dst + 256 * 1024))
+        // {
+        //     BOOT_DBG("Warning: vector %d is not in RAM_D1: 0x%08X", i, handlerAddress);
+        // }
+        // else
+        // {
+        //     BOOT_DBG("Vector %d OK: 0x%08X\r\n", i, handlerAddress);
+        // }
+    }
+
+    // 确保修改生效
+    __DSB();
+    __ISB();
 }
 
 /**
@@ -294,3 +355,18 @@ void assert_failed(uint8_t *file, uint32_t line)
     /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+void print_app_metadata(void)
+{
+    AppMetadata *metadata = (AppMetadata *)0x30000000;
+    
+    if(metadata->magic == 0x4D544144) {
+        BOOT_DBG("Application Metadata:\r\n");
+        BOOT_DBG("Text size: %d bytes\r\n", metadata->text_size);
+        BOOT_DBG("Data size: %d bytes\r\n", metadata->data_size);
+        BOOT_DBG("BSS size: %d bytes\r\n", metadata->bss_size);
+        BOOT_DBG("Total size: %d bytes\r\n", metadata->total_size);
+    } else {
+        BOOT_DBG("Invalid metadata magic number\r\n");
+    }
+}

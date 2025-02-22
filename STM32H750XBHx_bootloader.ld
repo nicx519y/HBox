@@ -2,7 +2,7 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);    /* end of "RAM_D1" Ram type memory */
+_estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);    /* end of "RAM_D2" Ram type memory */
 
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
 _Min_Stack_Size = 0x400;     /* required amount of stack */
@@ -91,7 +91,7 @@ SECTIONS
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-  } >RAM_D1 AT> FLASH
+  } >RAM_D3 AT> FLASH
 
   /* Uninitialized data section */
   . = ALIGN(4);
@@ -107,7 +107,7 @@ SECTIONS
     . = ALIGN(4);
     _ebss = .;         /* define a global symbol at bss end */
     __bss_end__ = _ebss;
-  } >RAM_D1
+  } >RAM_D3
 
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :
@@ -118,7 +118,7 @@ SECTIONS
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
-  } >RAM_D1
+  } >RAM_D3
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :
@@ -133,8 +133,9 @@ SECTIONS
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
 
-  PROVIDE(_application_dst = ORIGIN(RAM_D2));        /* RAM_D2起始地址 */
-  PROVIDE(_application_size = LENGTH(QSPIFLASH));      /* QSPI Flash大小: 256K */
+  PROVIDE(_application_dst = ORIGIN(RAM_D2));        /* RAM_D1起始地址 */
+  PROVIDE(_application_length = 256K);     /* QSPI Flash起始地址: 0x90000000 */
+  PROVIDE(_application_size = 256K);      /* QSPI Flash大小: 256K */
 } 
 
 
