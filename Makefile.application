@@ -158,21 +158,21 @@ print-debug:
 .PHONY: all clean print-debug
 
 # 添加生成元数据的目标
-metadata: $(BUILD_DIR)/$(TARGET).hex
+metadata: $(BUILD_DIR)/$(TARGET).elf
 	@echo "Generating metadata..."
 	@python scripts/generate_metadata.py $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/metadata.bin $(BUILD_DIR)/metadata.txt
 
 # 修改烧录命令以包含元数据
-flash: $(BUILD_DIR)/$(TARGET).hex metadata
+flash: $(BUILD_DIR)/$(TARGET).elf metadata
 	openocd \
 	-d0 \
 	-f Openocd_Script/ST-LINK-QSPIFLASH.cfg \
 	-c init \
 	-c halt \
 	-c "reset init" \
-	-c "flash write_image erase $(BUILD_DIR)/$(TARGET).hex 0x90000000" \
+	-c "flash write_image erase $(BUILD_DIR)/$(TARGET).elf 0x90000000" \
 	-c "flash write_image erase $(BUILD_DIR)/metadata.bin 0x90100000" \
-	-c "flash verify_image $(BUILD_DIR)/$(TARGET).hex 0x90000000" \
+	-c "flash verify_image $(BUILD_DIR)/$(TARGET).elf 0x90000000" \
 	-c "flash verify_image $(BUILD_DIR)/metadata.bin 0x90100000" \
 	-c reset \
 	-c shutdown

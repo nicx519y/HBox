@@ -2,7 +2,7 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);    /* end of "RAM_D2" Ram type memory */
+_estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);    /* end of "RAM_D3" Ram type memory */
 
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
 _Min_Stack_Size = 0x400;     /* required amount of stack */
@@ -133,9 +133,6 @@ SECTIONS
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
-
-  PROVIDE(_RAM_D2_start = ORIGIN(RAM_D2));  
-  PROVIDE(_RAM_D2_size = SIZEOF(RAM_D2));    
   PROVIDE(_QSPIFLASH_start = ORIGIN(QSPIFLASH));  
   PROVIDE(_QSPIFLASH_size = SIZEOF(QSPIFLASH)); 
   PROVIDE(_QSPIFLASH_METADATA_start = ORIGIN(QSPIFLASH_METADATA));  

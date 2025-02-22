@@ -70,53 +70,29 @@ MEMORY
     ITCMRAM (xrw)       : ORIGIN = 0x00000000, LENGTH = 64K
     QSPIFLASH (rx)      : ORIGIN = 0x90000000, LENGTH = 256K  /* application 区域 */
     WEB_RESOURCES (rx)  : ORIGIN = 0x90100000, LENGTH = 1M  /* web resources 区域 */
-    ADC_VALUES_MAPPING (rx) : ORIGIN = 0x00200000, LENGTH = 1M  /* adc values mapping 区域 */
+    HALL_BTNS_CONFIG (rx) : ORIGIN = 0x00200000, LENGTH = 1M  /* hall btns config 区域 */
     CONFIG (rx)         : ORIGIN = 0x00300000, LENGTH = 1M  /* config 区域 */
 }
 
 /* Define output sections */
 SECTIONS
 {
-    /* 在程序开始处添加元数据段 */
-    .metadata_header :
-    {
-        . = ALIGN(4);
-        PROVIDE(__metadata_start = .);
-        LONG(0x4D544144);        /* 'MTAD' Magic number */
-        LONG(SIZEOF(.text));    /* .text section size */
-        LONG(__data_end - __data_start);   /* .data section size */
-        LONG(__bss_end - __bss_start);     /* .bss section size */
-        . = ALIGN(4);
-        PROVIDE(__metadata_end = .);
-    } >RAM_D2 AT >QSPIFLASH
 
     /* The startup code goes first into RAM_D2 */
     .isr_vector :
     {
         . = ALIGN(4);
-        __isr_vector_start = .; /* 定义 .isr_vector 段的起始地址 */
         KEEP(*(.isr_vector)) /* Startup code */
         . = ALIGN(4);
-        __isr_vector_end = .; /* 定义 .isr_vector 段的结束地址 */
     } >RAM_D2 AT >QSPIFLASH
 
-    /* The program code and other data goes into FLASH */
+    /* The program code and other data goes into RAM_D2 */
     .text :
     {
         . = ALIGN(4);
-        __text_start = .;  /* 定义 .text 段的起始地址 */
         *(.text)           /* .text sections (code) */
         *(.text*)          /* .text* sections (code) */
-        *(.glue_7)         /* glue arm to thumb code */
-        *(.glue_7t)        /* glue thumb to arm code */
-        *(.eh_frame)
-
-        KEEP (*(.init))
-        KEEP (*(.fini))
-
         . = ALIGN(4);
-        __text_end = .;    /* 定义 .text 段的结束地址 */
-        _etext = .;        /* define a global symbols at end of code */
     } >RAM_D2 AT >QSPIFLASH
 
     /* Constant data goes into FLASH */
@@ -128,7 +104,7 @@ SECTIONS
         *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
         . = ALIGN(4);
         __rodata_end = .;  /* 定义 .rodata 段的结束地址 */
-    } >FLASH
+    } >RAM_D2 AT >QSPIFLASH
 
     /* Initialized data sections goes into RAM, load LMA copy after code */
     .data : 
@@ -169,7 +145,7 @@ SECTIONS
         . = . + _Min_Heap_Size;
         . = . + _Min_Stack_Size;
         . = ALIGN(8);
-    } >RAM_D2
+    } >DTCMRAM
 
     /* Remove information from the standard libraries */
     /DISCARD/ :

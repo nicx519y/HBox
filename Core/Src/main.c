@@ -102,7 +102,6 @@ int main(void)
   SCB_EnableICache(); /* Enable I-Cache */
   SCB_EnableDCache(); /* Enable D-Cache */
 
-
   cpp_main();
 
   // 到不了这

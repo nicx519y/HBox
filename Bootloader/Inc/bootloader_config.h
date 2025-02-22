@@ -55,7 +55,11 @@ typedef struct {
         uint32_t vma_end;
         uint32_t lma_start;
         uint32_t lma_end;
-    } sections[5];           /* .text, .data, .bss, .rodata, .isr_vector */
+    } text,                  /* .text section */
+      data,                  /* .data section */
+      bss,                   /* .bss section */
+      rodata,                /* .rodata section */
+      isr_vector;           /* .isr_vector section */
 } AppMetadata;
 
 // 定义魔数 (MTAD in little-endian)
