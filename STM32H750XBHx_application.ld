@@ -91,7 +91,7 @@ SECTIONS
         . = ALIGN(4);
         KEEP(*(.isr_vector)) /* Startup code */
         . = ALIGN(4);
-    } >QSPIFLASH
+    } >RAM_D2
 
     /* The program code and other data goes into FLASH */
     .text :
@@ -108,7 +108,7 @@ SECTIONS
 
         . = ALIGN(4);
         _etext = .;        /* define a global symbols at end of code */
-    } >QSPIFLASH
+    } >RAM_D2
 
     /* Constant data goes into FLASH */
     .rodata :
@@ -117,35 +117,8 @@ SECTIONS
         *(.rodata)         /* .rodata sections (constants, strings, etc.) */
         *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
         . = ALIGN(4);
-    } >QSPIFLASH
+    } >RAM_D2
 
-    .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >QSPIFLASH
-    .ARM : {
-        __exidx_start = .;
-        *(.ARM.exidx*)
-        __exidx_end = .;
-    } >QSPIFLASH
-
-    .preinit_array     :
-    {
-        PROVIDE_HIDDEN (__preinit_array_start = .);
-        KEEP (*(.preinit_array*))
-        PROVIDE_HIDDEN (__preinit_array_end = .);
-    } >QSPIFLASH
-    .init_array :
-    {
-        PROVIDE_HIDDEN (__init_array_start = .);
-        KEEP (*(SORT(.init_array.*)))
-        KEEP (*(.init_array*))
-        PROVIDE_HIDDEN (__init_array_end = .);
-    } >QSPIFLASH
-    .fini_array :
-    {
-        PROVIDE_HIDDEN (__fini_array_start = .);
-        KEEP (*(SORT(.fini_array.*)))
-        KEEP (*(.fini_array*))
-        PROVIDE_HIDDEN (__fini_array_end = .);
-    } >QSPIFLASH
 
     /* used by the startup to initialize data */
     _sidata = LOADADDR(.data);
@@ -160,7 +133,7 @@ SECTIONS
 
         . = ALIGN(4);
         _edata = .;        /* define a global symbol at data end */
-    } >DTCMRAM AT> QSPIFLASH
+    } >DTCMRAM
 
     /* Uninitialized data section */
     . = ALIGN(4);
@@ -195,6 +168,8 @@ SECTIONS
         libc.a ( * )
         libm.a ( * )
         libgcc.a ( * )
+        *(.ARM.exidx*)
+        *(.ARM.exidx.*)
     }
 
     .ARM.attributes 0 : { *(.ARM.attributes) }

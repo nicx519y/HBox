@@ -171,16 +171,7 @@ int8_t QSPI_W25Qxx_Init(void)
 	Device_ID = QSPI_W25Qxx_ReadID();
 	
 	if(Device_ID == W25Qxx_FLASH_ID)
-	{
-		printf("W25Q64 OK, flash ID:%X\r\n", (unsigned int)Device_ID);
-		
-		// 初始化成功后立即开启XIP模式
-		if(QSPI_W25Qxx_EnterMemoryMappedMode() != QSPI_W25Qxx_OK) {
-			printf("Enable XIP mode failed!\r\n");
-			return W25Qxx_ERROR_INIT;
-		}
-		printf("XIP mode enabled.\r\n");
-		
+	{	
 		return QSPI_W25Qxx_OK;
 	}
 	else
@@ -709,11 +700,6 @@ int8_t QSPI_W25Qxx_WritePage(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumB
 int8_t QSPI_W25Qxx_WriteBuffer(uint8_t* pBuffer, uint32_t WriteAddr, uint32_t NumByteToWrite)
 {   
 	int8_t status;
-	
-	// 退出XIP模式
-	if((status = QSPI_W25Qxx_ExitMemoryMappedMode()) != QSPI_W25Qxx_OK) {
-		return status;
-	}
 
 	// 计算需要擦除的扇区范围
 	uint32_t start_sector = WriteAddr & ~(W25Qxx_SECTOR_SIZE - 1);
@@ -726,7 +712,7 @@ int8_t QSPI_W25Qxx_WriteBuffer(uint8_t* pBuffer, uint32_t WriteAddr, uint32_t Nu
 	for(uint32_t sector = start_sector; sector <= end_sector; sector += W25Qxx_SECTOR_SIZE) {
 		printf("Erasing sector at address 0x%X\n", (unsigned int)sector);
 		if((status = QSPI_W25Qxx_SectorErase(sector)) != QSPI_W25Qxx_OK) {
-			goto exit;
+			return status;
 		}
 	}
 
@@ -745,12 +731,12 @@ int8_t QSPI_W25Qxx_WriteBuffer(uint8_t* pBuffer, uint32_t WriteAddr, uint32_t Nu
 		// 写使能
 		if (QSPI_W25Qxx_WriteEnable() != QSPI_W25Qxx_OK) {
 			status = W25Qxx_ERROR_WriteEnable;
-			goto exit;
+			return status;
 		}
 
 		// 写入数据
 		if((status = QSPI_W25Qxx_WritePage(write_data, current_addr, current_size)) != QSPI_W25Qxx_OK) {
-			goto exit;
+			return status;
 		}
 
 		current_addr += current_size;
@@ -758,11 +744,7 @@ int8_t QSPI_W25Qxx_WriteBuffer(uint8_t* pBuffer, uint32_t WriteAddr, uint32_t Nu
 	}
 
 	status = QSPI_W25Qxx_OK;
-
-exit:
-	// 恢复XIP模式
-	int8_t xip_status = QSPI_W25Qxx_EnterMemoryMappedMode();
-	return (status != QSPI_W25Qxx_OK) ? status : xip_status;
+	return status;
 }
 
 /**
@@ -785,11 +767,6 @@ exit:
 int8_t QSPI_W25Qxx_ReadBuffer(uint8_t* pBuffer, uint32_t ReadAddr, uint32_t NumByteToRead)
 {
 	int8_t status;
-	
-	// 退出XIP模式
-	if((status = QSPI_W25Qxx_ExitMemoryMappedMode()) != QSPI_W25Qxx_OK) {
-		return status;
-	}
 
 	QSPI_CommandTypeDef s_command;
 	
@@ -808,20 +785,16 @@ int8_t QSPI_W25Qxx_ReadBuffer(uint8_t* pBuffer, uint32_t ReadAddr, uint32_t NumB
 	
 	if (HAL_QSPI_Command(&hqspi, &s_command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
 		status = W25Qxx_ERROR_TRANSMIT;
-		goto exit;
+		return status;
 	}
 
 	if (HAL_QSPI_Receive(&hqspi, pBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
 		status = W25Qxx_ERROR_TRANSMIT;
-		goto exit;
+		return status;
 	}
 
 	status = QSPI_W25Qxx_OK;
-
-exit:
-	// 恢复XIP模式
-	int8_t xip_status = QSPI_W25Qxx_EnterMemoryMappedMode();
-	return (status != QSPI_W25Qxx_OK) ? status : xip_status;
+	return status;
 }
 
 // 添加测试函数
@@ -971,12 +944,6 @@ int8_t QSPI_W25Qxx_BufferErase(uint32_t StartAddr, uint32_t Size)
         return W25Qxx_ERROR_TRANSMIT;
     }
 
-    // 退出内存映射模式
-    result = QSPI_W25Qxx_ExitMemoryMappedMode();
-    if(result != QSPI_W25Qxx_OK) {
-        return result;
-    }
-
     // 写使能
     result = QSPI_W25Qxx_WriteEnable();
     if(result != QSPI_W25Qxx_OK) {
@@ -993,7 +960,7 @@ int8_t QSPI_W25Qxx_BufferErase(uint32_t StartAddr, uint32_t Size)
         if(remainSize >= 64*1024 && (CurrentAddr & (64*1024-1)) == 0) {
             result = QSPI_W25Qxx_BlockErase_64K(CurrentAddr);
             if(result != QSPI_W25Qxx_OK) {
-                goto exit;
+                return result;
             }
             CurrentAddr += 64*1024;
         }
@@ -1001,7 +968,7 @@ int8_t QSPI_W25Qxx_BufferErase(uint32_t StartAddr, uint32_t Size)
         else if(remainSize >= 32*1024 && (CurrentAddr & (32*1024-1)) == 0) {
             result = QSPI_W25Qxx_BlockErase_32K(CurrentAddr);
             if(result != QSPI_W25Qxx_OK) {
-                goto exit;
+                return result;
             }
             CurrentAddr += 32*1024;
         }
@@ -1009,7 +976,7 @@ int8_t QSPI_W25Qxx_BufferErase(uint32_t StartAddr, uint32_t Size)
         else {
             result = QSPI_W25Qxx_SectorErase(CurrentAddr);
             if(result != QSPI_W25Qxx_OK) {
-                goto exit;
+                return result;
             }
             CurrentAddr += 4*1024;
         }
@@ -1017,23 +984,16 @@ int8_t QSPI_W25Qxx_BufferErase(uint32_t StartAddr, uint32_t Size)
         // 等待擦除完成
         result = QSPI_W25Qxx_AutoPollingMemReady();
         if(result != QSPI_W25Qxx_OK) {
-            goto exit;
+            return result;
         }
 
         // 重新写使能
         result = QSPI_W25Qxx_WriteEnable();
         if(result != QSPI_W25Qxx_OK) {
-            goto exit;
+            return result;
         }
     }
 
     result = QSPI_W25Qxx_OK;
-
-exit:
-    // 恢复内存映射模式
-    if(QSPI_W25Qxx_ExitMemoryMappedMode() != QSPI_W25Qxx_OK) {
-        return W25Qxx_ERROR_MemoryMapped;
-    }
-
-    return result;
+	return result;
 }
