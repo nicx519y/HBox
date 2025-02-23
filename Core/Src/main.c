@@ -65,54 +65,37 @@ extern uint32_t __isr_vector_vma_start; // 中断向量表VMA起始地址
   */
 int main(void)
 {
-  /* Enable FPU */
-  // 启用 CP10 和 CP11 全访问
-  SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));
-  
-  // 启用 FPU 并配置它
-  FPU->FPCCR |= FPU_FPCCR_ASPEN_Msk | FPU_FPCCR_LSPEN_Msk;
-  FPU->FPCAR = 0;
-  FPU->FPDSCR = 0;
-  
-  // 清除浮点状态和控制寄存器
-  __set_FPSCR(0);
-  
-  // 确保所有 FPU 指令完成并刷新流水线
-  __DSB();
-  __ISB();
-  __DMB();
+    // 禁用所有中断
+    __disable_irq();
+    
+    // 初始化串口（用于调试输出）
+    USART1_Init();
+    printf("\r\nApplication started!\r\n");
+    
+    // 初始化系统时钟
+    SystemClock_Config();
+    
+    // 启用 FPU
+    SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));
+    
+    // 启用缓存
+    SCB_EnableICache();
+    SCB_EnableDCache();
+    
+    // 启用中断
+    __enable_irq();
+    
+    // 继续执行应用程序
+    cpp_main();
 
-  /* MCU Configuration--------------------------------------------------------*/
+    // 到不了这
+    while (1)
+    {
+        /* USER CODE END WHILE */
 
-  // 清除所有中断
-  for(uint8_t i = 0; i < 8; i++)
-	{
-		NVIC->ICER[i]=0xFFFFFFFF;
-		NVIC->ICPR[i]=0xFFFFFFFF;
-	}
-  SCB->VTOR = &__isr_vector_vma_start; // 设置中断向量表地址
-  // 启用全局中断
-  __enable_irq();
-  // 允许中断
-	__set_PRIMASK(0);
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  // Enable the CPU Cache
-  SCB_EnableICache(); /* Enable I-Cache */
-  SCB_EnableDCache(); /* Enable D-Cache */
-
-  cpp_main();
-
-  // 到不了这
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+        /* USER CODE BEGIN 3 */
+    }
+    /* USER CODE END 3 */
 }
 
 /**

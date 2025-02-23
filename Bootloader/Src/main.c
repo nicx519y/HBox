@@ -37,6 +37,7 @@ int8_t mmpResult = -1;
 void SystemClock_Config(void);
 static void MPU_Config(void);
 void copyCodeFromQSPIToRAM(void);
+void jump_to_application(uint32_t app_entry, uint32_t app_stack, uint32_t vtor_addr);
 
 
 extern uint32_t _QSPIFLASH_start;
@@ -93,56 +94,15 @@ int main(void)
     const uint32_t vtor_addr = metadata->isr_vector.vma_start;
     const uint32_t vtor_lma = metadata->isr_vector.lma_start;
     
-    // 设置中断向量表
-    SCB->VTOR = vtor_addr;
-    
-    // 清除所有中断
-    for (uint8_t i = 0; i < 8; i++) {
-        NVIC->ICER[i] = 0xFFFFFFFF;
-        NVIC->ICPR[i] = 0xFFFFFFFF;
-    }
-
-    // 关闭所有外设中断
-    SysTick->CTRL = 0;
-    SysTick->LOAD = 0;
-    SysTick->VAL = 0;
-
-    // 设置特权级别和禁用中断
-    __set_CONTROL(0);
-    __disable_irq();
-    __set_PRIMASK(1);
-
-    // 内存屏障
-    __DSB();
-    __ISB();
-
-    // 验证向量表内容
-    uint32_t *vector_table = (uint32_t *)vtor_addr;
-    BOOT_DBG("Vector Table Contents: vtor_addr = 0x%08X, vtor_lma = 0x%08X", vtor_addr, vtor_lma);
-    for(int i = 0; i < 8; i++) {
-        BOOT_DBG("  [%d]: 0x%08X", i, vector_table[i]);
-    }
-
     // 获取应用程序入口点和堆栈指针
     uint32_t app_entry = *((uint32_t*)(vtor_addr + 4));  // 取地址中的值
     uint32_t app_stack = *((uint32_t*)vtor_addr);        // 取地址中的值
 
-    BOOT_DBG("VTOR: 0x%08X\r\n", SCB->VTOR);
+    
     BOOT_DBG("Application Stack: 0x%08X\r\n", app_stack);
     BOOT_DBG("Application Entry: 0x%08X\r\n", app_entry);
 
-    // 设置堆栈指针
-    __set_MSP(app_stack);
-    
-    BOOT_DBG("Stack pointer set successfully\r\n");
-    // 跳转到应用程序
-    JumpToApplication = (pFunction)app_entry;
-
-    BOOT_DBG("Ready to jump to application at 0x%08X\r\n", app_entry);
-
-    JumpToApplication();
-
-    BOOT_DBG("Jump to application failed\r\n");
+    jump_to_application(app_entry, app_stack, vtor_addr);
 
     while (1)
     {
@@ -362,4 +322,46 @@ void copyCodeFromQSPIToRAM(void)
     } else {
         BOOT_ERR("Invalid metadata magic number: 0x%08X", metadata->magic);
     }
+}
+
+void jump_to_application(uint32_t app_entry, uint32_t app_stack, uint32_t vtor_addr)
+{
+    // 关闭所有中断
+    __disable_irq();
+    
+    // 清除所有中断
+    for (uint8_t i = 0; i < 8; i++) {
+        NVIC->ICER[i] = 0xFFFFFFFF;
+        NVIC->ICPR[i] = 0xFFFFFFFF;
+    }
+
+    // 关闭 SysTick
+    SysTick->CTRL = 0;
+    SysTick->LOAD = 0;
+    SysTick->VAL = 0;
+    
+    // 禁用缓存
+    SCB_DisableICache();
+    SCB_DisableDCache();
+    
+    // 设置中断向量表
+    SCB->VTOR = vtor_addr;
+
+    BOOT_DBG("VTOR: 0x%08X, app_entry: 0x%08X, app_stack: 0x%08X", SCB->VTOR, app_entry, app_stack);
+
+    // 设置特权级别
+    __set_CONTROL(0);
+
+    // 设置堆栈指针
+    __set_MSP(app_stack);
+    
+    BOOT_DBG("MSP: 0x%08X", __get_MSP());
+
+    // 内存屏障
+    __DSB();
+    __ISB();
+    BOOT_DBG("DSB and ISB completed");
+    // 跳转到应用程序
+    ((void (*)(void))app_entry)();
+    BOOT_DBG("Jump to application completed");
 }
