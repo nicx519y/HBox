@@ -53,7 +53,7 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);    /* end of "RAM_D1" Ram type memory */
+_estack = ORIGIN(DTCMRAM) + LENGTH(DTCMRAM);    /* end of "DTCMRAM" Ram type memory */
 
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
@@ -77,8 +77,7 @@ MEMORY
 /* Define output sections */
 SECTIONS
 {
-
-    /* The startup code goes first into RAM_D2 */
+    /* 中断向量表必须在最前面 */
     .isr_vector :
     {
         . = ALIGN(4);
@@ -86,7 +85,7 @@ SECTIONS
         . = ALIGN(4);
     } >RAM_D2 AT >QSPIFLASH
 
-    /* The program code and other data goes into RAM_D2 */
+    /* 程序代码紧跟在向量表后面 */
     .text :
     {
         . = ALIGN(4);
@@ -224,6 +223,12 @@ SECTIONS
     PROVIDE(__isr_vector_vma_end = ADDR(.isr_vector) + SIZEOF(.isr_vector));
     PROVIDE(__isr_vector_lma_start = LOADADDR(.isr_vector));
     PROVIDE(__isr_vector_lma_end = LOADADDR(.isr_vector) + SIZEOF(.isr_vector));
+
+    /* 确保这些符号被导出 */
+    __isr_vector_start = LOADADDR(.isr_vector);
+    __isr_vector_end = __isr_vector_start + SIZEOF(.isr_vector);
+    __text_start = LOADADDR(.text);
+    __text_end = __text_start + SIZEOF(.text);
 }
 
 

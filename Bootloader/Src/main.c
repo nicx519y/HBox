@@ -333,7 +333,7 @@ void jump_to_application(uint32_t app_entry, uint32_t app_stack, uint32_t vtor_a
     }
 
     // 验证堆栈指针
-    if ((app_stack & 0xFF000000) != 0x24000000) {
+    if ((app_stack & 0xFF000000) != 0x20000000) { // 0x20000000 是DTCMRAM的起始地址
         BOOT_ERR("Invalid app_stack address: 0x%08X", app_stack);
         while(1);
     }
@@ -385,13 +385,18 @@ void jump_to_application(uint32_t app_entry, uint32_t app_stack, uint32_t vtor_a
     BOOT_DBG("  CONTROL: 0x%08X", __get_CONTROL());
     BOOT_DBG("  PRIMASK: 0x%08X", __get_PRIMASK());
     
-    // 使用汇编跳转
-    __asm volatile (
-        "msr primask, %0\n"    // 设置 PRIMASK
-        "msr msp, %1\n"        // 设置 MSP
-        "bx %2\n"              // 跳转
-        : : "r" (1), "r" (app_stack), "r" (app_entry)
-    );
+    // 直接使用函数指针跳转
+    void (*app_reset_handler)(void) = (void*)app_entry;
+    
+    // 确保地址是 Thumb 模式（最低位为1）
+    app_entry |= 0x1;
+    
+    // 最后一次检查
+    BOOT_DBG("Jumping to 0x%08X with stack 0x%08X", app_entry, app_stack);
+    
+    // 设置堆栈指针并跳转
+    __set_MSP(app_stack);
+    app_reset_handler();
 
     // 不应该到达这里
     BOOT_ERR("Jump failed!");

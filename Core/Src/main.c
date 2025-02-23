@@ -68,14 +68,6 @@ int main(void)
     // 先禁用所有中断
     __disable_irq();
     
-    // 检查当前状态
-    printf("\n\nApplication Entry Point!\n");
-    printf("Current state:\n");
-    printf("  MSP: 0x%08X\n", __get_MSP());
-    printf("  VTOR: 0x%08X\n", SCB->VTOR);
-    printf("  CONTROL: 0x%08X\n", __get_CONTROL());
-    printf("  PRIMASK: 0x%08X\n", __get_PRIMASK());
-    
     // 设置中断向量表
     SCB->VTOR = 0x30000000;
     
@@ -84,7 +76,6 @@ int main(void)
     
     // 初始化串口
     USART1_Init();
-    printf("\r\nApplication started!\r\n");
     
     // 启用 FPU
     SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));
@@ -98,9 +89,6 @@ int main(void)
     
     // 继续执行应用程序
     cpp_main();
-    
-    // 如果到这里说明 cpp_main 返回了
-    printf("cpp_main returned!\r\n");
     
     while (1)
     {
