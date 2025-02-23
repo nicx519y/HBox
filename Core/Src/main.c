@@ -57,6 +57,7 @@
 
 /* USER CODE END 0 */
 
+extern uint32_t __isr_vector_vma_start; // 中断向量表VMA起始地址
 
 /**
   * @brief  The application entry point.
@@ -89,7 +90,7 @@ int main(void)
 		NVIC->ICER[i]=0xFFFFFFFF;
 		NVIC->ICPR[i]=0xFFFFFFFF;
 	}
-  SCB->VTOR = 0x30000000; // 设置中断向量表地址
+  SCB->VTOR = &__isr_vector_vma_start; // 设置中断向量表地址
   // 启用全局中断
   __enable_irq();
   // 允许中断

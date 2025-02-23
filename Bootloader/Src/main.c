@@ -35,7 +35,6 @@ int8_t mmpResult = -1;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void checkInterruptVectorTable(uint32_t ram_addr, uint32_t ram_size);
 static void MPU_Config(void);
 void copyCodeFromQSPIToRAM(void);
 
@@ -45,7 +44,7 @@ extern uint32_t _QSPIFLASH_size;
 extern uint32_t _QSPIFLASH_METADATA_start;
 extern uint32_t _QSPIFLASH_METADATA_size;
 
-const AppMetadata *metadata = (AppMetadata *)QSPI_METADATA_ADDRESS;  // 使用正确的元数据地址
+const AppMetadata *metadata = (AppMetadata *)&_QSPIFLASH_METADATA_start;  // 使用正确的元数据地址
 /**
  * @brief  The application entry point.
  * @retval int
@@ -92,7 +91,7 @@ int main(void)
     
     // 获取中断向量表地址
     const uint32_t vtor_addr = metadata->isr_vector.vma_start;
-    BOOT_DBG("ISR Vector VMA: 0x%08X, LMA: 0x%08X\r\n", metadata->isr_vector.vma_start, metadata->isr_vector.lma_start);
+    const uint32_t vtor_lma = metadata->isr_vector.lma_start;
     
     // 设置中断向量表
     SCB->VTOR = vtor_addr;
@@ -119,7 +118,7 @@ int main(void)
 
     // 验证向量表内容
     uint32_t *vector_table = (uint32_t *)vtor_addr;
-    BOOT_DBG("Vector Table Contents:");
+    BOOT_DBG("Vector Table Contents: vtor_addr = 0x%08X, vtor_lma = 0x%08X", vtor_addr, vtor_lma);
     for(int i = 0; i < 8; i++) {
         BOOT_DBG("  [%d]: 0x%08X", i, vector_table[i]);
     }
@@ -132,19 +131,18 @@ int main(void)
     BOOT_DBG("Application Stack: 0x%08X\r\n", app_stack);
     BOOT_DBG("Application Entry: 0x%08X\r\n", app_entry);
 
-    if((app_stack & 0xFFF00000) == 0x30000000) {  // 检查堆栈指针是否在 RAM_D2 范围
-        // 设置堆栈指针
-        __set_MSP(app_stack);
-        
-        BOOT_DBG("Stack pointer set successfully\r\n");
-        BOOT_DBG("Ready to jump to application at 0x%08X\r\n", app_entry);
+    // 设置堆栈指针
+    __set_MSP(app_stack);
+    
+    BOOT_DBG("Stack pointer set successfully\r\n");
+    // 跳转到应用程序
+    JumpToApplication = (pFunction)app_entry;
 
-        // 跳转到应用程序
-        JumpToApplication = (pFunction)app_entry;
-        JumpToApplication();
-    } else {
-        BOOT_ERR("Invalid stack pointer: 0x%08X\r\n", app_stack);
-    }
+    BOOT_DBG("Ready to jump to application at 0x%08X\r\n", app_entry);
+
+    JumpToApplication();
+
+    BOOT_DBG("Jump to application failed\r\n");
 
     while (1)
     {
@@ -260,82 +258,6 @@ void MPU_Config(void)
 
 }
 
-// 定义中断向量表的大小
-#define NVIC_NUM_INTERRUPTS 166 // 根据实际中断数量调整
-
-void checkInterruptVectorTable(uint32_t ram_addr, uint32_t ram_size)
-{
-    // 定义中断向量表中的处理函数类型
-    typedef void (*pFunction)(void);
-    
-    // 获取当前的中断向量表地址
-    uint32_t *vectorTable = (uint32_t *)SCB->VTOR;
-    
-    BOOT_DBG("\r\nChecking Interrupt Vector Table at address: 0x%08X\r\n", (uint32_t)vectorTable);
-
-    // 定义一些关键中断的名称
-    const char* vector_names[] = {
-        "Initial_SP",           // 0: Initial Stack Pointer
-        "Reset_Handler",        // 1: Reset Handler
-        "NMI_Handler",          // 2: NMI Handler
-        "HardFault_Handler",    // 3: Hard Fault Handler
-        "MemManage_Handler",    // 4: MPU Fault Handler
-        "BusFault_Handler",     // 5: Bus Fault Handler
-        "UsageFault_Handler",   // 6: Usage Fault Handler
-        "Reserved",             // 7: Reserved
-        "Reserved",             // 8: Reserved
-        "Reserved",             // 9: Reserved
-        "Reserved",             // 10: Reserved
-        "SVC_Handler",          // 11: SVCall Handler
-        "DebugMon_Handler",     // 12: Debug Monitor Handler
-        "Reserved",             // 13: Reserved
-        "PendSV_Handler",       // 14: PendSV Handler
-        "SysTick_Handler"       // 15: SysTick Handler
-    };
-
-    // 打印前16个关键中断向量
-    for (int i = 0; i < 16; i++) {
-        uint32_t handler_addr = vectorTable[i];
-        pFunction handler = (pFunction)handler_addr;
-        
-        BOOT_DBG("Vector %2d (%20s): 0x%08X", i, vector_names[i], handler_addr);
-        
-        // 检查地址的有效性
-        if (handler_addr == 0 || handler_addr == 0xFFFFFFFF) {
-            BOOT_DBG(" [INVALID]");
-        } else {
-            // 检查地址范围
-            if ((handler_addr >= FLASH_BASE && handler_addr < (FLASH_BASE + FLASH_SIZE)) ||
-                (handler_addr >= QSPI_APP_ADDRESS && handler_addr < (QSPI_APP_ADDRESS + QSPI_APP_SIZE)) ||
-                (handler_addr >= ram_addr && handler_addr < (ram_addr + ram_size))) {
-                BOOT_DBG(" [VALID]");
-            } else {
-                BOOT_DBG(" [OUT OF RANGE]");
-            }
-        }
-        BOOT_DBG("\r\n");
-    }
-
-    // 检查向量表是否在正确的内存区域
-    if ((uint32_t)vectorTable >= ram_addr && (uint32_t)vectorTable < (ram_addr + ram_size)) {
-        BOOT_DBG("Vector Table is in RAM\r\n");
-    } else if ((uint32_t)vectorTable >= FLASH_BASE && (uint32_t)vectorTable < (FLASH_BASE + FLASH_SIZE)) {
-        BOOT_DBG("Vector Table is in FLASH\r\n");
-    } else if ((uint32_t)vectorTable >= QSPI_APP_ADDRESS && (uint32_t)vectorTable < (QSPI_APP_ADDRESS + QSPI_APP_SIZE)) {
-        BOOT_DBG("Vector Table is in QSPI FLASH\r\n");
-    } else {
-        BOOT_ERR("Vector Table is in unknown memory region!\r\n");
-    }
-
-    // 检查堆栈指针
-    uint32_t sp = __get_MSP();
-    BOOT_DBG("Current MSP: 0x%08X\r\n", sp);
-    if (sp >= ram_addr && sp < (ram_addr + ram_size)) {
-        BOOT_DBG("Stack pointer is in valid RAM region\r\n");
-    } else {
-        BOOT_ERR("Stack pointer is in invalid memory region!\r\n");
-    }
-}
 
 /**
  * @brief  This function is executed in case of error occurrence.
@@ -431,22 +353,9 @@ void copyCodeFromQSPIToRAM(void)
         if(size > 0) {
             BOOT_DBG("Copying ISR vector section");
             
-            // 打印源数据
-            BOOT_DBG("Source data (LMA):");
-            for(int i = 0; i < 16; i++) {
-                BOOT_DBG("ISR Vector %2d: 0x%08X", 
-                    i, *(uint32_t*)(metadata->isr_vector.lma_start + i * 4));
-            }
-            
             memcpy((void*)metadata->isr_vector.vma_start, 
                    (void*)metadata->isr_vector.lma_start, size);
             
-            // 打印目标数据
-            BOOT_DBG("Destination data (VMA):");
-            for(int i = 0; i < 16; i++) {
-                BOOT_DBG("ISR Vector %2d: 0x%08X", 
-                    i, *(uint32_t*)(metadata->isr_vector.vma_start + i * 4));
-            }
         }
 
         BOOT_DBG("All sections copied successfully");
