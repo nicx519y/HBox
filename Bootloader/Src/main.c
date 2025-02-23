@@ -326,6 +326,22 @@ void copyCodeFromQSPIToRAM(void)
 
 void jump_to_application(uint32_t app_entry, uint32_t app_stack, uint32_t vtor_addr)
 {
+    // 验证地址有效性
+    if ((app_entry & 0xFF000000) != 0x30000000) {
+        BOOT_ERR("Invalid app_entry address: 0x%08X", app_entry);
+        while(1);
+    }
+
+    // 验证堆栈指针
+    if ((app_stack & 0xFF000000) != 0x24000000) {
+        BOOT_ERR("Invalid app_stack address: 0x%08X", app_stack);
+        while(1);
+    }
+
+    // 尝试读取入口地址的内容
+    uint32_t *entry_content = (uint32_t*)app_entry;
+    BOOT_DBG("Entry point content: 0x%08X", *entry_content);
+
     // 关闭所有中断
     __disable_irq();
     
@@ -361,7 +377,23 @@ void jump_to_application(uint32_t app_entry, uint32_t app_stack, uint32_t vtor_a
     __DSB();
     __ISB();
     BOOT_DBG("DSB and ISB completed");
-    // 跳转到应用程序
-    ((void (*)(void))app_entry)();
-    BOOT_DBG("Jump to application completed");
+
+    // 跳转前最后的检查
+    BOOT_DBG("Final check before jump:");
+    BOOT_DBG("  VTOR: 0x%08X", SCB->VTOR);
+    BOOT_DBG("  MSP: 0x%08X", __get_MSP());
+    BOOT_DBG("  CONTROL: 0x%08X", __get_CONTROL());
+    BOOT_DBG("  PRIMASK: 0x%08X", __get_PRIMASK());
+    
+    // 使用汇编跳转
+    __asm volatile (
+        "msr primask, %0\n"    // 设置 PRIMASK
+        "msr msp, %1\n"        // 设置 MSP
+        "bx %2\n"              // 跳转
+        : : "r" (1), "r" (app_stack), "r" (app_entry)
+    );
+
+    // 不应该到达这里
+    BOOT_ERR("Jump failed!");
+    while(1);
 }
