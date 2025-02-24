@@ -81,7 +81,7 @@ extern const  uint8_t D1CorePrescTable[16] ; /*!< D1CorePrescTable prescalers ta
 /** @addtogroup STM32H7xx_System_Exported_Functions
   * @{
   */
-
+extern void UserLEDInit(void);
 extern void SystemInit(void);
 extern void SystemCoreClockUpdate(void);
 /**

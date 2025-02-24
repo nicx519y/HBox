@@ -165,6 +165,21 @@
   * @{
   */
 
+void UserLEDInit(void)
+{
+    // 使能 GPIO 时钟
+    RCC->AHB4ENR |= RCC_AHB4ENR_GPIOCEN;
+    
+    // 等待时钟稳定
+    __DSB();
+
+    GPIOC->MODER &= ~(3U << (13 * 2));
+    GPIOC->MODER |= (1U << (13 * 2));
+    // 翻转 user LED 状态
+    GPIOC->ODR ^= GPIO_PIN_13;
+    
+}
+
 /**
   * @brief  Setup the microcontroller system
   *         Initialize the FPU setting and  vector table location
@@ -175,6 +190,18 @@
 
 void SystemInit (void)
 {
+
+  // // 使能 GPIO 时钟
+  //   RCC->AHB4ENR |= RCC_AHB4ENR_GPIOCEN;
+    
+  //   // 等待时钟稳定
+  //   __DSB();
+
+  //   GPIOC->MODER &= ~(3U << (13 * 2));
+  //   GPIOC->MODER |= (1U << (13 * 2));
+  //   // 翻转 user LED 状态
+  //   GPIOC->ODR ^= GPIO_PIN_13;
+    
 #if defined (DATA_IN_D2_SRAM)
  __IO uint32_t tmpreg;
 #endif /* DATA_IN_D2_SRAM */

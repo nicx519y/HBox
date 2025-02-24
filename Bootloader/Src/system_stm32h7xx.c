@@ -5,11 +5,36 @@ uint32_t SystemCoreClock = 64000000;
 uint32_t SystemD2Clock = 64000000;
 const uint8_t D1CorePrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6, 7, 8, 9};
 
+void UserLEDInit(void)
+{
+    // 使能 GPIO 时钟
+    RCC->AHB4ENR |= RCC_AHB4ENR_GPIOCEN;
+    
+    // 等待时钟稳定
+    __DSB();
+
+    GPIOC->MODER &= ~(3U << (13 * 2));
+    GPIOC->MODER |= (1U << (13 * 2));
+    // 翻转 user LED 状态
+    GPIOC->ODR ^= GPIO_PIN_13;
+    
+}
+
 void SystemInit(void)
 {
-    // 翻转 LED 状态
-    GPIOE->ODR ^= GPIO_PIN_3;
+    // // 使能 GPIO 时钟
+    // RCC->AHB4ENR |= RCC_AHB4ENR_GPIOCEN;
     
+    // // 等待时钟稳定
+    // __DSB();
+
+    // GPIOC->MODER &= ~(3U << (13 * 2));
+    // GPIOC->MODER |= (1U << (13 * 2));
+    // // 翻转 user LED 状态
+    // GPIOC->ODR ^= GPIO_PIN_13;
+    
+    /******************   以上初始化LED 提示  ************* */
+
     // 基本系统初始化
     SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));  // Enable FPU
     
@@ -42,28 +67,28 @@ void SystemInit(void)
     RCC->D3CFGR = 0x00000000;
     
     // Reset PLLCKSELR register
-    RCC->PLLCKSELR = 0x00000000;
+    // RCC->PLLCKSELR = 0x00000000;
     
-    // Reset PLL1DIVR register
-    RCC->PLL1DIVR = 0x00000000;
+    // // Reset PLL1DIVR register
+    // RCC->PLL1DIVR = 0x00000000;
     
-    // Reset PLL1FRACR register
-    RCC->PLL1FRACR = 0x00000000;
+    // // Reset PLL1FRACR register
+    // RCC->PLL1FRACR = 0x00000000;
     
-    // Reset PLL2DIVR register
-    RCC->PLL2DIVR = 0x00000000;
+    // // Reset PLL2DIVR register
+    // RCC->PLL2DIVR = 0x00000000;
     
-    // Reset PLL2FRACR register
-    RCC->PLL2FRACR = 0x00000000;
+    // // Reset PLL2FRACR register
+    // RCC->PLL2FRACR = 0x00000000;
     
-    // Reset PLL3DIVR register
-    RCC->PLL3DIVR = 0x00000000;
+    // // Reset PLL3DIVR register
+    // RCC->PLL3DIVR = 0x00000000;
     
-    // Reset PLL3FRACR register
-    RCC->PLL3FRACR = 0x00000000;
+    // // Reset PLL3FRACR register
+    // RCC->PLL3FRACR = 0x00000000;
     
     // Reset HSEBYP bit
-    RCC->CR &= 0xFFFBFFFF;
+    RCC->CR &= 0xFFFBFFFU;
     
     // Disable all interrupts
     RCC->CIER = 0x00000000;

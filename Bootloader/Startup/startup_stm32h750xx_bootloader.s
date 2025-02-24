@@ -60,6 +60,9 @@ defined in linker script */
 Reset_Handler:
   ldr   sp, =_estack      /* set stack pointer */
 
+/* 初始化LED */
+ // bl  UserLEDInit
+
 /* Call the clock system initialization function.*/
   bl  SystemInit
 

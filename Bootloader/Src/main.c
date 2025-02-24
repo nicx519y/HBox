@@ -251,71 +251,69 @@ void assert_failed(uint8_t *file, uint32_t line)
 
 void copyCodeFromQSPIToRAM(void)
 {
-    // 从正确的地址读取元数据
     AppMetadata *metadata = (AppMetadata *)QSPI_METADATA_ADDRESS;
     
     BOOT_DBG("Metadata address: 0x%08X", QSPI_METADATA_ADDRESS);
     BOOT_DBG("Metadata magic: 0x%08X", metadata->magic);
 
     if(metadata->magic == METADATA_MAGIC) {
-        // 打印所有段的信息
-        BOOT_DBG("Text section:");
-        BOOT_DBG("  VMA: 0x%08X - 0x%08X", metadata->text.vma_start, metadata->text.vma_end);
-        BOOT_DBG("  LMA: 0x%08X - 0x%08X", metadata->text.lma_start, metadata->text.lma_end);
-        
-        BOOT_DBG("Data section:");
-        BOOT_DBG("  VMA: 0x%08X - 0x%08X", metadata->data.vma_start, metadata->data.vma_end);
-        BOOT_DBG("  LMA: 0x%08X - 0x%08X", metadata->data.lma_start, metadata->data.lma_end);
-        
-        BOOT_DBG("BSS section:");
-        BOOT_DBG("  VMA: 0x%08X - 0x%08X", metadata->bss.vma_start, metadata->bss.vma_end);
-        BOOT_DBG("  LMA: 0x%08X - 0x%08X", metadata->bss.lma_start, metadata->bss.lma_end);
-        
-        BOOT_DBG("ROData section:");
-        BOOT_DBG("  VMA: 0x%08X - 0x%08X", metadata->rodata.vma_start, metadata->rodata.vma_end);
-        BOOT_DBG("  LMA: 0x%08X - 0x%08X", metadata->rodata.lma_start, metadata->rodata.lma_end);
-        
-        BOOT_DBG("ISR Vector section:");
-        BOOT_DBG("  VMA: 0x%08X - 0x%08X", metadata->isr_vector.vma_start, metadata->isr_vector.vma_end);
-        BOOT_DBG("  LMA: 0x%08X - 0x%08X", metadata->isr_vector.lma_start, metadata->isr_vector.lma_end);
+        uint32_t size;
 
-        // 拷贝各个段
-        // Text section
-        uint32_t size = metadata->text.vma_end - metadata->text.vma_start;
-        if(size > 0) {
-            BOOT_DBG("Copying text section");
-            memcpy((void*)metadata->text.vma_start, (void*)metadata->text.lma_start, size);
-        }
-
-        // Data section
-        size = metadata->data.vma_end - metadata->data.vma_start;
-        if(size > 0) {
-            BOOT_DBG("Copying data section");
-            memcpy((void*)metadata->data.vma_start, (void*)metadata->data.lma_start, size);
-        }
-
-        // BSS section
-        size = metadata->bss.vma_end - metadata->bss.vma_start;
-        if(size > 0) {
-            BOOT_DBG("Zeroing BSS section");
-            memset((void*)metadata->bss.vma_start, 0, size);
-        }
-
-        // ROData section
-        size = metadata->rodata.vma_end - metadata->rodata.vma_start;
-        if(size > 0) {
-            BOOT_DBG("Copying rodata section");
-            memcpy((void*)metadata->rodata.vma_start, (void*)metadata->rodata.lma_start, size);
-        }
-
-        // ISR Vector section
+        // 1. 先拷贝中断向量表
         size = metadata->isr_vector.vma_end - metadata->isr_vector.vma_start;
         if(size > 0) {
             BOOT_DBG("Copying ISR vector section");
+            BOOT_DBG("  VMA: 0x%08X - 0x%08X", metadata->isr_vector.vma_start, metadata->isr_vector.vma_end);
+            BOOT_DBG("  LMA: 0x%08X - 0x%08X", metadata->isr_vector.lma_start, metadata->isr_vector.lma_end);
             
             memcpy((void*)metadata->isr_vector.vma_start, 
                    (void*)metadata->isr_vector.lma_start, size);
             
+            // 验证拷贝是否成功
+            if (memcmp((void*)metadata->isr_vector.vma_start, 
+                      (void*)metadata->isr_vector.lma_start, size) != 0) {
+                BOOT_ERR("ISR vector verification failed");
+                return;
+            }
+        }
+
+        // 2. 拷贝代码段
+        size = metadata->text.vma_end - metadata->text.vma_start;
+        if(size > 0) {
+            BOOT_DBG("Copying text section");
+            BOOT_DBG("  VMA: 0x%08X - 0x%08X", metadata->text.vma_start, metadata->text.vma_end);
+            BOOT_DBG("  LMA: 0x%08X - 0x%08X", metadata->text.lma_start, metadata->text.lma_end);
+            memcpy((void*)metadata->text.vma_start, 
+                   (void*)metadata->text.lma_start, size);
+        }
+
+        // 3. 拷贝只读数据
+        size = metadata->rodata.vma_end - metadata->rodata.vma_start;
+        if(size > 0) {
+            BOOT_DBG("Copying rodata section");
+            BOOT_DBG("  VMA: 0x%08X - 0x%08X", metadata->rodata.vma_start, metadata->rodata.vma_end);
+            BOOT_DBG("  LMA: 0x%08X - 0x%08X", metadata->rodata.lma_start, metadata->rodata.lma_end);
+            memcpy((void*)metadata->rodata.vma_start, 
+                   (void*)metadata->rodata.lma_start, size);
+        }
+
+        // 4. 拷贝数据段
+        size = metadata->data.vma_end - metadata->data.vma_start;
+        if(size > 0) {
+            BOOT_DBG("Copying data section");
+            BOOT_DBG("  VMA: 0x%08X - 0x%08X", metadata->data.vma_start, metadata->data.vma_end);
+            BOOT_DBG("  LMA: 0x%08X - 0x%08X", metadata->data.lma_start, metadata->data.lma_end);
+            memcpy((void*)metadata->data.vma_start, 
+                   (void*)metadata->data.lma_start, size);
+        }
+
+        // 5. 清零 BSS 段
+        size = metadata->bss.vma_end - metadata->bss.vma_start;
+        if(size > 0) {
+            BOOT_DBG("Zeroing BSS section");
+            BOOT_DBG("  VMA: 0x%08X - 0x%08X", metadata->bss.vma_start, metadata->bss.vma_end);
+            BOOT_DBG("  LMA: 0x%08X - 0x%08X", metadata->bss.lma_start, metadata->bss.lma_end);
+            memset((void*)metadata->bss.vma_start, 0, size);
         }
 
         BOOT_DBG("All sections copied successfully");
@@ -333,10 +331,10 @@ void jump_to_application(uint32_t app_entry, uint32_t app_stack, uint32_t vtor_a
     }
 
     // 验证堆栈指针
-    if ((app_stack & 0xFF000000) != 0x20000000) { // 0x20000000 是DTCMRAM的起始地址
-        BOOT_ERR("Invalid app_stack address: 0x%08X", app_stack);
-        while(1);
-    }
+    // if ((app_stack & 0xFF000000) != 0x20000000) { // 0x20000000 是DTCMRAM的起始地址
+    //     BOOT_ERR("Invalid app_stack address: 0x%08X", app_stack);
+    //     while(1);
+    // }
 
     // 尝试读取入口地址的内容
     uint32_t *entry_content = (uint32_t*)app_entry;

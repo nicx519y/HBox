@@ -60,7 +60,10 @@ defined in linker script */
 Reset_Handler:
   ldr   sp, =_estack      /* set stack pointer */
 
-/* Call the clock system initialization function.*/
+  /** 初始化 LED **/
+  bl  UserLEDInit
+
+  /** 继续原有的初始化流程 **/
   bl  SystemInit
 
 /* Copy the data segment initializers from flash to SRAM */
