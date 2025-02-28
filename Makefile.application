@@ -117,7 +117,11 @@ LDSCRIPT = STM32H750XBHx_application.ld
 
 # 链接选项
 LDFLAGS = $(MCU) -specs=nano.specs -specs=nosys.specs $(LIBS) -Wl,--gc-sections -u _printf_float
-LDFLAGS += -flto -Wl,--gc-sections -Wl,--strip-debug
+LDFLAGS += -flto  # 链接时优化
+LDFLAGS += -O3    # 最高优化级别
+LDFLAGS += -Wl,--gc-sections  # 删除未使用的段
+LDFLAGS += -Wl,--strip-debug  # 删除调试信息
+LDFLAGS += -Wl,-s  # 删除所有符号信息
 
 # 编译规则
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin metadata
@@ -172,7 +176,7 @@ flash: $(BUILD_DIR)/$(TARGET).elf
 	-c "reset init" \
 	-c "flash write_image erase $(BUILD_DIR)/metadata.bin 0x90100000" \
 	-c "flash verify_image $(BUILD_DIR)/metadata.bin 0x90100000" \
-	-c "program erase $(BUILD_DIR)/$(TARGET).elf" \
+	-c "p $(BUILD_DIR)/$(TARGET).elf 0x00000000" \
 	-c reset \
 	-c shutdown
 

@@ -6,7 +6,15 @@
 
 // 只保留 Bootloader 需要的中断处理函数
 void NMI_Handler(void) { while(1) {} }
-void HardFault_Handler(void) { while(1) {} }
+void HardFault_Handler(void)
+{
+    printf("[BOOT ERROR] HardFault occurred!\r\n");
+    printf("[BOOT ERROR] HFSR: 0x%08X\r\n", SCB->HFSR);
+    printf("[BOOT ERROR] CFSR: 0x%08X\r\n", SCB->CFSR);
+    printf("[BOOT ERROR] MMFAR: 0x%08X\r\n", SCB->MMFAR);
+    printf("[BOOT ERROR] BFAR: 0x%08X\r\n", SCB->BFAR);
+    while(1);
+}
 void MemManage_Handler(void) { while(1) {} }
 void BusFault_Handler(void) { while(1) {} }
 void UsageFault_Handler(void) { while(1) {} }

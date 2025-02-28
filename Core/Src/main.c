@@ -57,7 +57,7 @@
 
 /* USER CODE END 0 */
 
-extern uint32_t __isr_vector_vma_start; // 中断向量表VMA起始地址
+// extern uint32_t __isr_vector_vma_start; // 中断向量表VMA起始地址
 
 /**
   * @brief  The application entry point.
@@ -65,36 +65,25 @@ extern uint32_t __isr_vector_vma_start; // 中断向量表VMA起始地址
   */
 int main(void)
 {
-    // 先禁用所有中断
-    __disable_irq();
-    
-    // 设置中断向量表
-    SCB->VTOR = 0x30000000;
-    
+    // 确保向量表指向 QSPI Flash
+    SCB->VTOR = 0x90000000;
     // 初始化系统时钟
     SystemClock_Config();
     
     // 初始化串口
     USART1_Init();
     
-    // 启用 FPU
-    SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));
+    // LED 初始化
+    RCC->AHB4ENR |= RCC_AHB4ENR_GPIOCEN;
+    GPIOC->MODER &= ~(3U << (13 * 2));
+    GPIOC->MODER |= (1U << (13 * 2));
     
-    // 启用缓存
-    SCB_EnableICache();
-    SCB_EnableDCache();
+    printf("\r\nApplication Started!\r\n");
     
-    // 启用中断
-    __enable_irq();
-    
-    // 继续执行应用程序
-    cpp_main();
-    
-    while (1)
-    {
-        // 添加一些可见的指示
-        printf(".");
-        HAL_Delay(1000);
+    // LED 闪烁
+    while(1) {
+        GPIOC->ODR ^= (1 << 13);
+        HAL_Delay(500);
     }
 }
 
@@ -130,3 +119,19 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+// 添加一个简单的测试函数，放在固定偏移位置
+__attribute__((section(".text.test_func")))
+__attribute__((used))
+__attribute__((aligned(4)))
+static void test_function(void) __attribute__((naked));
+static void test_function(void)
+{
+    asm volatile(
+        ".thumb\n"            // 明确指定 Thumb 模式
+        ".syntax unified\n"   // 使用统一语法
+        ".align 2\n"         // 4 字节对齐
+        "bx lr\n"            // 直接返回
+        ".align 2\n"
+    );
+}

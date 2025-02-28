@@ -52,8 +52,8 @@
 /* Entry Point */
 ENTRY(Reset_Handler)
 
-/* Highest address of the user mode stack */
-_estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);    /* end of "RAM_D1" Ram type memory */
+/* 定义栈顶 */
+_estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);
 
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
@@ -62,13 +62,12 @@ _Min_Stack_Size = 0x400;     /* required amount of stack */
 /* Specify the memory areas */
 MEMORY
 {
-    FLASH (rx)          : ORIGIN = 0x08000000, LENGTH = 128K
+    FLASH (rx)          : ORIGIN = 0x90000000, LENGTH = 8192K
     DTCMRAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 128K
     RAM_D1 (xrw)        : ORIGIN = 0x24000000, LENGTH = 512K
     RAM_D2 (xrw)        : ORIGIN = 0x30000000, LENGTH = 288K
     RAM_D3 (xrw)        : ORIGIN = 0x38000000, LENGTH = 64K
     ITCMRAM (xrw)       : ORIGIN = 0x00000000, LENGTH = 64K
-    QSPIFLASH (rx)      : ORIGIN = 0x90000000, LENGTH = 1M  /* application 区域 */
     WEB_RESOURCES (rx)  : ORIGIN = 0x90100000, LENGTH = 1M  /* web resources 区域 */
     HALL_BTNS_CONFIG (rx) : ORIGIN = 0x00200000, LENGTH = 1M  /* hall btns config 区域 */
     CONFIG (rx)         : ORIGIN = 0x00300000, LENGTH = 1M  /* config 区域 */
@@ -81,59 +80,101 @@ SECTIONS
     .isr_vector :
     {
         . = ALIGN(4);
-        KEEP(*(.isr_vector)) /* Startup code */
+        __vector_table = .;
+        KEEP(*(.isr_vector))
         . = ALIGN(4);
-    } >RAM_D2 AT >QSPIFLASH
+    } >FLASH  /* 确保在 QSPI Flash 中 */
 
-    /* 程序代码紧跟在向量表后面 */
+    /* 测试函数放在固定偏移位置 */
+    .text.test_func 0x90001000 :
+    {
+        . = ALIGN(4);
+        KEEP(*(.text.test_func))  /* 添加 KEEP 确保不被优化掉 */
+        . = ALIGN(4);
+    } >FLASH
+
+    /* 程序代码 */
     .text :
     {
         . = ALIGN(4);
         *(.text)           /* .text sections (code) */
         *(.text*)          /* .text* sections (code) */
+        *(.glue_7)         /* glue arm to thumb code */
+        *(.glue_7t)        /* glue thumb to arm code */
+        *(.eh_frame)
+
+        KEEP (*(.init))
+        KEEP (*(.fini))
+
         . = ALIGN(4);
-    } >RAM_D2 AT >QSPIFLASH
+        _etext = .;        /* define a global symbols at end of code */
+    } >FLASH  /* 确保在 QSPI Flash 中 */
 
     /* Constant data goes into FLASH */
     .rodata :
     {
         . = ALIGN(4);
-        __rodata_start = .; /* 定义 .rodata 段的起始地址 */
         *(.rodata)         /* .rodata sections (constants, strings, etc.) */
         *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
         . = ALIGN(4);
-        __rodata_end = .;  /* 定义 .rodata 段的结束地址 */
-    } >RAM_D2 AT >QSPIFLASH
+    } >FLASH
 
+    .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
+    .ARM : {
+        __exidx_start = .;
+        *(.ARM.exidx*)
+        __exidx_end = .;
+    } >FLASH
+
+    .preinit_array :
+    {
+        PROVIDE_HIDDEN (__preinit_array_start = .);
+        KEEP (*(.preinit_array*))
+        PROVIDE_HIDDEN (__preinit_array_end = .);
+    } >FLASH
+
+    .init_array :
+    {
+        PROVIDE_HIDDEN (__init_array_start = .);
+        KEEP (*(SORT(.init_array.*)))
+        KEEP (*(.init_array*))
+        PROVIDE_HIDDEN (__init_array_end = .);
+    } >FLASH
+    .fini_array :
+    {
+        PROVIDE_HIDDEN (__fini_array_start = .);
+        KEEP (*(SORT(.fini_array.*)))
+        KEEP (*(.fini_array*))
+        PROVIDE_HIDDEN (__fini_array_end = .);
+    } >FLASH
+
+    _sidata = LOADADDR(.data);
     /* Initialized data sections goes into RAM, load LMA copy after code */
     .data : 
     {
         . = ALIGN(4);
-        _sidata = LOADADDR(.data);  /* 定义初始化数据的起始地址 */
-        __data_start = .;           /* 定义数据段的起始地址 */
-        _sdata = .;                  /* 定义数据段的起始地址 */
-        *(.data)                     /* .data sections */
-        *(.data*)                    /* .data* sections */
+        _sdata = .;        /* create a global symbol at data start */
+        *(.data)           /* .data sections */
+        *(.data*)          /* .data* sections */
 
         . = ALIGN(4);
-        __data_end = .;             /* 定义 .data 段的结束地址 */
-        _edata = .;                  /* define a global symbol at data end */
-    } >RAM_D2 AT >QSPIFLASH
+        _edata = .;        /* define a global symbol at data end */
+    } >RAM_D1 AT> FLASH
 
     /* Uninitialized data section */
     .bss :
     {
-        . = ALIGN(4);
+        /* This is used by the startup in order to initialize the .bss secion */
         _sbss = .;         /* define a global symbol at bss start */
-        __bss_start = .;   /* define alternative symbol for bss start */
+        __bss_start__ = _sbss;
         *(.bss)
         *(.bss*)
         *(COMMON)
 
         . = ALIGN(4);
         _ebss = .;         /* define a global symbol at bss end */
-        __bss_end = .;     /* define alternative symbol for bss end */
-    } >RAM_D2
+        __bss_end__ = _ebss;
+    } >RAM_D1
 
     /* User_heap_stack section, used to check that there is enough RAM left */
     ._user_heap_stack :
@@ -202,33 +243,10 @@ SECTIONS
         . = ALIGN(4);
     } >WEB_RESOURCES
 
-    /* Define symbols for application */
-    PROVIDE(__text_vma_start = ADDR(.text));            /* RAM 中的地址 */
-    PROVIDE(__text_vma_end = ADDR(.text) + SIZEOF(.text));
-    PROVIDE(__text_lma_start = LOADADDR(.text));        /* QSPI Flash 中的地址 */
-    PROVIDE(__text_lma_end = LOADADDR(.text) + SIZEOF(.text));
-
-    PROVIDE(__data_vma_start = ADDR(.data));
-    PROVIDE(__data_vma_end = ADDR(.data) + SIZEOF(.data));
-    PROVIDE(__data_lma_start = LOADADDR(.data));
-    PROVIDE(__data_lma_end = LOADADDR(.data) + SIZEOF(.data));
-    
-    PROVIDE(__bss_vma_start = ADDR(.bss));
-    PROVIDE(__bss_vma_end = ADDR(.bss) + SIZEOF(.bss));
-
-    PROVIDE(__rodata_vma_start = ADDR(.rodata));
-    PROVIDE(__rodata_vma_end = ADDR(.rodata) + SIZEOF(.rodata));
-
-    PROVIDE(__isr_vector_vma_start = ADDR(.isr_vector));
-    PROVIDE(__isr_vector_vma_end = ADDR(.isr_vector) + SIZEOF(.isr_vector));
-    PROVIDE(__isr_vector_lma_start = LOADADDR(.isr_vector));
-    PROVIDE(__isr_vector_lma_end = LOADADDR(.isr_vector) + SIZEOF(.isr_vector));
-
-    /* 确保这些符号被导出 */
-    __isr_vector_start = LOADADDR(.isr_vector);
-    __isr_vector_end = __isr_vector_start + SIZEOF(.isr_vector);
-    __text_start = LOADADDR(.text);
-    __text_end = __text_start + SIZEOF(.text);
+    /* Export important symbols */
+    PROVIDE(_stack = ORIGIN(RAM_D1) + LENGTH(RAM_D1));
+    PROVIDE(_flash_start = ORIGIN(FLASH));
+    PROVIDE(_flash_end = ORIGIN(FLASH) + LENGTH(FLASH));
 }
 
 

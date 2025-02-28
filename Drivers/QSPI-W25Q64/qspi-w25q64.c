@@ -350,15 +350,11 @@ int8_t QSPI_W25Qxx_EnterMemoryMappedMode(void)
 	s_mem_mapped_cfg.TimeOutActivation = QSPI_TIMEOUT_COUNTER_DISABLE;
 	s_mem_mapped_cfg.TimeOutPeriod     = 0;
 
-	if (HAL_QSPI_MemoryMapped(&hqspi, &s_command, &s_mem_mapped_cfg) != HAL_OK)
-	{
-		// printf("Enter XIP mode failed!\n");
-		return W25Qxx_ERROR_MemoryMapped;
-	}
-
-	xip_enabled = true;
-	// printf("Enter XIP mode success!\n");
-	return QSPI_W25Qxx_OK;
+	// 添加调试信息
+	printf("QSPI CR: 0x%08X\n", QUADSPI->CR);
+	printf("QSPI DCR: 0x%08X\n", QUADSPI->DCR);
+	
+	return HAL_QSPI_MemoryMapped(&hqspi, &s_command, &s_mem_mapped_cfg);
 }
 
 /**
@@ -997,3 +993,5 @@ int8_t QSPI_W25Qxx_BufferErase(uint32_t StartAddr, uint32_t Size)
     result = QSPI_W25Qxx_OK;
 	return result;
 }
+
+
